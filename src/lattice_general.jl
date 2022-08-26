@@ -44,10 +44,12 @@ function closetoborders(i::Int,j::Int,L::Int,c::Int=5)
     end
 end
 
-function ontheborder(i::Int,j::Int,L::Int)
+function ontheborder(i::Int,j::Int,L::Int)::Bool
     if i == 1 || j == 1 || i == L || j == L
         return true
     else
         return false
     end
 end
+
+is_in_bulk(i::Int,j::Int,L::Int) = !ontheborder(i::Int,j::Int,L::Int)

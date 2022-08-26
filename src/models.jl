@@ -1,9 +1,14 @@
 export XY, AXY, VisionXY
 
-abstract type AbstractModel end
+abstract type AbstractModel{AbstractFloat} end
+abstract type AbstractModel2 end
+function sym(model::AbstractModel{T}) where T<:AbstractFloat
+    model.symmetry == "polar" ? symm = 2π : symm = π
+    return T(symm)
+end
 
 ## ---------------------------- Classical XY Model ----------------------------
-mutable struct XY{AbstractFloat} <: AbstractModel
+mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     L::Int
     T::AbstractFloat
     symmetry::String
@@ -18,7 +23,7 @@ end
 
 
 ## ------------------------- Forced / Active XY Model -------------------------
-mutable struct AXY{AbstractFloat} <: AbstractModel
+mutable struct AXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     L::Int
     T::AbstractFloat
     Var::AbstractFloat
@@ -40,7 +45,7 @@ function AXY(L::Int,T,Var,symmetry::String;float_type=Float32)
 end
 
 ## ------------------- Non Reciprocal (Vision Cone) XY Model -------------------
-mutable struct VisionXY{AbstractFloat} <: AbstractModel
+mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     L::Int
     T::AbstractFloat
     vision::AbstractFloat

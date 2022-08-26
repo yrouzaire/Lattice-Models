@@ -1,5 +1,6 @@
-include("lattice_general.jl");
-include("models.jl");
+include("../src/lattice_general.jl");
+include("../src/models.jl");
+include("../src/core_methods.jl");
 using Plots,ColorSchemes,LaTeXStrings
 
 ## ------------------------ Initializations  ------------------------
@@ -95,3 +96,6 @@ function display_quiver!(p,thetas,window)
     return p
 end
 # Note : after returning the plots with quiver, one has to add xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+## ------------------------ Movies  ------------------------
+#TODO
