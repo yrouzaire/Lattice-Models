@@ -4,7 +4,7 @@ This code base is using the Julia Language and [DrWatson](https://juliadynamics.
 to make a reproducible scientific project named
 > Lattice Models
 
-It is authored by Rouzaire.
+It is authored by Ylann Rouzaire.
 
 To (locally) reproduce this project, do the following:
 
