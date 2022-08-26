@@ -62,13 +62,13 @@ function exp_moving_average(x,window)
     return y
 end
 
-function smooth(x;over=1)
-    len = length(x)
-    result = zeros(len)
-    result[1:over] .= NaN
-    result[end-over+1:end] .= NaN
-    for i in 1+over:len-over
-        result[i] = mean(x[i-over:i+over])
+function smooth(X;over=3) ## for smoother plots
+    smoothed = copy(X)
+    coeff = [2^(i-1) for i in 1:over]
+    coeff = coeff./sum(coeff)
+    s = length(coeff)
+    for i in 1+s:length(smoothed)
+        smoothed[i] = X[i-s+1:i]'*coeff
     end
-    return result
+    return smoothed
 end
