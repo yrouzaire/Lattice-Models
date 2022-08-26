@@ -30,6 +30,7 @@ function init_thetas!(model::AbstractModel,space::AbstractLattice,init::String)
     return nothing
 end
 
+## ------------------------ Visualization  ------------------------
 function plot_theta(model::AbstractModel,space::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
     model.symmetry == "polar" ? symm = 2π : symm = π
     p = heatmap(mod.(model.thetas',symm),c=cols,clims=(0,symm),size=(512,512),
