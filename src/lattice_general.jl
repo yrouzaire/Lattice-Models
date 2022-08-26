@@ -17,7 +17,7 @@ function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where 
         dx = min(dx,lattice.L-dx)
         dy = min(dy,lattice.L-dy)
     end
-    if lattice.metric == "euclidian"     return sqrt(dx^2 + dy^2)
+    if     lattice.metric == "euclidian" return sqrt(dx^2 + dy^2)
     elseif lattice.metric == "manhattan" return dx + dy
     end
 end
@@ -35,7 +35,7 @@ function square_to_linear_index(i::Int,j::Int,L::Int)::Int
     return L*(i-1) + j # 1 ≤ n ≤ L^2
 end
 
-function closetoborders(i::Int,j::Int,L::Int,c::Int=5)
+function closetoborders(i::Int,j::Int,L::Int,c::Int=5)::Bool
     if     i ≤ c     return true
     elseif j ≤ c     return true
     elseif i + c ≥ L return true
@@ -52,4 +52,4 @@ function ontheborder(i::Int,j::Int,L::Int)::Bool
     end
 end
 
-is_in_bulk(i::Int,j::Int,L::Int) = !ontheborder(i::Int,j::Int,L::Int)
+is_in_bulk(i::Int,j::Int,L::Int)::Bool = !ontheborder(i,j,L)
