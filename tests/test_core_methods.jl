@@ -19,3 +19,5 @@ plot_theta(model,lattice)
 
 i = 1; j=1
 get_neighbours(model,lattice,i,j)
+
+##
