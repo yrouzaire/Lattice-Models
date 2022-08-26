@@ -29,3 +29,40 @@ function init_thetas!(model::AbstractModel,space::AbstractLattice,init::String)
     end
     return nothing
 end
+
+function plot_theta(model::AbstractModel,space::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
+    model.symmetry == "polar" ? symm = 2π : symm = π
+    p = heatmap(mod.(model.thetas',symm),c=cols,clims=(0,symm),size=(512,512),
+        colorbar=colorbar,title=title,aspect_ratio=1)
+
+    if defects
+        defects_p,defects_m = spot_defects(model.thetas,model.T,space.periodic)
+        highlight_defects!(p,model.L,defects_p,defects_m)
+    end
+
+    return p
+end
+
+
+function highlight_defects!(p,L,defects_p,defects_m,symbP=:circle,symbM=:utriangle)
+    for defect in defects_p
+        scatter!((defect), m = (8, 12.0, symbP,:transparent, stroke(1.2, :grey85)))
+    end
+    for defect in defects_m
+        scatter!((defect), m = (8, 12.0, symbM,:transparent, stroke(1.2, :grey85)))
+    end
+    xlims!((1,L))
+    ylims!((1,L))
+    return p
+end
+
+function display_quiver!(p,thetas,window)
+    p
+    for j in 1:2window+1
+        quiver!(j*ones(2window+1),collect(1:2window+1),
+        quiver=(cos.(thetas'[j,:]),-sin.(thetas'[j,:])),
+        c=:white,lw=0.8)
+    end
+    return p
+end
+# Note : after returning the plots with quiver, one has to add xlims!(1,2window+1) ; ylims!(1,2window+1)
