@@ -1,4 +1,4 @@
-include("../src/lattice_general.jl");
+include("../src/lattices.jl");
 include("../src/models.jl");
 include("../src/core_methods.jl");
 using Plots,ColorSchemes,LaTeXStrings

@@ -7,7 +7,7 @@ L = 300
     Var = 0.1
     vision = π
     params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
-    
+
 # Numerical Parameters
 dt = 1E-2
     float_type = Float32
@@ -19,6 +19,7 @@ init_thetas!(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
     plot_theta(model,lattice)
 &
 
+## Basic Tests
 init_thetas!(model,lattice,init="isolated",q=1,type="source")
     plot_theta(model,lattice)
 &
@@ -46,3 +47,5 @@ init_thetas!(model,lattice,init="pair",q=1/2,r0=60,type=["source","divergent"])
 init_thetas!(model,lattice,init="2pair",q=1/2,r0=60,type=["source","divergent"])
     plot_theta(model,lattice)
 &
+
+## Tests vortices TODO
