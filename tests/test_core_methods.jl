@@ -19,17 +19,17 @@ dt = 1E-2
 lattice = TriangularLattice(L)
 i = 10; j=10
 model = XY(params_phys,params_num)
-    @btime get_neighbours(model,lattice,i,j)
+    @btime get_neighbours(thetas,model,lattice,i,j)
 model = AXY(params_phys,params_num)
-    @btime get_neighbours(model,lattice,i,j)
+    @btime get_neighbours(thetas,model,lattice,i,j)
 model = VisionXY(params_phys,params_num)
-    @btime get_neighbours(model,lattice,i,j,true)
+    @btime get_neighbours(thetas,model,lattice,i,j,true)
 
 # Tests update!()
 model = XY(params_phys,params_num)
-    @btime update!(model,lattice)
+    @btime update!(thetas,model,lattice)
 model = AXY(params_phys,params_num)
-    @btime update!(model,lattice)
+    @btime update!(thetas,model,lattice)
 
 
 
