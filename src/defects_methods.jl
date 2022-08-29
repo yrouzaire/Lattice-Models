@@ -27,7 +27,7 @@ function get_vorticity(thetasmodpi::Matrix{T},i::Int,j::Int,L::Int,sym)::T where
            5   6
         =#
 
-    angles_corners = get_neighbours_triangular(thetasmodpi,L,i,j,is_in_bulk(i,j,L))
+    angles_corners = get_neighbours(thetasmodpi,L,i,j,is_in_bulk(i,j,L))
     perimeter_covered = 0.0
     for i in 1:length(angles_corners)-1
         perimeter_covered += arclength(angles_corners[i],angles_corners[i+1],sym)
