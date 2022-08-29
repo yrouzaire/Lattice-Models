@@ -3,7 +3,7 @@ include("../src/core_methods.jl");
 using BenchmarkTools
 ## Tests get neighbours
 # Physical Parameters
-L = 300
+L = 500
     T = 0.1
     symmetry = "polar"
     Var = 0.1
@@ -15,8 +15,8 @@ dt = 1E-2
     float_type = Float32
     params_num  = Dict("dt"=>dt,"float_type"=>float_type)
 
-# Checks whether the number of NN is plausible
-lattice = TriangularLattice(L)
+lattice = TriangularLattice(L,periodic=true,single=true)
+## Checks whether the number of NN is plausible
 i = 10; j=10
 model = XY(params_phys,params_num)
     @btime get_neighbours(thetas,model,lattice,i,j)
@@ -25,15 +25,14 @@ model = AXY(params_phys,params_num)
 model = VisionXY(params_phys,params_num)
     @btime get_neighbours(thetas,model,lattice,i,j,true)
 
-# Tests update!()
+## Tests update!()
 model = XY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
 model = AXY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
 
 
-
-# Complexity of update!()
+## Complexity of update!()
 L = 100 ; params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
 model = XY(params_phys,params_num)
     @btime get_neighbours(model,lattice,i,j)
