@@ -19,6 +19,7 @@ function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where 
     end
     if     lattice.metric == "euclidian" return sqrt(dx^2 + dy^2)
     elseif lattice.metric == "manhattan" return dx + dy
+    else error("Unknown metric !")
     end
 end
 
