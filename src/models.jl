@@ -58,7 +58,6 @@ mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     vision::AbstractFloat
     symmetry::String
     thetas::Matrix{AbstractFloat}
-    thetas_old::Matrix{AbstractFloat}
 end
 function VisionXY(params_phys,params_num)
     @unpack L,T,vision,symmetry  = params_phys
