@@ -67,6 +67,8 @@ function VisionXY(params_phys,params_num)
     @unpack float_type = params_num
     T,vision = convert.(float_type,(T,vision))
 
+    if vision ≠ 2π @assert symmetry == "polar" "I am not sure how to interpret a vision cone with nematic symmetry" end
+
     thetas = zeros(float_type,L,L)
     return VisionXY{float_type}(L,T,vision,symmetry,thetas)
     # if vision == 2π
