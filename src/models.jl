@@ -1,7 +1,8 @@
+using Parameters
+
 export XY, AXY, VisionXY
 
 abstract type AbstractModel{AbstractFloat} end
-abstract type AbstractModel2 end
 function sym(model::AbstractModel{T}) where T<:AbstractFloat
     model.symmetry == "polar" ? symm = 2π : symm = π
     return T(symm)
@@ -13,12 +14,16 @@ mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     symmetry::String
     thetas::Matrix{AbstractFloat}
+    dt::AbstractFloat
 end
-function XY(L::Int,T,symmetry::String;float_type=Float32)
-    thetas = zeros(float_type,L,L)
-    T = convert(float_type,T)
+function XY(params_phys,params_num)
+    @unpack L,T,symmetry  = params_phys
+    @unpack dt,float_type = params_num
 
-    return XY{float_type}(L,T,symmetry,thetas)
+    thetas = zeros(float_type,L,L)
+    T,dt = convert.(float_type,(T,dt))
+
+    return XY{float_type}(L,T,symmetry,thetas,dt)
 end
 
 
@@ -30,19 +35,24 @@ mutable struct AXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     symmetry::String
     thetas::Matrix{AbstractFloat}
     const omegas::Matrix{AbstractFloat}
+    dt::AbstractFloat
 end
-function AXY(L::Int,T,Var,symmetry::String;float_type=Float32)
-    thetas = zeros(float_type,L,L)
-    T,Var = convert.(float_type,(T,Var))
-    omegas = sqrt(Var)*randn(L,L)
+function AXY(params_phys,params_num)
+    @unpack L,T,Var,symmetry  = params_phys
+    @unpack dt,float_type = params_num
+    T,Var,dt = convert.(float_type,(T,Var,dt))
 
-    return AXY{float_type}(L,T,Var,symmetry,thetas,omegas)
+    thetas = zeros(float_type,L,L)
+    omegas = sqrt(Var)*randn(float_type,L,L)
+
+    return AXY{float_type}(L,T,Var,symmetry,thetas,omegas,dt)
     # if Var == 0
-    #     return XY{float_type}(L,T,symmetry,thetas)
+    #     return XY{float_type}(L,T,symmetry,thetas,dt)
     # else
-    #     return AXY{float_type}(L,T,Var,symmetry,thetas,omegas)
+    #     AXY{float_type}(L,T,Var,symmetry,dt,thetas,omegas)
     # end
 end
+
 
 ## ------------------- Non Reciprocal (Vision Cone) XY Model -------------------
 mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
@@ -52,10 +62,12 @@ mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     symmetry::String
     thetas::Matrix{AbstractFloat}
 end
-function VisionXY(L::Int,T,vision,symmetry::String;float_type=Float32)
-    thetas = zeros(float_type,L,L)
+function VisionXY(params_phys,params_num)
+    @unpack L,T,vision,symmetry  = params_phys
+    @unpack float_type = params_num
     T,vision = convert.(float_type,(T,vision))
 
+    thetas = zeros(float_type,L,L)
     return VisionXY{float_type}(L,T,vision,symmetry,thetas)
     # if vision == 2π
     #     return XY{float_type}(L,T,symmetry,thetas)
