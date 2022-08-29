@@ -48,14 +48,15 @@ mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     vision::AbstractFloat
     symmetry::String
+    dt::AbstractFloat
 end
 function VisionXY(params_phys,params_num)
     @unpack T,vision,symmetry  = params_phys
-    @unpack float_type = params_num
+    @unpack dt,float_type = params_num
 
-    T,vision = convert.(float_type,(T,vision))
+    T,vision,dt = convert.(float_type,(T,vision,dt))
 
     if vision ≠ 2π @assert symmetry == "polar" "I am not sure how to interpret a vision cone with nematic symmetry" end
 
-    return VisionXY{float_type}(T,vision,symmetry)
+    return VisionXY{float_type}(T,vision,symmetry,dt)
 end
