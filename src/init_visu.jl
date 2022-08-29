@@ -9,7 +9,7 @@ function init_thetas!(model::AbstractModel,space::AbstractLattice;init::String,k
     @assert model.L == space.L
     L = model.L
     if init in ["hightemp" , "disorder"]
-        model.thetas = 2π*rand(L,L)
+        model.thetas = model.thetas_old = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
         model.thetas = zeros(L,L)
     elseif init in ["lowtemp_nematic" , "nematic_order"]
@@ -22,6 +22,7 @@ function init_thetas!(model::AbstractModel,space::AbstractLattice;init::String,k
         model.thetas = create_2pairs_vortices(L;kwargs...)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
+    model.thetas_old = model.thetas
     return nothing
 end
 

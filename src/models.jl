@@ -14,6 +14,7 @@ mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     symmetry::String
     thetas::Matrix{AbstractFloat}
+    thetas_old::Matrix{AbstractFloat}
     dt::AbstractFloat
 end
 function XY(params_phys,params_num)
@@ -23,7 +24,7 @@ function XY(params_phys,params_num)
     thetas = zeros(float_type,L,L)
     T,dt = convert.(float_type,(T,dt))
 
-    return XY{float_type}(L,T,symmetry,thetas,dt)
+    return XY{float_type}(L,T,symmetry,thetas,thetas,dt) # thetas is written twice because thetas_old = thetas at t=0
 end
 
 
@@ -34,6 +35,7 @@ mutable struct AXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     Var::AbstractFloat
     symmetry::String
     thetas::Matrix{AbstractFloat}
+    thetas_old::Matrix{AbstractFloat}
     const omegas::Matrix{AbstractFloat}
     dt::AbstractFloat
 end
@@ -45,12 +47,7 @@ function AXY(params_phys,params_num)
     thetas = zeros(float_type,L,L)
     omegas = sqrt(Var)*randn(float_type,L,L)
 
-    return AXY{float_type}(L,T,Var,symmetry,thetas,omegas,dt)
-    # if Var == 0
-    #     return XY{float_type}(L,T,symmetry,thetas,dt)
-    # else
-    #     AXY{float_type}(L,T,Var,symmetry,dt,thetas,omegas)
-    # end
+    return AXY{float_type}(L,T,Var,symmetry,thetas,thetas,omegas,dt) # thetas is written twice because thetas_old = thetas at t=0
 end
 
 
@@ -61,6 +58,7 @@ mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     vision::AbstractFloat
     symmetry::String
     thetas::Matrix{AbstractFloat}
+    thetas_old::Matrix{AbstractFloat}
 end
 function VisionXY(params_phys,params_num)
     @unpack L,T,vision,symmetry  = params_phys
@@ -71,9 +69,4 @@ function VisionXY(params_phys,params_num)
 
     thetas = zeros(float_type,L,L)
     return VisionXY{float_type}(L,T,vision,symmetry,thetas)
-    # if vision == 2π
-    #     return XY{float_type}(L,T,symmetry,thetas)
-    # else
-    #     return VisionXY{float_type}(L,T,vision,symmetry,thetas)
-    # end
 end
