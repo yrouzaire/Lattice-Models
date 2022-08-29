@@ -2,6 +2,7 @@ include("../src/lattice_general.jl");
 include("../src/models.jl");
 include("../src/core_methods.jl");
 using Plots,ColorSchemes,LaTeXStrings
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
 
 ## ------------------------ Initializations  ------------------------
 function init_thetas!(model::AbstractModel,space::AbstractLattice;init::String,kwargs...)
@@ -62,14 +63,15 @@ end
 ## ------------------------ Visualization  ------------------------
 function plot_theta(model::AbstractModel,space::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
     model.symmetry == "polar" ? symm = 2π : symm = π
-    p = heatmap(mod.(model.thetas',symm),c=cols,clims=(0,symm),size=(512,512),
-        colorbar=colorbar,title=title,aspect_ratio=1)
+    p = heatmap(mod.(model.thetas',symm),c=cols,clims=(0,symm),size=(485,400),
+        colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
         defects_p,defects_m = spot_defects(model.thetas,model.T,space.periodic)
         highlight_defects!(p,model.L,defects_p,defects_m)
     end
-
+    xlims!((0,model.L))
+    ylims!((0,model.L))
     return p
 end
 

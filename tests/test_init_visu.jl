@@ -1,12 +1,19 @@
 include("../src/init_visu.jl");
-pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
-cols = cgrad([:black,:blue,:green,:orange,:red,:black]);
-plot(rand(10))
 
-
+# Physical Parameters
 L = 200
-model1 = VisionXY(L,0.1,pi,"polar")
+    T = 0.1
+    symmetry = "polar"
+    Var = 0.1
+    vision = π
+    params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
+# Numerical Parameters
+dt = 1E-2
+    float_type = Float32
+    params_num  = Dict("dt"=>dt,"float_type"=>float_type)
+
+model = VisionXY(params_phys,params_num)
 lattice = TriangularLattice(L)
-init_thetas!(model1,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
-# init_thetas!(model1,lattice,init="isolated",q=1,type="source")
-    plot_theta(model1,lattice)
+init_thetas!(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
+# init_thetas!(model,lattice,init="isolated",q=1,type="source")
+    plot_theta(model,lattice)
