@@ -1,6 +1,6 @@
 include("../src/core_methods.jl");
-include("../src/init_visu.jl");
-
+# include("../src/init_visu.jl");
+using BenchmarkTools
 ## Tests get neighbours
 # Physical Parameters
 L = 300
@@ -17,13 +17,13 @@ dt = 1E-2
 
 # Checks whether the number of NN is plausible
 lattice = TriangularLattice(L)
-i = 1; j=1
+i = 10; j=10
 model = XY(params_phys,params_num)
-    get_neighbours(model,lattice,i,j)
+    @btime get_neighbours(model,lattice,i,j)
 model = AXY(params_phys,params_num)
-    get_neighbours(model,lattice,i,j)
-model1 = VisionXY(params_phys,params_num)
-    get_neighbours(model1,lattice,i,j,true)
+    @btime get_neighbours(model,lattice,i,j)
+model = VisionXY(params_phys,params_num)
+    @btime get_neighbours(model,lattice,i,j,true)
 
 
 

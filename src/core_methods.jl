@@ -45,15 +45,18 @@ end
 function get_neighbours(model::VisionXY{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
     all_angles = invoke(get_neighbours, Tuple{AbstractModel{T},typeof(lattice),Int,Int,Bool}, model,lattice,i,j,bulk)
     neighbours_in_vision_cone = T[]
-    for i in 1:length(all_angles)
-        dtheta = mod(model.thetas[i,j],sym(model)) - (i-1)*π/3 # because TriangularLattice
+    symm = sym(model)
+    theta0 = mod(model.thetas[i,j],symm)
+    for n in 1:length(all_angles)
+        dtheta = theta0 - (n-1)*π/3 # because TriangularLattice
         dtheta_abs = abs(dtheta)
-        arcleng = min(sym(model)-dtheta_abs,dtheta_abs)
+        arcleng = min(symm-dtheta_abs,dtheta_abs)
 
         if arcleng ≤ model.vision/2
-            push!(result,all_angles[i])
+            push!(neighbours_in_vision_cone,all_angles[n])
         end
     end
+    return neighbours_in_vision_cone
     #= Small note on the invoke function used above. To avoid infinite loops
     of get_neighbours(model::VisionXY{T},,lattice::AbstractLattice ....) calling
     itself over and over, I forced it to invoke the more general one, namely
@@ -85,15 +88,37 @@ end
 
 ## ------------------------ Update ------------------------
 # NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
-function update!(model::XY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(model::Union{AXY{FT},XY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
+    # In Bulk
+    ij_in_bulk = true
     for j in 2:model.L-1
         for i in 2:model.L-1
-            ij_in_bulk = true
-            θ = model.thetas[i,j]
-            angle_neighbours = get_neighbours(model,i,j,ij_in_bulk)
-            model.thetas_new[i,j] =  θ + model.dt*sum(sin,angle_neighbours .- θ) + sqrt(2*model.T*model.dt)*randn(FT) # O(1)
+            langevin_update!(model,i,j,ij_in_bulk)
         end
     end
+    # On the borders
+    ij_in_bulk = false
+    for j in [1,L] , i in 1:model.L
+        langevin_update!(model,i,j,ij_in_bulk)
+    end
+    for j in 2:model.L-1 , i in [1,L]
+        langevin_update!(model,i,j,ij_in_bulk)
+    end
+
     model.thetas = model.thetas_new
     return thetas
+end
+
+function langevin_update!(model::XY{FT},i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
+    θ = model.thetas[i,j]
+    angle_neighbours = get_neighbours(model,i,j,ij_in_bulk)
+    model.thetas_new[i,j] =  θ + model.dt*sum(sin,angle_neighbours .- θ) + sqrt(2*model.T*model.dt)*randn(FT)
+    return nothing
+end
+
+function langevin_update!(model::AXY{FT},i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
+    θ = model.thetas[i,j]
+    angle_neighbours = get_neighbours(model,i,j,ij_in_bulk)
+    model.thetas_new[i,j] =  θ + model.dt*(model.omegas[i,j]  + sum(sin,angle_neighbours .- θ)) + sqrt(2*model.T*model.dt)*randn(FT)
+    return nothing
 end
