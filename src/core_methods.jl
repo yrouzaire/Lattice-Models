@@ -1,8 +1,13 @@
-include("lattice_general.jl");
+include("lattices.jl");
 include("models.jl");
 
-## ------------------------ Generic methods ------------------------
-function get_neighbours_triangular(thetas::Matrix{T1},L::T2,i::T2,j::T2,bulk::Bool)::Vector{<:T1} where {T1<:AbstractFloat,T2<:Int}
+## ------------------------ Get Neighbours ------------------------
+# NOTE : no need to define get_neighbours(model::AbstractModel,lattice::AbstractLattice ...)
+# TODO deal with non periodic BC
+function get_neighbours(model::AbstractModel{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
+    L = model.L
+    thetas = model.thetas_old # "old" is important !
+
     # convention depuis la droite et sens trigo
     if bulk
         jm  = j-1
@@ -37,31 +42,58 @@ function get_neighbours_triangular(thetas::Matrix{T1},L::T2,i::T2,j::T2,bulk::Bo
     return angles
 end
 
-function get_neighbours(model::AbstractModel,lattice::TriangularLattice,i::Int,j::Int;bulk::Bool=false)::Vector{<:AbstractFloat}
-    # The method called by default for all TriangularLattices if the model is not VisionXY
-    @assert lattice.periodic  #TODO
-    return get_neighbours_triangular(model.thetas,model.L,i,j,bulk)
-end
-
-function update!(model::AbstractModel,lattice::TriangularLattice)
-
-end
-
-## ---------------------- Specific methods for VisionXY ----------------------
-function get_neighbours(model::VisionXY{T},lattice::TriangularLattice,i::Int,j::Int;bulk::Bool=false)::Vector{T} where T<:AbstractFloat
-    # The method called if and only if the model is VisionXY
-    @assert lattice.periodic  #TODO
-    angles = get_neighbours_triangular(model.thetas,model.L,i,j,bulk)
-    theta = mod(model.thetas[i,j],sym(model))
-    result = T[]
-    for i in 1:length(angles)
-        dtheta = theta - (i-1)*π/3
+function get_neighbours(model::VisionXY{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
+    all_angles = invoke(get_neighbours, Tuple{AbstractModel,typeof(lattice),Int,Int,Bool}, model,lattice,i,j,bulk)
+    neighbours_in_vision_cone = T[]
+    for i in 1:length(all_angles)
+        dtheta = mod(model.thetas[i,j],sym(model)) - (i-1)*π/3 # because TriangularLattice
         dtheta_abs = abs(dtheta)
         arcleng = min(sym(model)-dtheta_abs,dtheta_abs)
 
         if arcleng ≤ model.vision/2
-            push!(result,angles[i])
+            push!(result,all_angles[i])
         end
     end
-    return result
+    #= Small note on the invoke function used above. To avoid infinite loops
+    of get_neighbours(model::VisionXY{T},,lattice::AbstractLattice ....) calling
+    itself over and over, I forced it to invoke the more general one, namely
+    get_neighbours(model::AbstratcModel{T},lattice::AbstractLattice ....) .
+    I then refine the general result to satisfy the vision cone.
+
+    Hereafter, a small working example of the use of the invoke function.
+    ``
+    ft(x::Int) = "Int with type(x) = $(typeof(x))"
+    ft(x:: Any) = "Any with type(x) = $(typeof(x))"
+    a = 1 ; b = "yy"
+    ft(a)
+    ft(b)
+    invoke(ft,Tuple{Any},a)
+    ``
+    =#
+
+    #= Another Note : I tried to be more general by defining
+    get_neighbours(model::VisionXY{T},lattice::AbstractLattice) but error
+    while running :
+    MethodError: get_neighbours(::VisionXY{Float32}, ::TriangularLattice ... ) is ambiguous. Candidates:
+    get_neighbours(model::AbstractModel{T}, lattice::TriangularLattice ...)
+    get_neighbours(model::VisionXY{T}, lattice::AbstractLattice, ...)
+
+    Possible fix, define get_neighbours(::VisionXY{T}, ::TriangularLattice, ...)
+    =#
+end
+
+
+## ------------------------ Update ------------------------
+# NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
+function update!(model::XY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+    for j in 2:model.L-1
+        for i in 2:model.L-1
+            ij_in_bulk = true
+            θ = model.thetas_old[i,j]
+            angle_neighbours = get_neighbours(model,i,j,ij_in_bulk)
+            model.thetas[i,j] =  θ + model.dt*sum(sin,angle_neighbours .- θ) + sqrt(2*model.T*model.dt)*randn(FT) # O(1)
+        end
+    end
+    model.thetas_old = model.thetas
+    return thetas
 end
