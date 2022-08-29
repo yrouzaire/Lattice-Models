@@ -14,7 +14,7 @@ mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     symmetry::String
     thetas::Matrix{AbstractFloat}
-    thetas_old::Matrix{AbstractFloat}
+    thetas_new::Matrix{AbstractFloat}
     dt::AbstractFloat
 end
 function XY(params_phys,params_num)
@@ -24,7 +24,7 @@ function XY(params_phys,params_num)
     thetas = zeros(float_type,L,L)
     T,dt = convert.(float_type,(T,dt))
 
-    return XY{float_type}(L,T,symmetry,thetas,thetas,dt) # thetas is written twice because thetas_old = thetas at t=0
+    return XY{float_type}(L,T,symmetry,thetas,thetas,dt) # thetas is written twice because thetas_new = thetas at t=0
 end
 
 
@@ -35,7 +35,7 @@ mutable struct AXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     Var::AbstractFloat
     symmetry::String
     thetas::Matrix{AbstractFloat}
-    thetas_old::Matrix{AbstractFloat}
+    thetas_new::Matrix{AbstractFloat}
     const omegas::Matrix{AbstractFloat}
     dt::AbstractFloat
 end
@@ -47,7 +47,7 @@ function AXY(params_phys,params_num)
     thetas = zeros(float_type,L,L)
     omegas = sqrt(Var)*randn(float_type,L,L)
 
-    return AXY{float_type}(L,T,Var,symmetry,thetas,thetas,omegas,dt) # thetas is written twice because thetas_old = thetas at t=0
+    return AXY{float_type}(L,T,Var,symmetry,thetas,thetas,omegas,dt) # thetas is written twice because thetas_new = thetas at t=0
 end
 
 

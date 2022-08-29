@@ -6,7 +6,7 @@ include("models.jl");
 # TODO deal with non periodic BC
 function get_neighbours(model::AbstractModel{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
     L = model.L
-    thetas = model.thetas_old # "old" is important !
+    thetas = model.thetas
 
     # convention depuis la droite et sens trigo
     if bulk
@@ -43,7 +43,7 @@ function get_neighbours(model::AbstractModel{T},lattice::TriangularLattice,i::In
 end
 
 function get_neighbours(model::VisionXY{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
-    all_angles = invoke(get_neighbours, Tuple{AbstractModel,typeof(lattice),Int,Int,Bool}, model,lattice,i,j,bulk)
+    all_angles = invoke(get_neighbours, Tuple{AbstractModel{T},typeof(lattice),Int,Int,Bool}, model,lattice,i,j,bulk)
     neighbours_in_vision_cone = T[]
     for i in 1:length(all_angles)
         dtheta = mod(model.thetas[i,j],sym(model)) - (i-1)*π/3 # because TriangularLattice
@@ -89,11 +89,11 @@ function update!(model::XY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
     for j in 2:model.L-1
         for i in 2:model.L-1
             ij_in_bulk = true
-            θ = model.thetas_old[i,j]
+            θ = model.thetas[i,j]
             angle_neighbours = get_neighbours(model,i,j,ij_in_bulk)
-            model.thetas[i,j] =  θ + model.dt*sum(sin,angle_neighbours .- θ) + sqrt(2*model.T*model.dt)*randn(FT) # O(1)
+            model.thetas_new[i,j] =  θ + model.dt*sum(sin,angle_neighbours .- θ) + sqrt(2*model.T*model.dt)*randn(FT) # O(1)
         end
     end
-    model.thetas_old = model.thetas
+    model.thetas = model.thetas_new
     return thetas
 end

@@ -23,7 +23,7 @@ model = XY(params_phys,params_num)
 model = AXY(params_phys,params_num)
     get_neighbours(model,lattice,i,j)
 model1 = VisionXY(params_phys,params_num)
-    get_neighbours(model1,lattice,i,j)
+    get_neighbours(model1,lattice,i,j,true)
 
 
 
