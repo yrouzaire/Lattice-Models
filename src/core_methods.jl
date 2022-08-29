@@ -93,32 +93,32 @@ function update!(model::Union{AXY{FT},XY{FT}},lattice::AbstractLattice) where FT
     ij_in_bulk = true
     for j in 2:model.L-1
         for i in 2:model.L-1
-            langevin_update!(model,i,j,ij_in_bulk)
+            langevin_update!(model,lattice,i,j,ij_in_bulk)
         end
     end
     # On the borders
     ij_in_bulk = false
     for j in [1,L] , i in 1:model.L
-        langevin_update!(model,i,j,ij_in_bulk)
+        langevin_update!(model,lattice,i,j,ij_in_bulk)
     end
     for j in 2:model.L-1 , i in [1,L]
-        langevin_update!(model,i,j,ij_in_bulk)
+        langevin_update!(model,lattice,i,j,ij_in_bulk)
     end
 
     model.thetas = model.thetas_new
-    return thetas
+    return model.thetas
 end
 
-function langevin_update!(model::XY{FT},i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
+function langevin_update!(model::XY{FT},lattice::AbstractLattice,i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
     θ = model.thetas[i,j]
-    angle_neighbours = get_neighbours(model,i,j,ij_in_bulk)
+    angle_neighbours = get_neighbours(model,lattice,i,j,ij_in_bulk)
     model.thetas_new[i,j] =  θ + model.dt*sum(sin,angle_neighbours .- θ) + sqrt(2*model.T*model.dt)*randn(FT)
     return nothing
 end
 
-function langevin_update!(model::AXY{FT},i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
+function langevin_update!(model::AXY{FT},lattice::AbstractLattice,i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
     θ = model.thetas[i,j]
-    angle_neighbours = get_neighbours(model,i,j,ij_in_bulk)
+    angle_neighbours = get_neighbours(model,lattice,i,j,ij_in_bulk)
     model.thetas_new[i,j] =  θ + model.dt*(model.omegas[i,j]  + sum(sin,angle_neighbours .- θ)) + sqrt(2*model.T*model.dt)*randn(FT)
     return nothing
 end

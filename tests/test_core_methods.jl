@@ -25,6 +25,20 @@ model = AXY(params_phys,params_num)
 model = VisionXY(params_phys,params_num)
     @btime get_neighbours(model,lattice,i,j,true)
 
+# Tests update!()
+model = XY(params_phys,params_num)
+    @btime update!(model,lattice)
+model = AXY(params_phys,params_num)
+    @btime update!(model,lattice)
+
+
+
+# Complexity of update!()
+L = 100 ; params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
+model = XY(params_phys,params_num)
+    @btime get_neighbours(model,lattice,i,j)
+
+
 
 
 
