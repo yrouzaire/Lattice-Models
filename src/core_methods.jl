@@ -110,6 +110,15 @@ end
 
 ## ------------------------ Update ------------------------
 # NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
+function update!(thetas::Matrix{<:T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
+    niter = 1
+    while model.t < tmax && niter<1E4
+        update!(thetas,model,lattice)
+        niter += 1
+    end
+    return thetas
+end
+
 function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
@@ -138,6 +147,7 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
         thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
     end
 
+    model.t += dt
     return thetas
 end
 
@@ -169,5 +179,6 @@ function update!(thetas::Matrix{<:FT},model::AXY{FT},lattice::AbstractLattice) w
         thetas[i,j] =  θ + dt*(model.omegas[i,j] + sum(sin,angle_neighbours .- θ)) + sqrt(2T*dt)*randn(FT)
     end
 
+    model.t += dt
     return thetas
 end

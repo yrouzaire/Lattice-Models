@@ -4,7 +4,7 @@ include("../src/init_visu.jl");
 using BenchmarkTools
 ## Tests get neighbours
 # Physical Parameters
-L = 500
+L = 200
     T = 0.1
     symmetry = "polar"
     Var = 0.1
@@ -40,6 +40,14 @@ model = AXY(params_phys,params_num)
 model = VisionXY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
 
+# Tests update!(....,tmax)
+tmax = 1
+model = XY(params_phys,params_num)
+model.t
+update!(thetas,model,lattice)
+model.t
+update!(thetas,model,lattice,tmax)
+model.t
 
 ## Complexity of update!()
 L = 100 ; params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
