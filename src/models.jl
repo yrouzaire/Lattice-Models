@@ -1,6 +1,6 @@
 using Parameters
 
-export XY, AXY, VisionXY
+export XY, ForcedXY, VisionXY
 
 abstract type AbstractModel{AbstractFloat} end
 function sym(model::AbstractModel{T}) where T<:AbstractFloat
@@ -26,7 +26,7 @@ end
 
 
 ## ------------------------- Forced / Active XY Model -------------------------
-mutable struct AXY{AbstractFloat} <: AbstractModel{AbstractFloat}
+mutable struct ForcedXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     Var::AbstractFloat
     symmetry::String
@@ -34,14 +34,14 @@ mutable struct AXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     dt::AbstractFloat
     t::AbstractFloat
 end
-function AXY(params_phys,params_num)
+function ForcedXY(params_phys,params_num)
     @unpack L,T,Var,symmetry  = params_phys
     @unpack dt,float_type = params_num
     T,Var,dt = convert.(float_type,(T,Var,dt))
 
     omegas = sqrt(Var)*randn(float_type,L,L)
 
-    return AXY{float_type}(T,Var,symmetry,omegas,dt,float_type(0))
+    return ForcedXY{float_type}(T,Var,symmetry,omegas,dt,float_type(0))
 end
 
 ## ------------------------- Moving XY -------------------------
@@ -50,13 +50,14 @@ mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     A::AbstractFloat
     symmetry::String
     t::AbstractFloat
+    rho::AbstractFloat
 end
 function MovingXY(params_phys,params_num)
-    @unpack T,A,symmetry  = params_phys
+    @unpack T,A,rho,symmetry  = params_phys
     @unpack float_type = params_num
-    T,A = convert.(float_type,(T,A))
+    T,A,rho = convert.(float_type,(T,A,rho))
 
-    return MovingXY{float_type}(T,A,symmetry,float_type(0))
+    return MovingXY{float_type}(T,A,symmetry,float_type(0),rho)
 end
 
 
