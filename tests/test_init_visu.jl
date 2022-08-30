@@ -8,6 +8,7 @@ L = 300
     A = 1
     rho = 0.95
     vision = π
+    init = "2pair"
     params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry)
 
 # Numerical Parameters
@@ -17,7 +18,7 @@ dt = 1E-2
 
 model = MovingXY(params_phys,params_num)
 lattice = TriangularLattice(L)
-thetas = init_thetas(lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
+thetas = init_thetas(model,lattice,init=init,q=1,r0=60,type=["source","divergent"])
     plot_theta(thetas,model,lattice)
 &
 
@@ -49,5 +50,3 @@ thetas = init_thetas(model,lattice,init="pair",q=1/2,r0=60,type=["source","diver
 thetas = init_thetas(model,lattice,init="2pair",q=1/2,r0=60,type=["source","divergent"])
     plot_theta(thetas,model,lattice)
 &
-
-## Tests vortices TODO

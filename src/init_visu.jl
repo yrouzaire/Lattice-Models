@@ -2,10 +2,11 @@ include("../src/lattices.jl");
 include("../src/models.jl");
 include("../src/core_methods.jl");
 using Plots,ColorSchemes,LaTeXStrings
+import StatsBase.sample
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
 
 ## ------------------------ Initializations  ------------------------
-function init_thetas(space::AbstractLattice;init::String,float_type = Float32,kwargs...)
+function init_thetas(model::AbstractModel,space::AbstractLattice;init::String,float_type = Float32,kwargs...)
     L = space.L
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
@@ -22,6 +23,7 @@ function init_thetas(space::AbstractLattice;init::String,float_type = Float32,kw
         thetas = create_2pairs_vortices(L;kwargs...)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
+    if isa(model,MovingXY) make_holes!(thetas,model.rho) end
     return float_type.(thetas)
 end
 
@@ -58,6 +60,13 @@ end
 function create_2pairs_vortices(L;r0,q,type)
     @assert isinteger(r0/4) "R0 has to be a multiple of 4 !"
     return create_pair_vortices(L;r0,q,type) + create_pair_vortices(L;r0=r0/2,q,type)'
+end
+
+function make_holes!(thetas,rho)
+    N = length(thetas)
+    holes = sample(1:N,round(Int,(1-rho)*N),replace=false)
+    thetas[holes] .= NaN
+    return thetas
 end
 
 ## ------------------------ Visualization  ------------------------

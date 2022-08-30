@@ -9,8 +9,10 @@ L = 200
     T = 0.1
     symmetry = "polar"
     Var = 0.1
+    A = 0.5
     vision = 4π/3
-    params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
+    rho = 1
+    params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry)
 
 # Numerical Parameters
 dt = 1E-2
@@ -18,14 +20,19 @@ dt = 1E-2
     params_num  = Dict("dt"=>dt,"float_type"=>float_type)
 
 lattice = TriangularLattice(L,periodic=true,single=true)
-thetas = init_thetas(lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
+thetas = init_thetas(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
 
 ## Checks whether the number of NN is plausible
 i = 10; j=10
 model = XY(params_phys,params_num)
     @btime get_neighbours(thetas,model,lattice,i,j)
-model = AXY(params_phys,params_num)
+
+model = ForcedXY(params_phys,params_num)
     @btime get_neighbours(thetas,model,lattice,i,j)
+
+model = MovingXY(params_phys,params_num)
+    @btime get_neighbours(thetas,model,lattice,i,j)
+
 model = VisionXY(params_phys,params_num)
 angle_neighbours = get_neighbours(thetas,model,lattice,i,j,true)
 sum_influence_neighbours(thetas[i,j],angle_neighbours,model,lattice)
@@ -36,7 +43,7 @@ sum_influence_neighbours(thetas[i,j],angle_neighbours,model,lattice)
 ## Tests update!()
 model = XY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
-model = AXY(params_phys,params_num)
+model = ForcedXY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
 model = VisionXY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
@@ -63,3 +70,13 @@ z = @elapsed update!(thetas,model,lattice,tmax)
 prinz(z)
 
 ## Check chebychev Metric
+model = ForceXY(params_phys,params_num)
+lattice = SquareLattice(L,periodic=true,metric="chebychev")
+thetas = init_thetas(lattice,init="hightemp",q=1,r0=60,float_type=float_type,type=["source","divergent"])
+plot_theta(thetas,model,lattice)
+tmax = 100
+z = @elapsed update!(thetas,model,lattice,tmax)
+plot_theta(thetas,model,lattice)
+include("../src/defects_methods.jl")
+
+plot_theta(thetas,model,lattice,defects=true)

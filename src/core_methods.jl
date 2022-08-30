@@ -37,7 +37,9 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
             thetas[ip,jm],
             thetas[ip,j]]
     end
-    return angles
+    if isa(model,MovingXY) return filter!(!isnan,angles)
+    else return angles
+    end
 end
 
 function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::SquareLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
@@ -73,8 +75,15 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Squ
             thetas[ip,j],
             thetas[ip,jp]]
     end
-    return angles
+    if isa(model,MovingXY) return filter!(!isnan,angles)
+    else return angles
+    end
 end
+
+# function get_neighbours(thetas::Matrix{<:T},model::MovingXY{T},lattice::AbstractLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
+#     angles_with_nan = invoke(get_neighbours, Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},  thetas,model,lattice,i,j,bulk)
+#     return filter!(!isnan,angles_with_nan)
+# end
 
 function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     # default case, nothing to worry about
@@ -106,13 +115,11 @@ end
 ## ------------------------ Update ------------------------
 # NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
 function update!(thetas::Matrix{<:T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
-    while model.t < tmax
-        update!(thetas,model,lattice)
-    end
+    while model.t < tmax update!(thetas,model,lattice) end
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT},MovingXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -146,7 +153,7 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::AXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
