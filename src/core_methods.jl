@@ -87,7 +87,7 @@ end
 
 ## ------------------------ Update ------------------------
 # NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
-function update!(thetas::Matrix{<:FT},model::XY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -117,17 +117,34 @@ function update!(thetas::Matrix{<:FT},model::XY{FT},lattice::AbstractLattice) wh
 
     return thetas
 end
-#
-# function langevin_update!(model::XY{FT},lattice::AbstractLattice,i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
-#     θ = model.thetas[i,j]
-#     angle_neighbours = get_neighbours(model,lattice,i,j,ij_in_bulk)
-#     model.thetas_new[i,j] =  θ + model.dt*sum(sin,angle_neighbours .- θ) + sqrt(2*model.T*model.dt)*randn(FT)
-#     return nothing
-# end
-#
-# function langevin_update!(model::AXY{FT},lattice::AbstractLattice,i::Int,j::Int,ij_in_bulk::Bool) where FT<:AbstractFloat
-#     θ = model.thetas[i,j]
-#     angle_neighbours = get_neighbours(model,lattice,i,j,ij_in_bulk)
-#     model.thetas_new[i,j] =  θ + model.dt*(model.omegas[i,j]  + sum(sin,angle_neighbours .- θ)) + sqrt(2*model.T*model.dt)*randn(FT)
-#     return nothing
-# end
+
+function update!(thetas::Matrix{<:FT},model::AXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+    thetas_old = copy(thetas)
+    L  = lattice.L
+    dt = model.dt
+    T  = model.T
+    # In Bulk
+    ij_in_bulk = true
+    for j in 2:L-1
+        for i in 2:L-1
+            θ = thetas_old[i,j]
+            angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
+            thetas[i,j] =  θ + dt*(model.omegas[i,j] + sum(sin,angle_neighbours .- θ)) + sqrt(2T*dt)*randn(FT)
+        end
+    end
+
+    # On the borders
+    ij_in_bulk = false
+    for j in [1,L] , i in 1:L
+        θ = thetas_old[i,j]
+        angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
+        thetas[i,j] =  θ + dt*(model.omegas[i,j] + sum(sin,angle_neighbours .- θ)) + sqrt(2T*dt)*randn(FT)
+    end
+    for j in 2:L-1 , i in [1,L]
+        θ = thetas_old[i,j]
+        angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
+        thetas[i,j] =  θ + dt*(model.omegas[i,j] + sum(sin,angle_neighbours .- θ)) + sqrt(2T*dt)*randn(FT)
+    end
+
+    return thetas
+end
