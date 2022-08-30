@@ -41,47 +41,70 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
     return angles
 end
 
-function get_neighbours(thetas::Matrix{<:T},model::VisionXY{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
-    all_angles = invoke(get_neighbours, Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},  thetas,model,lattice,i,j,bulk)
-    neighbours_in_vision_cone = T[]
-    symm = sym(model)
-    theta0 = mod(thetas[i,j],symm)
-    for n in 1:length(all_angles)
-        dtheta = theta0 - (n-1)*π/3 # because TriangularLattice
-        dtheta_abs = abs(dtheta)
-        arcleng = min(symm-dtheta_abs,dtheta_abs)
+# function get_neighbours(thetas::Matrix{<:T},model::VisionXY{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
+#     all_angles = invoke(get_neighbours, Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},  thetas,model,lattice,i,j,bulk)
+#     neighbours_in_vision_cone = T[]
+#     symm = sym(model)
+#     theta0 = mod(thetas[i,j],symm)
+#     for n in 1:length(all_angles)
+#         dtheta = theta0 - (n-1)*π/3 # because TriangularLattice
+#         dtheta_abs = abs(dtheta)
+#         arcleng = min(symm-dtheta_abs,dtheta_abs)
+#
+#         if arcleng ≤ model.vision/2
+#             push!(neighbours_in_vision_cone,all_angles[n])
+#         end
+#     end
+#     return neighbours_in_vision_cone
+#     #= Small note on the invoke function used above. To avoid infinite loops
+#     of get_neighbours(model::VisionXY{T},,lattice::AbstractLattice ....) calling
+#     itself over and over, I forced it to invoke the more general one, namely
+#     get_neighbours(model::AbstratcModel{T},lattice::AbstractLattice ....) .
+#     I then refine the general result to satisfy the vision cone.
+#
+#     Hereafter, a small working example of the use of the invoke function.
+#     ``
+#     ft(x::Int) = "Int with type(x) = $(typeof(x))"
+#     ft(x:: Any) = "Any with type(x) = $(typeof(x))"
+#     a = 1 ; b = "yy"
+#     ft(a)
+#     ft(b)
+#     invoke(ft,Tuple{Any},a)
+#     ``
+#     =#
+#
+#     #= Another Note : I tried to be more general by defining
+#     get_neighbours(model::VisionXY{T},lattice::AbstractLattice) but error
+#     while running :
+#     MethodError: get_neighbours(::VisionXY{Float32}, ::TriangularLattice ... ) is ambiguous. Candidates:
+#     get_neighbours(model::AbstractModel{T}, lattice::TriangularLattice ...)
+#     get_neighbours(model::VisionXY{T}, lattice::AbstractLattice, ...)
+#
+#     Possible fix, define get_neighbours(::VisionXY{T}, ::TriangularLattice, ...)
+#     =#
+# end
 
-        if arcleng ≤ model.vision/2
-            push!(neighbours_in_vision_cone,all_angles[n])
+function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
+    return sum(sin,angles_neighbours .- theta)
+end
+
+function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::TriangularLattice)::T where T<:AbstractFloat
+    weights  = zeros(T,length(angles_neighbours))
+    symm     = sym(model)
+    theta0   = mod(theta,symm)
+    constant = T(π/3) # because TriangularLattice
+
+    for n in 1:length(angles_neighbours)
+        dtheta     = theta0 - (n-1)*constant
+        dtheta_abs = abs(dtheta)
+        arclengt   = min(symm-dtheta_abs,dtheta_abs)
+
+        if arclengt ≤ model.vision/2
+            @inbounds weights[n] = 1.0
         end
     end
-    return neighbours_in_vision_cone
-    #= Small note on the invoke function used above. To avoid infinite loops
-    of get_neighbours(model::VisionXY{T},,lattice::AbstractLattice ....) calling
-    itself over and over, I forced it to invoke the more general one, namely
-    get_neighbours(model::AbstratcModel{T},lattice::AbstractLattice ....) .
-    I then refine the general result to satisfy the vision cone.
 
-    Hereafter, a small working example of the use of the invoke function.
-    ``
-    ft(x::Int) = "Int with type(x) = $(typeof(x))"
-    ft(x:: Any) = "Any with type(x) = $(typeof(x))"
-    a = 1 ; b = "yy"
-    ft(a)
-    ft(b)
-    invoke(ft,Tuple{Any},a)
-    ``
-    =#
-
-    #= Another Note : I tried to be more general by defining
-    get_neighbours(model::VisionXY{T},lattice::AbstractLattice) but error
-    while running :
-    MethodError: get_neighbours(::VisionXY{Float32}, ::TriangularLattice ... ) is ambiguous. Candidates:
-    get_neighbours(model::AbstractModel{T}, lattice::TriangularLattice ...)
-    get_neighbours(model::VisionXY{T}, lattice::AbstractLattice, ...)
-
-    Possible fix, define get_neighbours(::VisionXY{T}, ::TriangularLattice, ...)
-    =#
+    return sum(sin.(angles_neighbours .- theta) .* weights)
 end
 
 
@@ -98,7 +121,7 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
         for i in 2:L-1
             θ = thetas_old[i,j]
             angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-            thetas[i,j] =  θ + dt*sum(sin,angle_neighbours .- θ) + sqrt(2T*dt)*randn(FT)
+            thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
         end
     end
 
@@ -107,12 +130,12 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
     for j in [1,L] , i in 1:L
         θ = thetas_old[i,j]
         angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-    thetas[i,j] =  θ + dt*sum(sin,angle_neighbours .- θ) + sqrt(2T*dt)*randn(FT)
+        thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
     end
     for j in 2:L-1 , i in [1,L]
         θ = thetas_old[i,j]
         angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-        thetas[i,j] =  θ + dt*sum(sin,angle_neighbours .- θ) + sqrt(2T*dt)*randn(FT)
+        thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
     end
 
     return thetas

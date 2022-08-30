@@ -26,7 +26,11 @@ model = XY(params_phys,params_num)
 model = AXY(params_phys,params_num)
     @btime get_neighbours(thetas,model,lattice,i,j)
 model = VisionXY(params_phys,params_num)
-    @btime get_neighbours(thetas,model,lattice,i,j,true)
+angle_neighbours = get_neighbours(thetas,model,lattice,i,j,true)
+sum_influence_neighbours(thetas[i,j],angle_neighbours,model,lattice)
+@btime get_neighbours(thetas,model,lattice,i,j,true)
+@btime sum_influence_neighbours(thetas[i,j],angle_neighbours,model,lattice)
+
 
 ## Tests update!()
 model = XY(params_phys,params_num)
