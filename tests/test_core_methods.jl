@@ -48,8 +48,3 @@ update!(thetas,model,lattice)
 model.t
 update!(thetas,model,lattice,tmax)
 model.t
-
-## Complexity of update!()
-L = 100 ; params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
-model = XY(params_phys,params_num)
-    @btime get_neighbours(model,lattice,i,j)

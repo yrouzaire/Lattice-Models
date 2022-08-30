@@ -5,7 +5,7 @@ using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
 
 ## ------------------------ Initializations  ------------------------
-function init_thetas(space::AbstractLattice;init::String,kwargs...)
+function init_thetas(space::AbstractLattice;init::String,float_type = Float32,kwargs...)
     L = space.L
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
@@ -21,12 +21,12 @@ function init_thetas(space::AbstractLattice;init::String,kwargs...)
         thetas = create_2pairs_vortices(L;kwargs...)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
-    return thetas
+    return float_type.(thetas)
 end
 
 function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="source")
     @assert (q > 0 && type in ["source","sink","clockwise","counterclockwise"]) || (q < 0 && type in ["convergent","divergent","threefold1","threefold2"])
-    thetas = zeros(Float32,L,L)
+    thetas = zeros(L,L)
     for y in 1:L , x in 1:L
         # q > 0
         if     type == "clockwise"            thetas[x,y] = q * atan(y-y0,x-x0)
@@ -61,7 +61,7 @@ end
 
 ## ------------------------ Visualization  ------------------------
 function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,space::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
-    model.symmetry == "polar" ? symm = 2π : symm = π
+    symm = sym(model)
     p = heatmap(mod.(thetas',symm),c=cols,clims=(0,symm),size=(485,400),
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
