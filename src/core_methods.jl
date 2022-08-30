@@ -42,7 +42,6 @@ end
 
 function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::SquareLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
     L = lattice.L
-
     # convention depuis la droite et sens trigo
     if bulk
         jm  = j-1
@@ -56,19 +55,23 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Squ
         ip  = mod1(i+1,L)
     end
 
-    if iseven(i)
+    if lattice.metric in ["manhattan","euclidian"]
         @inbounds angles =
            [thetas[i,jp],
             thetas[imm,j],
             thetas[i,jm],
             thetas[ip,j]]
 
-    else
+    elseif lattice.metric == "chebychev"
         @inbounds angles =
            [thetas[i,jp],
+            thetas[imm,jp],
             thetas[imm,j],
+            thetas[imm,jm],
             thetas[i,jm],
-            thetas[ip,j]]
+            thetas[ip,jm],
+            thetas[ip,j],
+            thetas[ip,jp]]
     end
     return angles
 end

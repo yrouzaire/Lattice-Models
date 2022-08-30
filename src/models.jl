@@ -44,6 +44,21 @@ function AXY(params_phys,params_num)
     return AXY{float_type}(T,Var,symmetry,omegas,dt,float_type(0))
 end
 
+## ------------------------- Moving XY -------------------------
+mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
+    T::AbstractFloat
+    A::AbstractFloat
+    symmetry::String
+    t::AbstractFloat
+end
+function MovingXY(params_phys,params_num)
+    @unpack T,A,symmetry  = params_phys
+    @unpack float_type = params_num
+    T,A = convert.(float_type,(T,A))
+
+    return MovingXY{float_type}(T,A,symmetry,float_type(0))
+end
+
 
 ## ------------------- Non Reciprocal (Vision Cone) XY Model -------------------
 mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}

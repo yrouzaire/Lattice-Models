@@ -30,6 +30,22 @@ function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where 
     end
     if     lattice.metric == "euclidian" return sqrt(dx^2 + dy^2)
     elseif lattice.metric == "manhattan" return dx + dy
+    elseif lattice.metric == "chebychev" return max(dx,dy)
+    else error("Unknown metric !")
+    end
+end
+
+function offsets(lattice::TriangularLattice,i::Int)
+    if iseven(i) return [(0,1) , (-1,1) , (-1,0) , (0,-1)  , (1,0)  , (1,1)]
+    else         return [(0,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1) , (1,0)]
+    end
+end
+
+function offsets(lattice::SquareLattice)
+    if lattice.metric in ["manhattan","euclidian"]
+        return [(0,1) , (-1,0) , (0,-1) , (1,0)]
+    elseif lattice.metric =="chebychev"
+        return [(0,1) , (-1,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1), (1,0) , (1,1)]
     else error("Unknown metric !")
     end
 end

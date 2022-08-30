@@ -61,3 +61,5 @@ z = @elapsed update!(thetas,model,lattice,tmax)
     plot_theta(thetas,model,lattice)
     # ok tout semble correspondre à mes attentes
 prinz(z)
+
+## Check chebychev Metric

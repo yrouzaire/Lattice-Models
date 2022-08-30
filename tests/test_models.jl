@@ -5,8 +5,9 @@ L = 200
     T = 0.1
     symmetry = "polar"
     Var = 0.1
+    A = 1
     vision = π
-    params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"symmetry"=>symmetry)
+    params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"A"=>A,"symmetry"=>symmetry)
 # Numerical Parameters
 dt = 1E-2
     float_type = Float32
@@ -15,6 +16,7 @@ dt = 1E-2
 model = XY(params_phys,params_num)
 model = AXY(params_phys,params_num)
 model = VisionXY(params_phys,params_num)
+model = MovingXY(params_phys,params_num)
 
 # WARNING, incohérence !
 iszero(Float32(π) - (π)) # true
