@@ -48,3 +48,13 @@ update!(thetas,model,lattice)
 model.t
 update!(thetas,model,lattice,tmax)
 model.t
+
+## Visual verification
+model = VisionXY(params_phys,params_num)
+thetas = init_thetas(lattice,init="hightemp",q=1,r0=60,float_type=float_type,type=["source","divergent"])
+plot_theta(thetas,model,lattice)
+tmax = 100
+z = @elapsed update!(thetas,model,lattice,tmax)
+    plot_theta(thetas,model,lattice)
+    prinz(z)
+    # ok tout semble correspondre à mes attentes

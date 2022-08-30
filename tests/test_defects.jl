@@ -19,12 +19,6 @@ dt = 1E-2
 
 lattice = TriangularLattice(L,periodic=true,single=true)
 
-## Visual verification
-model = VisionXY(params_phys,params_num)
-thetas = init_thetas(lattice,init="hightemp",q=1,r0=60,float_type=float_type,type=["source","divergent"])
-plot_theta(thetas,model,lattice)
-tmax = 100
-z = @elapsed update!(thetas,model,lattice,tmax)
-    plot_theta(thetas,model,lattice)
-    prinz(z)
-    #ok tout semble correspondre à mes attentes
+
+
+get_vorticity(mod.(thetas,sym(model)),model,lattice,10,10)

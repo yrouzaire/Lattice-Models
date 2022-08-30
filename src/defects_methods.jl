@@ -6,7 +6,7 @@ function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     #= This function returns the signed arclength on the unit trigonometric circle .
     Clockwise        >> sign -
     Counterclockwise >> sign +
-    Note that the inputs thetas are within [0,2π] =#
+    Note that the inputs thetas need to lie within [0,π] or [0,2π], depending on the symmetry of the model =#
     dtheta = theta2 - theta1
     dtheta_abs = abs(theta2 - theta1)
 
@@ -19,25 +19,25 @@ function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     return signe*shortest_unsigned_arclength
 end
 
-function get_vorticity(thetasmodpi::Matrix{T},i::Int,j::Int,L::Int,sym)::T where T<:AbstractFloat
+function get_vorticity(thetasmodpi::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,i::Int,j::Int)::T where T<:AbstractFloat
     #= Note : thetasmodpi = mod.(thetas,symm)
         By convention, the neighbours have the following ordering
            3   2
         4    x   1
            5   6
         =#
-
-    angles_corners = get_neighbours(thetasmodpi,L,i,j,is_in_bulk(i,j,L))
+    symm = sym(model)
+    angles_corners = get_neighbours(thetasmodpi,model,lattice,i,j,is_in_bulk(i,j,lattice.L))
     perimeter_covered = 0.0
     for i in 1:length(angles_corners)-1
-        perimeter_covered += arclength(angles_corners[i],angles_corners[i+1],sym)
+        perimeter_covered += arclength(angles_corners[i],angles_corners[i+1],symm)
     end
-    perimeter_covered += arclength(angles_corners[end],angles_corners[1],sym)
-    charge = round(perimeter_covered/2π,digits=1)
+    perimeter_covered += arclength(angles_corners[end],angles_corners[1],symm)
+    charge = round(perimeter_covered/2π,digits=1) # here 2π no matter the symmetry of the model. if nematic, will return half-integer defects
     return charge
 end
 
-function spot_defects(model::AbstractModel,lattice::AbstractLattice)
+function spot_defects(thetas,model::AbstractModel,lattice::AbstractLattice)
     L = model.L
     if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
     list_vortices_plus  = Tuple{Int,Int}[]
