@@ -1,11 +1,11 @@
 export TriangularLattice
 
 abstract type AbstractLattice end
-struct TriangularLattice <: AbstractLattice
-    L::Int
+mutable struct TriangularLattice <: AbstractLattice
+    const L::Int
     periodic::Bool
-    single::Bool
-    metric::String
+    const single::Bool
+    const metric::String
 end
 TriangularLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = TriangularLattice(L,periodic,single,metric)
 
