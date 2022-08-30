@@ -5,25 +5,23 @@ using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
 
 ## ------------------------ Initializations  ------------------------
-function init_thetas!(model::AbstractModel,space::AbstractLattice;init::String,kwargs...)
-    @assert model.L == space.L
-    L = model.L
+function init_thetas(space::AbstractLattice;init::String,kwargs...)
+    L = space.L
     if init in ["hightemp" , "disorder"]
-        model.thetas = model.thetas_old = 2π*rand(L,L)
+        thetas = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
-        model.thetas = zeros(L,L)
+        thetas = zeros(L,L)
     elseif init in ["lowtemp_nematic" , "nematic_order"]
-        model.thetas = rand(Bool,L,L)*π
+        thetas = rand(Bool,L,L)*π
     elseif init in ["isolated" , "single"]
-        model.thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2);kwargs...) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
+        thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2);kwargs...) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
     elseif init == "pair"
-        model.thetas = create_pair_vortices(L;kwargs...)
+        thetas = create_pair_vortices(L;kwargs...)
     elseif init in ["2pairs" , "2pair"]
-        model.thetas = create_2pairs_vortices(L;kwargs...)
+        thetas = create_2pairs_vortices(L;kwargs...)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
-    model.thetas_old = model.thetas
-    return nothing
+    return thetas
 end
 
 function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="source")
@@ -62,17 +60,17 @@ function create_2pairs_vortices(L;r0,q,type)
 end
 
 ## ------------------------ Visualization  ------------------------
-function plot_theta(model::AbstractModel,space::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
+function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,space::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
     model.symmetry == "polar" ? symm = 2π : symm = π
-    p = heatmap(mod.(model.thetas',symm),c=cols,clims=(0,symm),size=(485,400),
+    p = heatmap(mod.(thetas',symm),c=cols,clims=(0,symm),size=(485,400),
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
-        defects_p,defects_m = spot_defects(model.thetas,model.T,space.periodic)
-        highlight_defects!(p,model.L,defects_p,defects_m)
+        defects_p,defects_m = spot_defects(thetas,model.T,space.periodic)
+        highlight_defects!(p,space.L,defects_p,defects_m)
     end
-    xlims!((0,model.L))
-    ylims!((0,model.L))
+    xlims!((0,space.L))
+    ylims!((0,space.L))
     return p
 end
 

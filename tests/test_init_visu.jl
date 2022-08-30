@@ -15,37 +15,37 @@ dt = 1E-2
 
 model = XY(params_phys,params_num)
 lattice = TriangularLattice(L)
-init_thetas!(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
+    plot_theta(thetas,model,lattice)
 &
 
 ## Basic Tests
-init_thetas!(model,lattice,init="isolated",q=1,type="source")
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="isolated",q=1,type="source")
+    plot_theta(thetas,model,lattice)
 &
 
-init_thetas!(model,lattice,init="isolated",q=-1,type="convergent")
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="isolated",q=-1,type="convergent")
+    plot_theta(thetas,model,lattice)
 &
 
-init_thetas!(model,lattice,init="isolated",q=1/2,type="source")
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="isolated",q=1/2,type="source")
+    plot_theta(thetas,model,lattice)
 &
 
-init_thetas!(model,lattice,init="pair",q=1,r0=60,type=["source","divergent"])
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="pair",q=1,r0=60,type=["source","divergent"])
+    plot_theta(thetas,model,lattice)
 &
 
-init_thetas!(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
+    plot_theta(thetas,model,lattice)
 &
 
-init_thetas!(model,lattice,init="pair",q=1/2,r0=60,type=["source","divergent"])
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="pair",q=1/2,r0=60,type=["source","divergent"])
+    plot_theta(thetas,model,lattice)
 &
 
-init_thetas!(model,lattice,init="2pair",q=1/2,r0=60,type=["source","divergent"])
-    plot_theta(model,lattice)
+thetas = init_thetas(model,lattice,init="2pair",q=1/2,r0=60,type=["source","divergent"])
+    plot_theta(thetas,model,lattice)
 &
 
 ## Tests vortices TODO

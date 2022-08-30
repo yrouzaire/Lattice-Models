@@ -12,6 +12,8 @@ dt = 1E-2
     float_type = Float32
     params_num  = Dict("dt"=>dt,"float_type"=>float_type)
 
+model = XY(params_phys,params_num)
+model = AXY(params_phys,params_num)
 model = VisionXY(params_phys,params_num)
 
 # WARNING, incohérence !
