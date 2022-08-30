@@ -1,6 +1,8 @@
 export TriangularLattice
 
+## ------------------------ Lattices ------------------------
 abstract type AbstractLattice end
+
 mutable struct TriangularLattice <: AbstractLattice
     const L::Int
     periodic::Bool
@@ -9,6 +11,15 @@ mutable struct TriangularLattice <: AbstractLattice
 end
 TriangularLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = TriangularLattice(L,periodic,single,metric)
 
+mutable struct SquareLattice <: AbstractLattice
+    const L::Int
+    periodic::Bool
+    const single::Bool
+    const metric::String
+end
+SquareLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = SquareLattice(L,periodic,single,metric)
+
+## ------------------------ Functions ------------------------
 function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where T<:Number
     a,b = pos1 ; x,y = pos2
     dx = abs(x-a)
