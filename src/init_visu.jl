@@ -15,6 +15,7 @@ function init_thetas(space::AbstractLattice;init::String,float_type = Float32,kw
         thetas = rand(Bool,L,L)*π
     elseif init in ["isolated" , "single"]
         thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2);kwargs...) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
+        space.periodic = false
     elseif init == "pair"
         thetas = create_pair_vortices(L;kwargs...)
     elseif init in ["2pairs" , "2pair"]
@@ -60,17 +61,17 @@ function create_2pairs_vortices(L;r0,q,type)
 end
 
 ## ------------------------ Visualization  ------------------------
-function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,space::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
+function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
     symm = sym(model)
     p = heatmap(mod.(thetas',symm),c=cols,clims=(0,symm),size=(485,400),
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
-        defects_p,defects_m = spot_defects(thetas,model.T,space.periodic)
-        highlight_defects!(p,space.L,defects_p,defects_m)
+        defects_p,defects_m = spot_defects(thetas,model,lattice)
+        highlight_defects!(p,lattice.L,defects_p,defects_m)
     end
-    xlims!((0,space.L))
-    ylims!((0,space.L))
+    xlims!((0,lattice.L))
+    ylims!((0,lattice.L))
     return p
 end
 

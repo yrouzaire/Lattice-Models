@@ -21,7 +21,7 @@ end
 
 function get_vorticity(thetasmodpi::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,i::Int,j::Int)::T where T<:AbstractFloat
     #= Note : thetasmodpi = mod.(thetas,symm)
-        By convention, the neighbours have the following ordering
+        By convention, for a TriangularLattice, the neighbours have the following ordering
            3   2
         4    x   1
            5   6
@@ -38,7 +38,7 @@ function get_vorticity(thetasmodpi::Matrix{T},model::AbstractModel{T},lattice::A
 end
 
 function spot_defects(thetas,model::AbstractModel,lattice::AbstractLattice)
-    L = model.L
+    L = lattice.L
     if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
     list_vortices_plus  = Tuple{Int,Int}[]
     list_vortices_minus = Tuple{Int,Int}[]
@@ -52,10 +52,10 @@ function spot_defects(thetas,model::AbstractModel,lattice::AbstractLattice)
     # for n in 1:10 thetas_prerelaxed = align(thetas_prerelaxed,L,0,0,"polar",BC) end
     # thetasmodpi = mod.(fill_relax_holes(thetas_prerelaxed),π)
     # thetasmodpi = cg_gaussian_fiecld(remove_isolate(copy(thetas),L))
-    thetasmodpi = mod.(model.thetas,sym(model))
+    thetasmodpi = mod.(thetas,sym(model))
     for i in range_bc
         for j in range_bc
-            q = get_vorticity(thetasmodpi,i,j,L)
+            q = get_vorticity(thetasmodpi,model,lattice,i,j)
             if     q > + 0.1 push!(list_vortices_plus,(i,j)) # we want to keep ±½ defects, and not rounding errors
             elseif q < - 0.1 push!(list_vortices_minus,(i,j))
             end
