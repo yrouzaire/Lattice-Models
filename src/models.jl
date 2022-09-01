@@ -49,15 +49,18 @@ mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     A::AbstractFloat
     symmetry::String
+    propulsion::String
     t::AbstractFloat
     rho::AbstractFloat
+    antiferro::Bool
+    width_proposal::AbstractFloat # to be hidden from user once benchmarked
 end
 function MovingXY(params_phys,params_num)
-    @unpack T,A,rho,symmetry  = params_phys
-    @unpack float_type = params_num
-    T,A,rho = convert.(float_type,(T,A,rho))
+    @unpack T,A,rho,symmetry,antiferro,propulsion = params_phys
+    @unpack float_type,width_proposal  = params_num
+    T,A,rho,width_proposal = convert.(float_type,(T,A,rho,width_proposal))
 
-    return MovingXY{float_type}(T,A,symmetry,float_type(0),rho)
+    return MovingXY{float_type}(T,A,symmetry,propulsion,float_type(0),rho,antiferro,width_proposal)
 end
 
 

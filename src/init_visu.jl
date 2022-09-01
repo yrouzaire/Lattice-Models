@@ -1,9 +1,7 @@
 include("../src/lattices.jl");
 include("../src/models.jl");
 include("../src/core_methods.jl");
-using Plots,ColorSchemes,LaTeXStrings
 import StatsBase.sample
-pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
 
 ## ------------------------ Initializations  ------------------------
 function init_thetas(model::AbstractModel,space::AbstractLattice;init::String,float_type = Float32,kwargs...)

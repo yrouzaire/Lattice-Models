@@ -35,13 +35,13 @@ function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where 
     end
 end
 
-function offsets(lattice::TriangularLattice,i::Int)
-    if iseven(i) return [(0,1) , (-1,1) , (-1,0) , (0,-1)  , (1,0)  , (1,1)]
-    else         return [(0,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1) , (1,0)]
+function offsets(lattice::TriangularLattice,even::Bool)::Vector{Tuple{Int,Int}}
+    if even return [(0,1) , (-1,1) , (-1,0) , (0,-1)  , (1,0)  , (1,1)]
+    else    return [(0,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1) , (1,0)]
     end
 end
 
-function offsets(lattice::SquareLattice)
+function offsets(lattice::SquareLattice,even::Bool)::Vector{Tuple{Int,Int}}
     if lattice.metric in ["manhattan","euclidian"]
         return [(0,1) , (-1,0) , (0,-1) , (1,0)]
     elseif lattice.metric =="chebychev"
@@ -63,15 +63,6 @@ function square_to_linear_index(i::Int,j::Int,L::Int)::Int
     return L*(i-1) + j # 1 ≤ n ≤ L^2
 end
 
-function closetoborders(i::Int,j::Int,L::Int,c::Int=5)::Bool
-    if     i ≤ c     return true
-    elseif j ≤ c     return true
-    elseif i + c ≥ L return true
-    elseif j + c ≥ L return true
-    else return false
-    end
-end
-
 function ontheborder(i::Int,j::Int,L::Int)::Bool
     if i == 1 || j == 1 || i == L || j == L
         return true
@@ -81,3 +72,26 @@ function ontheborder(i::Int,j::Int,L::Int)::Bool
 end
 
 is_in_bulk(i::Int,j::Int,L::Int)::Bool = !ontheborder(i,j,L)
+function at_least_at_distance_X_from_border(i::Int,j::Int,L::Int;X=2)::Bool
+    if i < X || j < X || i > L-X+1 || j > L-X+1
+        return false
+    else
+        return true
+    end
+end
+
+function add_2_positions(pos1::Tuple{T,T},pos2::Tuple{T,T},L::T,should_take_mod::Bool)::Tuple{T,T} where T<:Int
+    if should_take_mod return mod1.(pos1 .+ pos2 ,L)
+    else return pos1 .+ pos2
+    end
+end
+
+# function add_2_positions(pos1::CartesianIndex{2},pos2::CartesianIndex{2},L::Int,should_take_mod::Bool)::CartesianIndex{2}
+#     if should_take_mod return mod1.((pos1 + pos2).I ,L)
+#     else return pos1 + pos2
+#     end
+# end
+#
+# a = CartesianIndex(1,1)
+# b = CartesianIndex(1,10)
+# mod.((a+b).I,10)

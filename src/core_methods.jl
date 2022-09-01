@@ -1,5 +1,6 @@
 include("lattices.jl");
 include("models.jl");
+using StatsBase,Distributions
 
 ## ------------------------ Get Neighbours ------------------------
 # NOTE : no need to define get_neighbours(model::AbstractModel,lattice::AbstractLattice ...)
@@ -80,11 +81,6 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Squ
     end
 end
 
-# function get_neighbours(thetas::Matrix{<:T},model::MovingXY{T},lattice::AbstractLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
-#     angles_with_nan = invoke(get_neighbours, Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},  thetas,model,lattice,i,j,bulk)
-#     return filter!(!isnan,angles_with_nan)
-# end
-
 function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     # default case, nothing to worry about
     return sum(sin,angles_neighbours .- theta,init=0) # init = 0 in case angles_neighbours is empty
@@ -111,7 +107,6 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
     return sum(sin.(angles_neighbours .- theta) .* weights , init = 0) # init = 0 in case angles_neighbours is empty
 end
 
-
 ## ------------------------ Update ------------------------
 # NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
 function update!(thetas::Matrix{<:T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
@@ -119,11 +114,12 @@ function update!(thetas::Matrix{<:T},model::AbstractModel,lattice::AbstractLatti
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT},MovingXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
     T  = model.T
+
     # In Bulk
     ij_in_bulk = true
     for j in 2:L-1
@@ -185,4 +181,81 @@ function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLatti
 
     model.t += dt
     return thetas
+end
+
+function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+    L = lattice.L
+    order_trials = StatsBase.shuffle(1:L^2)
+    for n in order_trials
+        i,j = linear_to_square_index(n,L)
+        in_bulk = 2 < i < L-1 &&  2 < j < L-1 # si "seulement" 1 < x,y < L , bug pour avoir le voisin d'un voisin
+
+        θ = thetas[i,j]
+        if !isnan(θ) && ( in_bulk || lattice.periodic) # translation : if on the border AND lattice not periodic, do nothing
+
+            ic,jc = angle2neighbour(θ,i,j,model,lattice)
+            θc = thetas[ic,jc]
+
+            if isnan(θc) # destination empty, let's go
+                thetas[ic,jc] = θ
+                thetas[i,j] = NaN
+            else # destination occupied
+                collision!(thetas,model,(i,j),θ,(ic,jc),θc)
+            end
+        end
+    end
+    model.t += 1 # here = number of MonteCarlo steps
+    return thetas
+end
+
+function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT) where {T<:Int,FT<:AbstractFloat}
+    # Part 1: Align or antialign
+    # if model.antiferro
+        proposal_1a = model.width_proposal*randn(FT)+theta1
+        ccos = cos(theta1 - theta2)
+        if ccos > 0
+             J = +1 # ferro
+        else J = -1 # antiferro
+        end
+        E_before = ccos
+        E_after  = cos(theta1 - proposal_1a)
+        dE = -J*(E_after - E_before)
+        if rand() < exp(-dE/model.T) # Metropolis Monte Carlo
+            @inbounds thetas[pos1...] = proposal_1a
+            theta1 = proposal_1a
+        end
+    # end
+    i,j = pos1
+    get_neighbours(thetas,model,lattice,i,j)
+    return thetas
+end
+
+function angle2neighbour(theta::AbstractFloat,i::Int,j::Int,model::AbstractModel,lattice::AbstractLattice)
+    theta,A = Float64.((theta,model.A)) # Float64.((1,1)) 50x faster than Float64.([1,1])
+    direction_motion = direction_of_motion(theta,A)
+    NN = project_angle_onto_lattice(direction_motion,i,j,lattice)
+    if model.propulsion == "nematic" && rand(Bool)
+        NN = (-1) .* NN # choose opposite direction with probability 1/2
+    end
+    return add_2_positions((i,j),NN,lattice.L,true) # TODO, check whether false could make it and what runtime gain it would yields
+end
+
+function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
+    if A == 0 angle = 2π*rand()
+    else
+        # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
+        angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
+    end
+    return angle
+end
+
+
+function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::AbstractLattice)
+    nearest_neighbours = offsets(lattice,iseven(i)) # can be of length 4, 6 or 8
+    nb_nn = length(nearest_neighbours)
+    index_nearest_neighbour = round(Int,mod(angle,2π)/(2π/nb_nn),RoundNearest) + 1
+    if index_nearest_neighbour == nb_nn + 1
+        index_nearest_neighbour = 1
+    end
+    return nearest_neighbours[index_nearest_neighbour]
 end
