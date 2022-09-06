@@ -89,21 +89,20 @@ function spot_defects(thetas,model::AbstractModel,lattice::AbstractLattice)
     return list_vortices_plus[elements_to_keep_plus],list_vortices_minus[elements_to_keep_minus]
 end
 
-#is it even useful now ?
-# function spot_single_default_global(thetas::Matrix{T})::Tuple{Tuple{Int16,Int16},T} where T<:AbstractFloat
-#     L = size(thetas)[1]
-#     list_defaults = Tuple{Int16,Int16,T}[]
-#     for i in 2:L-1
-#         for j in 2:L-1
-#             q = get_vorticity(thetas,i,j,L)
-#             if abs(q) > 0.1
-#                 push!(list_defaults,(i,j,q))
-#             end
-#         end
-#     end
-#     @assert length(list_defaults) == 1
-#     return list_defaults[1][1:2],list_defaults[1][3]
-# end
+function spot_single_default_global(thetas::Matrix{T},model,lattice)::Tuple{Tuple{Int16,Int16},T} where T<:AbstractFloat
+    L = size(thetas)[1]
+    list_defaults = Tuple{Int16,Int16,T}[]
+    for i in 2:L-1
+        for j in 2:L-1
+            q = get_vorticity(thetas,model,lattice,i,j)
+            if abs(q) > 0.1 # to avoid rounding errors
+                push!(list_defaults,(i,j,q))
+            end
+        end
+    end
+    @assert length(list_defaults) == 1
+    return list_defaults[1][1:2],list_defaults[1][3]
+end
 
 
 #is it even useful now ?

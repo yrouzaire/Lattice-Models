@@ -1,17 +1,7 @@
 include("../src/models.jl");
 
 # Physical Parameters
-L = 200
-    T = 0.1
-    symmetry = "polar"
-    Var = 0.1
-    A = 1
-    vision = π
-    params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"vision"=>vision,"A"=>A,"symmetry"=>symmetry)
-# Numerical Parameters
-dt = 1E-2
-    float_type = Float32
-    params_num  = Dict("dt"=>dt,"float_type"=>float_type)
+include(srcdir("../parameters.jl"));
 
 model = XY(params_phys,params_num)
 model = AXY(params_phys,params_num)

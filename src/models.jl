@@ -15,10 +15,8 @@ mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     dt::AbstractFloat
     t::AbstractFloat
 end
-function XY(params_phys,params_num)
-    @unpack T,symmetry  = params_phys
-    @unpack dt,float_type = params_num
-
+function XY(params)
+    @unpack T,symmetry,dt,float_type  = params
     T,dt = convert.(float_type,(T,dt))
 
     return XY{float_type}(T,symmetry,dt,float_type(0))
@@ -34,9 +32,8 @@ mutable struct ForcedXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     dt::AbstractFloat
     t::AbstractFloat
 end
-function ForcedXY(params_phys,params_num)
-    @unpack L,T,Var,symmetry  = params_phys
-    @unpack dt,float_type = params_num
+function ForcedXY(params)
+    @unpack L,T,Var,symmetry,dt,float_type  = params
     T,Var,dt = convert.(float_type,(T,Var,dt))
 
     omegas = sqrt(Var)*randn(float_type,L,L)
@@ -55,9 +52,8 @@ mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     antiferro::Bool
     width_proposal::AbstractFloat # to be hidden from user once benchmarked
 end
-function MovingXY(params_phys,params_num)
-    @unpack T,A,rho,symmetry,antiferro,propulsion = params_phys
-    @unpack float_type,width_proposal  = params_num
+function MovingXY(params)
+    @unpack T,A,rho,symmetry,antiferro,propulsion,float_type,width_proposal = params
     T,A,rho,width_proposal = convert.(float_type,(T,A,rho,width_proposal))
 
     return MovingXY{float_type}(T,A,symmetry,propulsion,float_type(0),rho,antiferro,width_proposal)
@@ -72,9 +68,8 @@ mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     dt::AbstractFloat
     t::AbstractFloat
 end
-function VisionXY(params_phys,params_num)
-    @unpack T,vision,symmetry  = params_phys
-    @unpack dt,float_type = params_num
+function VisionXY(params)
+    @unpack T,vision,symmetry,dt,float_type = params
 
     T,vision,dt = convert.(float_type,(T,vision,dt))
 
