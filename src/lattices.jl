@@ -84,12 +84,24 @@ function add_2_positions(pos1::Tuple{T,T},pos2::Tuple{T,T},L::T,should_take_mod:
     end
 end
 
-# function add_2_positions(pos1::CartesianIndex{2},pos2::CartesianIndex{2},L::Int,should_take_mod::Bool)::CartesianIndex{2}
-#     if should_take_mod return mod1.((pos1 + pos2).I ,L)
-#     else return pos1 + pos2
-#     end
-# end
-#
-# a = CartesianIndex(1,1)
-# b = CartesianIndex(1,10)
-# mod.((a+b).I,10)
+function mean_2_positions(pos1,pos2,L,should_take_mod::Bool=true)
+    a,b = pos1 ; x,y = pos2
+
+    dx = (x - a) #; dx = min(dx,L-dx)
+    dy = (y - b) #; dy = min(dy,L-dy)
+
+    if should_take_mod
+        if abs(L-dx) < abs(dx) dx = -(L-dx) end
+        # if L-dx < dx dx = -(L-dx) end
+        if abs(L-dy) < abs(dy) dy = -(L-dy) end
+        # if L-dy < dy dy = -(L-dy) end
+        estimate_loc_collision = mod1.((a,b) .+ 0.5.*(dx,dy),L)
+        # estimate_loc_collision = mod1.(0.5.*(a,b) .+ 0.5.*(x,y),L)
+        return estimate_loc_collision
+    end
+    return (a,b) .+ 0.5.*(dx,dy) # if should_take_mod == false
+end
+# l = 100
+# mean_2_positions((50,50),(60,60),l) == (55,55)
+# mean_2_positions((10,10),(90,90),l) == (100,100)
+# mean_2_positions((49,66),(51,61),l) == (50.0, 63.5)
