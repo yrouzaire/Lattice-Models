@@ -2,6 +2,8 @@ include("lattices.jl");
 include("models.jl");
 include("core_methods.jl");
 
+using Hungarian
+
 function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     #= This function returns the signed arclength on the unit trigonometric circle .
     Clockwise        >> sign -
@@ -281,7 +283,7 @@ function defects_active(dt::DefectTracker)
         if defect.annihilation_time == nothing push!(P,defect) end
     end
     for n in 1:dt.Nm
-        defect = dt.defectn]
+        defect = dt.defectM[n]
         if defect.annihilation_time == nothing push!(P,defect) end
     end
     return P,M,length(P)+length(M)
