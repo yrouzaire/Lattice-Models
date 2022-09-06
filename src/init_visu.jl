@@ -68,9 +68,9 @@ function make_holes!(thetas,rho)
 end
 
 ## ------------------------ Visualization  ------------------------
-function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]))
+function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(485,400))
     symm = sym(model)
-    p = heatmap(mod.(thetas',symm),c=cols,clims=(0,symm),size=(485,400),
+    p = heatmap(mod.(thetas',symm),c=cols,clims=(0,symm),size=size,
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
@@ -81,7 +81,6 @@ function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice
     ylims!((0,lattice.L))
     return p
 end
-
 
 function highlight_defects!(p,L,defects_p,defects_m,symbP=:circle,symbM=:utriangle)
     for defect in defects_p
@@ -107,4 +106,13 @@ end
 # Note : after returning the plots with quiver, one has to add xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 ## ------------------------ Movies  ------------------------
-#TODO
+function movies(thetas,model,lattice;defects=false,saving_times,transients)
+    anim = @animate for t in saving_times
+        println("$(round(t/saving_times[end]*100,digits=2)) %")
+        update!(thetas,model,lattice,t)  # updates until time = t
+        if t<transients p = plot_theta(thetas,model,lattice,defects=false,size=(512,512))
+        else            p = plot_theta(thetas,model,lattice,defects=defects,size=(512,512))
+        end
+    end
+    return anim
+end

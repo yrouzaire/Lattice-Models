@@ -1,5 +1,5 @@
 using DrWatson
-@quickactivate "Lattice Models"
+@quickactivate "LatticeModels"
 
 println(
 """

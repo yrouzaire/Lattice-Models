@@ -1,4 +1,4 @@
-name = "Lattice Models"
+name = "LatticeModels"
 authors = ["Rouzaire"]
 [compat]
 julia = "1.6.1"

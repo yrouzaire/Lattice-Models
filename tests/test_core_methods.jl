@@ -10,22 +10,20 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 # Physical Parameters
 L = 200
     T = 0.1
-    symmetry = "nematic"
+    symmetry = "polar"
     propulsion = "polar"
     Var = 0.1
-    A = 0.5
+    A = 1.
     vision = 4π/3
-    rho = 0.9
+    rho = 0.99
     antiferro = true
     params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"antiferro"=>antiferro)
 
 # Numerical Parameters
 dt = 1E-2
     float_type = Float32
-    width_proposal = 0.15
+    width_proposal = 0.01
     params_num  = Dict("dt"=>dt,"float_type"=>float_type,"width_proposal"=>width_proposal)
-
-lattice = TriangularLattice(L,periodic=true,single=true)
 
 ## Benchmark update
 model = MovingXY(params_phys,params_num)
@@ -33,7 +31,13 @@ lattice = TriangularLattice(L,periodic=true)
 thetas = init_thetas(model,lattice,init="hightemp",q=1,r0=60,float_type=float_type,type=["source","divergent"])
 update!(thetas,model,lattice)
 @btime update!(thetas,model,lattice)
- # en fait le plus lent c'est de
+#= Runtimes
+WN = Wrapped Normal ; VM = VonMises ; AF = antiferro
+Avec WN, AF = false update takes 11 ms
+Avec VM, AF = false update takes 23 ms
+Avec WN, AF = true update takes 11 ms
+Avec VM, AF = true update takes 25 ms
+=#
 
 ## Tests update!()
 model = XY(params_phys,params_num)
@@ -63,11 +67,10 @@ model.t
 ## Visual verification
 model = MovingXY(params_phys,params_num)
 lattice = TriangularLattice(L,periodic=true)
-lattice = SquareLattice(L,periodic=true)
-thetas = init_thetas(model,lattice,init="hightemp",q=1,r0=60,float_type=float_type,type=["source","divergent"])
+thetas = init_thetas(model,lattice,init="pair",q=1,r0=60,float_type=float_type,type=["sink","convergent"])
 plot_theta(thetas,model,lattice)
-tmax = 1
-z = @elapsed update!(thetas,model,lattice,tmax)
+tmax = 1000
+    z = @elapsed update!(thetas,model,lattice,tmax)
     plot_theta(thetas,model,lattice)
     # ok tout semble correspondre à mes attentes
 prinz(z)

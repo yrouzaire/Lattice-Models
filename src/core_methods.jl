@@ -200,7 +200,7 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLatti
                 thetas[ic,jc] = θ
                 thetas[i,j] = NaN
             else # destination occupied
-                collision!(thetas,model,(i,j),θ,(ic,jc),θc)
+                collision!(thetas,model,(i,j),θ,(ic,jc),θc,in_bulk)
             end
         end
     end
@@ -208,25 +208,30 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLatti
     return thetas
 end
 
-function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT) where {T<:Int,FT<:AbstractFloat}
+function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
     # Part 1: Align or antialign
-    # if model.antiferro
+    if model.antiferro
         proposal_1a = model.width_proposal*randn(FT)+theta1
         ccos = cos(theta1 - theta2)
         if ccos > 0
              J = +1 # ferro
         else J = -1 # antiferro
         end
-        E_before = ccos
-        E_after  = cos(theta1 - proposal_1a)
-        dE = -J*(E_after - E_before)
+        dE = -J*(cos(theta1 - proposal_1a) - ccos)
         if rand() < exp(-dE/model.T) # Metropolis Monte Carlo
             @inbounds thetas[pos1...] = proposal_1a
             theta1 = proposal_1a
         end
-    # end
+    end
     i,j = pos1
-    get_neighbours(thetas,model,lattice,i,j)
+    proposal_1b = model.width_proposal*randn(FT)+theta1
+    sum1 = proposal_1b + theta1
+    neighbours_1 = 2get_neighbours(thetas,model,lattice,i,j,bulk)
+    @fastmath dE = sin(proposal_1b - theta1)*sum(sin,sum1 .- neighbours_1)
+    if rand() < exp(-dE/model.T)
+        @inbounds thetas[i,j] = proposal_1b
+    end
+
     return thetas
 end
 
