@@ -1,6 +1,6 @@
 include("lattices.jl");
 include("models.jl");
-using StatsBase,Distributions
+# using StatsBase,Distributions
 
 ## ------------------------ Get Neighbours ------------------------
 # NOTE : no need to define get_neighbours(model::AbstractModel,lattice::AbstractLattice ...)

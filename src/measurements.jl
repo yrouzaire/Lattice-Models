@@ -1,4 +1,4 @@
-include("lattice_general.jl");
+include("lattices.jl");
 include("models.jl");
 
 
