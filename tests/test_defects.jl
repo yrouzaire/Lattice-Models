@@ -24,9 +24,6 @@ function X(A,B)
 end
 x = X(true,true)
 typeof(x)
-function f1(x::AbstractTest{A,B}) where {A=Bool,B}
-    return "A = true ; B = true"
-end
 function f2(x::X{A,B}) where {A,B}
     return "General"
 end
@@ -38,6 +35,5 @@ function f2(x::X{A,false}) where {A,B}
 end
 
 f2(X(false,false))
-
-
-f1(x)
+f2(X(true,false))
+f2(X(false,true))

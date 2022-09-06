@@ -6,7 +6,7 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 ## Parameters
 include(srcdir("../parameters.jl"));
 
-## Benchmark update
+## 
 model = XY(params)
 lattice = TriangularLattice(L,periodic=true)
 thetas = init_thetas(lattice,params=params)
