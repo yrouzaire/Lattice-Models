@@ -231,10 +231,10 @@ mutable struct DefectTracker
     defectsM::Vector{Defect} # so there is a (+)defect with id=1 AND and a (-)defect with id=1
     current_time::Int # latest update time (by convention, the creation time of the whole data structure = 0)
 
-    function DefectTracker(;thetas,T,BC,t) # constructor
-        vortices,antivortices = spot_defects(thetas,T,BC)
+    function DefectTracker(thetas,model,lattice) # constructor
+        vortices,antivortices = spot_defects(thetas,model,lattice)
         Np = length(vortices) ; Nm = length(antivortices)
-        new(Np,Nm,Np,Nm,[Defect(id=i,charge=+1/2,loc=vortices[i],t=t) for i in 1:Np],[Defect(id=i,charge=-1/2,loc=antivortices[i],t=t) for i in 1:Nm],t)
+        new(Np,Nm,Np,Nm,[Defect(id=i,charge=+1/2,loc=vortices[i],t=model.t) for i in 1:Np],[Defect(id=i,charge=-1/2,loc=antivortices[i],t=model.t) for i in 1:Nm],model.t)
     end
 end
 
@@ -274,22 +274,23 @@ function add_defect!(dt::DefectTracker;charge,loc,t)
     end
 end
 
-# TODO le code pourrait etre bien plus simple, avec un simple count + condition
 function defects_active(dt::DefectTracker)
     P = [] ; M = []
     for n in 1:dt.Np
-        if dt.defectsP[n].annihilation_time == nothing push!(P,n) end
+        defect = dt.defectsP[n]
+        if defect.annihilation_time == nothing push!(P,defect) end
     end
     for n in 1:dt.Nm
-        if dt.defectsM[n].annihilation_time == nothing push!(M,n) end
+        defect = dt.defectn]
+        if defect.annihilation_time == nothing push!(P,defect) end
     end
     return P,M,length(P)+length(M)
 end
 
 function pair_up_hungarian(dt::DefectTracker,new,old,L,charge)
-    distance_matrixx    = distance_matrix(new,old,L) # m_new lignes, m_old colonnes
-    proposal            = hungarian(distance_matrixx)[1] # length = length(new)
-    assignment          = copy(proposal) # because it will be modified in the next for loop
+    distance_matrixx = distance_matrix(new,old,L) # m_new lignes, m_old colonnes
+    proposal         = hungarian(distance_matrixx)[1] # length = length(new)
+    assignment       = copy(proposal) # because it will be modified in the next for loop
 
     #= A few comments :
     1. The proposal is the match between indices of the vectors
