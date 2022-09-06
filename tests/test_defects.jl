@@ -1,39 +1,14 @@
-include("../src/core_methods.jl");
-include("../src/init_visu.jl");
-include("../src/misc.jl");
-using BenchmarkTools
+using DrWatson ; @quickactivate "LatticeModels"
+include(srcdir("LatticeModels.jl")) ;
+using BenchmarkTools,Plots,ColorSchemes,LaTeXStrings
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
-## Parameters
+## Code for update_and_track
 include(srcdir("../parameters.jl"));
-
+model = XY(params)
 lattice = TriangularLattice(L,periodic=true,single=true)
-thetas = init_thetas(lattice,init="isolated",q=1,type="source")
-# thetas = init_thetas(lattice,init="pair",q=1,r0=60,type=["source","divergent"])
-spot_defects(thetas,model,lattice)
-plot_theta(thetas,model,lattice,defects=true)
+thetas = init_thetas(lattice,params=params)
 
-
-##
-abstract type AbstractTest{A,B} end
-mutable struct X{A,B} <: AbstractTest{A,B}
-    p1
-    p2
-end
-function X(A,B)
-    return X{A,B}(1,1)
-end
-x = X(true,true)
-typeof(x)
-function f2(x::X{A,B}) where {A,B}
-    return "General"
-end
-function f2(x::X{true,true}) where {A,B}
-    return "true true"
-end
-function f2(x::X{A,false}) where {A,B}
-    return "A false"
-end
-
-f2(X(false,false))
-f2(X(true,false))
-f2(X(false,true))
+dft = DefectTracker(thetas,model,lattice)
+total_tracked(dft)
+defects_active(dft)

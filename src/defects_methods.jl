@@ -2,6 +2,8 @@ include("lattices.jl");
 include("models.jl");
 include("core_methods.jl");
 
+using Hungarian
+
 function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     #= This function returns the signed arclength on the unit trigonometric circle .
     Clockwise        >> sign -
@@ -230,10 +232,10 @@ mutable struct DefectTracker
     defectsM::Vector{Defect} # so there is a (+)defect with id=1 AND and a (-)defect with id=1
     current_time::Int # latest update time (by convention, the creation time of the whole data structure = 0)
 
-    function DefectTracker(;thetas,T,BC,t) # constructor
-        vortices,antivortices = spot_defects(thetas,T,BC)
+    function DefectTracker(thetas,model,lattice) # constructor
+        vortices,antivortices = spot_defects(thetas,model,lattice)
         Np = length(vortices) ; Nm = length(antivortices)
-        new(Np,Nm,Np,Nm,[Defect(id=i,charge=+1/2,loc=vortices[i],t=t) for i in 1:Np],[Defect(id=i,charge=-1/2,loc=antivortices[i],t=t) for i in 1:Nm],t)
+        new(Np,Nm,Np,Nm,[Defect(id=i,charge=+1/2,loc=vortices[i],t=model.t) for i in 1:Np],[Defect(id=i,charge=-1/2,loc=antivortices[i],t=model.t) for i in 1:Nm],model.t)
     end
 end
 
@@ -273,22 +275,23 @@ function add_defect!(dt::DefectTracker;charge,loc,t)
     end
 end
 
-# TODO le code pourrait etre bien plus simple, avec un simple count + condition
 function defects_active(dt::DefectTracker)
     P = [] ; M = []
     for n in 1:dt.Np
-        if dt.defectsP[n].annihilation_time == nothing push!(P,n) end
+        defect = dt.defectsP[n]
+        if defect.annihilation_time == nothing push!(P,defect) end
     end
     for n in 1:dt.Nm
-        if dt.defectsM[n].annihilation_time == nothing push!(M,n) end
+        defect = dt.defectM[n]
+        if defect.annihilation_time == nothing push!(P,defect) end
     end
     return P,M,length(P)+length(M)
 end
 
 function pair_up_hungarian(dt::DefectTracker,new,old,L,charge)
-    distance_matrixx    = distance_matrix(new,old,L) # m_new lignes, m_old colonnes
-    proposal            = hungarian(distance_matrixx)[1] # length = length(new)
-    assignment          = copy(proposal) # because it will be modified in the next for loop
+    distance_matrixx = distance_matrix(new,old,L) # m_new lignes, m_old colonnes
+    proposal         = hungarian(distance_matrixx)[1] # length = length(new)
+    assignment       = copy(proposal) # because it will be modified in the next for loop
 
     #= A few comments :
     1. The proposal is the match between indices of the vectors
@@ -338,21 +341,8 @@ function find_closest_before_annihilation(dt,old_loc_defect,L)
     return ID_antidefect,last_loc(dt.defectsM[ID_antidefect])
 end
 
-function estimation_location_annihilation((a,b),(x,y),L)
-    dx = (x - a) #; dx = min(dx,L-dx)
-    if abs(L-dx) < abs(dx) dx = -(L-dx) end
-    # if L-dx < dx dx = -(L-dx) end
-    dy = (y - b) #; dy = min(dy,L-dy)
-    if abs(L-dy) < abs(dy) dy = -(L-dy) end
-    # if L-dy < dy dy = -(L-dy) end
-    estimate_loc_collision = mod1.((a,b) .+ 0.5.*(dx,dy),L)
-    # estimate_loc_collision = mod1.(0.5.*(a,b) .+ 0.5.*(x,y),L)
-    return estimate_loc_collision
-end
-# estimation_location_annihilation((50,50),(60,60),L) == (55,55)
-# estimation_location_annihilation((10,10),(90,90),L) == (100,100)
-# estimation_location_annihilation((49,66),(51,61),L) == (50.0, 63.5)
 
+# estimation_location_annihilation() has been replaced by mean_2_positions()
 function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
     for i in ids_annihilated_defects
         old_loc_vortex = last_loc(dt.defectsP[i])
@@ -364,7 +354,7 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
         # dt.defectsP[i].annihilation_time = dt.current_time
         # dt.defectsM[ID_antivortex].annihilation_time = dt.current_time
 
-        estimate = estimation_location_annihilation(old_loc_vortex,old_loc_antivortex,L)
+        estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,L)
         push!(dt.defectsP[i].hist,estimate)
         push!(dt.defectsM[ID_antivortex].hist,estimate)
     end
@@ -389,7 +379,7 @@ function update_DefectTracker(dt::DefectTracker,thetas::Matrix{Float32},BC,
     if N_new == N_old == 0 # do nothing, otherwise, "reducing over empty collection blablabla"
 
     elseif Nm_new == Nm_old == 0 && Np_new == Np_old > 0 # there are only (+) defects and no creation/annihilation
-        assignment_vortices     = pair_up_hungarian(dt,vortices_new,vortices_old,L,+1/2)
+        assignment_vortices = pair_up_hungarian(dt,vortices_new,vortices_old,L,+1/2)
         for i in 1:Np_new push!(dt.defectsP[assignment_vortices[i]].hist,vortices_new[i]) end
 
     elseif Np_new == Np_old == 0 && Nm_new == Nm_old > 0 # there are only (-) defects and no creation/annihilation
@@ -503,7 +493,6 @@ function update_DefectTracker(dt::DefectTracker,thetas::Matrix{Float32},BC,
 end
 
 ## Small helpful methods for scripts
-
 function number_defects(model::AbstractModel,lattice::AbstractLattice)
     a,b = spot_defects(thetas,T,BC)
     return length(a) + length(b)

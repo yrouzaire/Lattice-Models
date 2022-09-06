@@ -16,7 +16,7 @@ float_type = Float32
 width_proposal = 0.01
 
 # Initialisation
-init = "2pair"
+init = "single"
 q = 1
 r0 = Int(L/2)
 type1defect = "clockwise"
