@@ -9,7 +9,6 @@ vision = 4π/3
 rho = 0.99
 antiferro = true
 
-
 # Numerical Parameters
 dt = 1E-2
 float_type = Float32
