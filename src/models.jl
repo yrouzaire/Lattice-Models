@@ -1,6 +1,6 @@
 using Parameters
 
-export XY, ForcedXY, VisionXY
+# export XY, ForcedXY, VisionXY
 
 abstract type AbstractModel{AbstractFloat} end
 function sym(model::AbstractModel{T}) where T<:AbstractFloat

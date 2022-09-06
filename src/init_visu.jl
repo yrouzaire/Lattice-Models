@@ -1,7 +1,8 @@
-include("../src/lattices.jl");
-include("../src/models.jl");
-include("../src/core_methods.jl");
+include("lattices.jl");
+include("models.jl");
+include("core_methods.jl");
 import StatsBase.sample
+import Plots.@animate
 
 ## ------------------------ Initializations  ------------------------
 function init_thetas(model::AbstractModel,space::AbstractLattice;init::String,float_type = Float32,kwargs...)

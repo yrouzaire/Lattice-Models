@@ -1,7 +1,6 @@
 include("lattices.jl");
 include("models.jl");
 
-
 function OP(thetas::Matrix{T})::Vector{T} where T<:AbstractFloat
     tmp_polar   = Complex(0)
     tmp_nematic = Complex(0)

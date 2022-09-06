@@ -1,6 +1,6 @@
-include("../src/lattices.jl");
-include("../src/models.jl");
-include("../src/core_methods.jl");
+include("lattices.jl");
+include("models.jl");
+include("core_methods.jl");
 
 function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     #= This function returns the signed arclength on the unit trigonometric circle .
