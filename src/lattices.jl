@@ -1,5 +1,3 @@
-export TriangularLattice
-
 ## ------------------------ Lattices ------------------------
 abstract type AbstractLattice end
 
