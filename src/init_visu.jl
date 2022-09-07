@@ -17,9 +17,9 @@ function init_thetas(space;params)
         thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,type=type1defect) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
         space.periodic = false
     elseif init == "pair"
-        thetas = create_pair_vortices(L,r=r,q=q,type=type2defect)
+        thetas = create_pair_vortices(L,r0=r0,q=q,type=type2defect)
     elseif init in ["2pairs" , "2pair"]
-        thetas = create_2pairs_vortices(L,r=r,q=q,type=type2defect)
+        thetas = create_2pairs_vortices(L,r0=r0,q=q,type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
     if isa(model,MovingXY) make_holes!(thetas,rho) end
@@ -69,14 +69,16 @@ function make_holes!(thetas,rho)
 end
 
 ## ------------------------ Visualization  ------------------------
-function plot_theta(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(485,400))
+function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(485,400))
     symm = sym(model)
     p = heatmap(mod.(thetas',symm),c=cols,clims=(0,symm),size=size,
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
         defects_p,defects_m = spot_defects(thetas,model,lattice)
-        highlight_defects!(p,lattice.L,defects_p,defects_m)
+        locP = [defects_p[i][1:2] for i in each(defects_p)]
+        locN = [defects_m[i][1:2] for i in each(defects_m)]
+        highlight_defects!(p,lattice.L,locP,locN)
     end
     xlims!((0,lattice.L))
     ylims!((0,lattice.L))

@@ -18,7 +18,7 @@ end
 SquareLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = SquareLattice(L,periodic,single,metric)
 
 ## ------------------------ Functions ------------------------
-function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where T<:Number
+function dist(lattice::AbstractLattice,pos1,pos2)
     a,b = pos1 ; x,y = pos2
     dx = abs(x-a)
     dy = abs(y-b)
@@ -33,7 +33,8 @@ function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where 
     end
 end
 
-function distance_matrix(new::Vector{Tuple{T,T}},old::Vector{Tuple{T,T}},lattice::AbstractLattice) where T<:Number
+
+function distance_matrix(new,old,lattice::AbstractLattice)
     m_new,m_old = length(new),length(old)
     distance_matrix = zeros(m_new,m_old)
     for j in 1:m_old

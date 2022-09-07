@@ -38,7 +38,7 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
             thetas[ip,jm],
             thetas[ip,j]]
     end
-    if isa(model,MovingXY) return filter!(!isnan,angles)
+    if model.rho < 1 return filter!(!isnan,angles)
     else return angles
     end
 end
@@ -147,6 +147,14 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
 
     model.t += dt
     return thetas
+end
+
+# Meant to relax reconstruction for spotting defects, or for "Pair" initialisation
+function relax!(thetas::Matrix{<:AbstractFloat},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
+    dummy_dt = T(1E-2)
+    trelax = T(1.0)
+    dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T))
+    update!(thetas,dummy_model,lattice,trelax)
 end
 
 function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat

@@ -1,12 +1,12 @@
 # Physical Parameters
 L = 200
-T = 0.1
+T = 0.2
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.2
 A = 1.
-vision = 4π/3
-rho = 0.99
+vision = 5π/3
+rho = 0.95
 antiferro = true
 
 # Numerical Parameters
@@ -15,7 +15,7 @@ float_type = Float32
 width_proposal = 0.01
 
 # Initialisation
-init = "single"
+init = "pair"
 q = 1
 r0 = Int(L/2)
 type1defect = "clockwise"
