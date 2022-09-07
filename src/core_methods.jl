@@ -149,12 +149,13 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
     return thetas
 end
 
-# Meant to relax reconstruction for spotting defects, or for "Pair" initialisation
-function relax!(thetas::Matrix{<:AbstractFloat},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
+# Meant to relax reconstruction for spotting defects
+function relax!(thetas::Matrix{T}) where T<:AbstractFloat
     dummy_dt = T(1E-2)
     trelax = T(1.0)
-    dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T))
-    update!(thetas,dummy_model,lattice,trelax)
+    dummy_model = XY{T}(zero(T),"polar",dummy_dt,zero(T))
+    dummy_lattice = SquareLattice(size(thetas,1),true,true,"euclidian")
+    update!(thetas,dummy_model,dummy_lattice,trelax)
 end
 
 function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat

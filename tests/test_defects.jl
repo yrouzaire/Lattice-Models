@@ -22,13 +22,13 @@ plot_thetas(thetas,model,lattice,defects=true)
 
 ## Preconditionning of the theta field
 include(srcdir("../parameters.jl"));
-model = MovingXY(params)
-lattice = SquareLattice(L,periodic=true,single=true)
-thetas = init_thetas(lattice,params=params)
-update!(thetas,model,lattice,100)
-plot_thetas(thetas,model,lattice,defects=false)
-thetas0 = copy(thetas)
-    plot_thetas(precondition!(thetas0,model,lattice),model,lattice,defects=true)
+    model = MovingXY(params)
+    lattice = SquareLattice(L,periodic=true,single=true)
+    thetas = init_thetas(lattice,params=params)
+    # update!(thetas,model,lattice,100)
+    plot_thetas(thetas,model,lattice,defects=false)
+    # thetas0 = copy(thetas)
+    # plot_thetas(precondition!(thetas0,model,lattice),model,lattice,defects=true)
 
 
 

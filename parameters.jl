@@ -19,7 +19,7 @@ init = "pair"
 q = 1
 r0 = Int(L/2)
 type1defect = "clockwise"
-type2defect = ["source" , "convergent"]
+type2defect = ["sink" , "convergent"]
 
 # Containers
 params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"antiferro"=>antiferro)

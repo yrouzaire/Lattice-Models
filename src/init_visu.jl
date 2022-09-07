@@ -53,7 +53,23 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
 
     thetas = create_single_defect(L,round(Int,L/2+r0/2),round(Int,L/2),q=+q,type=type[1]) +
              create_single_defect(L,round(Int,L/2-r0/2),round(Int,L/2),q=-q,type=type[2])
-    return thetas
+
+    return smooth_border!(thetas)
+end
+
+function smooth_border!(thetas)
+    cst = round(Int,0.02*size(thetas,1)) # has to be even
+
+    for i in 1:L
+        sample1 = thetas[i,cst]
+        sample2 = thetas[i,L-cst]
+        arcl = arclength(sample1,sample2,2pi) # Oddly, pi or 2pi is not important even when symmetry is polar or nematic
+        smoothed_values = [sample1 + arcl*n/(2cst+1) for n in 1:(2cst+1)]
+        for j in 1:2cst+1
+            thetas[i,mod1(Int(cst-j+1),L)] = smoothed_values[j]
+        end
+    end
+    return thetas # in fact, this procedure is insensible to relax!() since already smooth
 end
 
 function create_2pairs_vortices(L;r0,q,type)
