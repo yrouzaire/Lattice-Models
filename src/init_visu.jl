@@ -5,8 +5,8 @@ import StatsBase.sample
 import Plots.@animate
 
 ## ------------------------ Initializations  ------------------------
-function init_thetas(model::AbstractModel,space::AbstractLattice;init::String,float_type = Float32,kwargs...)
-    L = space.L
+function init_thetas(model::AbstractModel,space::AbstractLattice,params)
+    @unpack L,init,q,r0,type1defect,type2defect = params
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
@@ -14,12 +14,12 @@ function init_thetas(model::AbstractModel,space::AbstractLattice;init::String,fl
     elseif init in ["lowtemp_nematic" , "nematic_order"]
         thetas = rand(Bool,L,L)*π
     elseif init in ["isolated" , "single"]
-        thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2);kwargs...) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
+        thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,type=type1defect) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
         space.periodic = false
     elseif init == "pair"
-        thetas = create_pair_vortices(L;kwargs...)
+        thetas = create_pair_vortices(L,r=r,q=q,type=type2defect)
     elseif init in ["2pairs" , "2pair"]
-        thetas = create_2pairs_vortices(L;kwargs...)
+        thetas = create_2pairs_vortices(L,r=r,q=q,type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
     if isa(model,MovingXY) make_holes!(thetas,model.rho) end
