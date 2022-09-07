@@ -33,6 +33,17 @@ function dist(lattice::AbstractLattice,pos1::Tuple{T,T},pos2::Tuple{T,T}) where 
     end
 end
 
+function distance_matrix(new::Vector{Tuple{T,T}},old::Vector{Tuple{T,T}},lattice::AbstractLattice) where T<:Number
+    m_new,m_old = length(new),length(old)
+    distance_matrix = zeros(m_new,m_old)
+    for j in 1:m_old
+        for i in 1:m_new
+            distance_matrix[i,j] = dist(lattice,new[i],old[j])
+        end
+    end
+    return distance_matrix
+end
+
 function offsets(lattice::TriangularLattice,even::Bool)::Vector{Tuple{Int,Int}}
     if even return [(0,1) , (-1,1) , (-1,0) , (0,-1)  , (1,0)  , (1,1)]
     else    return [(0,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1) , (1,0)]

@@ -254,7 +254,7 @@ function add_defect!(dt::DefectTracker;charge,loc)
     end
 end
 
-function pair_up_hungarian(dt::DefectTracker,new,old,L,charge::String)
+function pair_up_hungarian(dt::DefectTracker,new,old,lattice::AbstractLattice,charge::String)
     # charge can be either "+" or "-"
     distance_matrixx = distance_matrix(new,old,L) # m_new lignes, m_old colonnes
     proposal         = hungarian(distance_matrixx)[1] # length = length(new)
@@ -365,11 +365,11 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
     if N_new == N_old == 0 # do nothing, otherwise, "reducing over empty collection blablabla"
 
     elseif Nn_new == Nn_old == 0 && Np_new == Np_old > 0 # there are only (+) defects and no creation/annihilation
-        assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,L,"+")
+        assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,lattice,"+")
         for i in 1:Np_new push_position!(dt.defectsP[assignment_vortices[i]],locP_new[i]) end
 
     elseif Np_new == Np_old == 0 && Nm_new == Nm_old > 0 # there are only (-) defects and no creation/annihilation
-        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,L,"-")
+        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,lattice,"-")
         for i in 1:Nm_new push_position!(dt.defectsN[assignment_antivortices[i]],locN_new[i]) end
 
     elseif N_new > 0 && N_old == 0
@@ -384,7 +384,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
         dt = annihilate_defects(dt::DefectTracker,id_just_annihilated_defectP,L)
 
     elseif Np_new > 0 && Np_old > 0 && Nm_old > 0 && Nm_new == 0  # (+)(+)(-) >> (+) par exemple
-        assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,L,"+")
+        assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,lattice,"+")
         # Update living vortices. NB : the annihilated vortex is absent from the assignment vector : proceed without the condition "≠ 0"
         for i in eachindex(assignment_vortices) push_position!(dt.defectsP[assignment_vortices[i]],locP_new[i]) end
         # Identify annihilated defects
@@ -401,7 +401,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
         dt = annihilate_defects(dt,ID_annihilated_vortices,L)
 
     elseif Nm_new > 0 && Nm_old > 0 && Np_old > 0 && Np_new == 0  # (+)(-)(-) >> (-) par exemple
-        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,L,"-")
+        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,lattice,"-")
         # Update living antivortices. NB : the annihilated antivortex is absent from the assignment vector : proceed without the condition "≠ 0"
         for i in eachindex(assignment_antivortices) push_position!(dt.defectsN[assignment_antivortices[i]],locN_new[i]) end
         # Identify annihilated defects
@@ -420,8 +420,8 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
     else # end of special cases
 
     # GENERAL TREATMENT
-        assignment_vortices     = pair_up_hungarian(dt,locP_new,locP_old,L,"+")
-        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,L,"-")
+        assignment_vortices     = pair_up_hungarian(dt,locP_new,locP_old,lattice,"+")
+        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,lattice,"-")
 
         # CASE 1 : no creation, no annihilation : simply update the data structure
         if N_new == N_old
