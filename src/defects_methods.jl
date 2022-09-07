@@ -29,7 +29,8 @@ function get_vorticity(thetasmodpi::Matrix{T},model::AbstractModel{T},lattice::A
            5   6
         =#
     symm = sym(model)
-    angles_corners = get_neighbours(thetasmodpi,model,lattice,i,j,is_in_bulk(i,j,lattice.L))
+    angles_corners = invoke(get_neighbours,Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},   thetasmodpi,model,lattice,i,j,is_in_bulk(i,j,lattice.L))
+    # the invoke trick above is so that the neighbors are all considered, even in the Non Reciprocal case
     perimeter_covered = 0.0
     for i in 1:length(angles_corners)-1
         perimeter_covered += arclength(angles_corners[i],angles_corners[i+1],symm)
@@ -211,11 +212,11 @@ mutable struct Defect
     creation_time::Float64
     id_annihilator::Union{Int,Nothing}
 
-    Defect(id,charge,loc,t) = new(id,charge,[loc],nothing,t,nothing)
+    Defect(;id,charge,loc,t) = new(id,charge,[loc],nothing,t,nothing)
 end
 last_loc(d::Defect) = d.hist[end]
 creation_loc(d::Defect) = d.hist[1]
-push_position!(loc,d::Defect) = push!(d.hist,loc)
+push_position!(d::Defect,loc) = push!(d.hist,loc)
 
 mutable struct DefectTracker
     defectsP::Vector{Defect} # the id of a defect is its index in this vector
@@ -256,7 +257,7 @@ end
 
 function pair_up_hungarian(dt::DefectTracker,new,old,lattice::AbstractLattice,charge::String)
     # charge can be either "+" or "-"
-    distance_matrixx = distance_matrix(new,old,L) # m_new lignes, m_old colonnes
+    distance_matrixx = distance_matrix(new,old,lattice) # m_new lignes, m_old colonnes
     proposal         = hungarian(distance_matrixx)[1] # length = length(new)
     assignment       = copy(proposal) # because it will be modified in the next for loop
 
@@ -269,7 +270,7 @@ function pair_up_hungarian(dt::DefectTracker,new,old,lattice::AbstractLattice,ch
     =#
     if charge == "+"
         for i in eachindex(assignment)
-            for j in 1:dt.Np
+            for j in 1:number_defectsP(dt)
                 if assignment[i] ≠ 0 && dt.defectsP[j].annihilation_time == nothing && last_loc(dt.defectsP[j]) == old[proposal[i]]
                     # the first condition is a protection against the creation case, where the Hungarian algo matches the newly created vortex to 0
                     # the second condition ensures that one only considers currently living vortices and not vortices now annihilated
@@ -280,7 +281,7 @@ function pair_up_hungarian(dt::DefectTracker,new,old,lattice::AbstractLattice,ch
         end
     else # if charge  == "-"
         for i in eachindex(assignment)
-            for j in 1:dt.Nm
+            for j in 1:number_defectsN(dt)
                 if assignment[i] ≠ 0 && dt.defectsN[j].annihilation_time == nothing && last_loc(dt.defectsN[j]) == old[proposal[i]]
                     assignment[i] = j
                     break
@@ -334,22 +335,22 @@ function update_and_track(thetas::Matrix{T},model::AbstractModel{T},lattice::Abs
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time
             next_tracking_time += every
-
-            defectsP,defectsN = spot_defects(thetas,model,lattice)
-
             dft.current_time = model.t
-            update_DefectTracker!(dft,thetas,lattice.periodic,defectsP,defectsN)
+            update_DefectTracker!(dft,thetas,model,lattice)
         end
     end
 end
 
-function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},BC,vortices_new::VecTup,antivortices_new::VecTup) where VecTup<:Vector{Tuple{Int,Int,Number}}
+function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
+
+    NB = lattice.periodic
+    vortices_new,antivortices_new = spot_defects(thetas,model,lattice)
 
     # if BC == "periodic" @assert length(vortices_new) == length(antivortices_new) && length(vortices_old) == length(antivortices_old) end
-    locP_old    = [dt.defectsP[i][1:2] for i in each(dt.defectsP)]
-    locN_old    = [dt.defectsN[i][1:2] for i in each(dt.defectsN)]
-    chargeP_old = [dt.defectsP[i][3]   for i in each(dt.defectsP)]
-    chargeN_old = [dt.defectsN[i][3]   for i in each(dt.defectsN)]
+    locP_old    = [last_loc(dt.defectsP[i]) for i in each(dt.defectsP)]
+    locN_old    = [last_loc(dt.defectsN[i]) for i in each(dt.defectsN)]
+    chargeP_old = [dt.defectsP[i].charge    for i in each(dt.defectsP)]
+    chargeN_old = [dt.defectsN[i].charge    for i in each(dt.defectsN)]
 
     locP_new    = [vortices_new[i][1:2]     for i in each(vortices_new)]
     locN_new    = [antivortices_new[i][1:2] for i in each(antivortices_new)]

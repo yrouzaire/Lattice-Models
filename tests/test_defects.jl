@@ -11,5 +11,8 @@ thetas = init_thetas(lattice,params=params)
 defectsP,defectsN = spot_defects(thetas,model,lattice)
 
 dft = DefectTracker(thetas,model,lattice)
-update!(thetas,model,lattice)
-update_DefectTracker(dft,thetas,lattice.periodic,)
+update!(thetas,model,lattice,20)
+defectsP,defectsN = spot_defects(thetas,model,lattice)
+
+update_DefectTracker!(dft,thetas,model,lattice)
+dft.defectsP[1].hist
