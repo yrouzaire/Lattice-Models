@@ -230,7 +230,7 @@ mutable struct DefectTracker
     Nmactive::Int
     defectsP::Vector{Defect} # the id of a defect is its index in this vector
     defectsM::Vector{Defect} # so there is a (+)defect with id=1 AND and a (-)defect with id=1
-    current_time::Int # latest update time (by convention, the creation time of the whole data structure = 0)
+    current_time::Float64 # latest update time (by convention, the creation time of the whole data structure = 0)
 
     function DefectTracker(thetas,model,lattice) # constructor
         vortices,antivortices = spot_defects(thetas,model,lattice)
@@ -361,7 +361,7 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
     return dt
 end
 
-function update_DefectTracker(dt::DefectTracker,thetas::Matrix{Float32},BC,
+function update_DefectTracker(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},BC,
     vortices_new::Vector{Tuple{Int,Int}},antivortices_new::Vector{Tuple{Int,Int}},
     vortices_old::Vector{Tuple{Int,Int}},antivortices_old::Vector{Tuple{Int,Int}},t)
 

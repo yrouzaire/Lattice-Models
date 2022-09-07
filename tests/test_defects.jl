@@ -7,8 +7,8 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 include(srcdir("../parameters.jl"));
 model = XY(params)
 lattice = TriangularLattice(L,periodic=true,single=true)
-thetas = init_thetas(lattice,params=params)
+thetas = init_thetas(model,lattice,params)
 
 dft = DefectTracker(thetas,model,lattice)
-total_tracked(dft)
-defects_active(dft)
+
+update!(thetas,model,lattice)

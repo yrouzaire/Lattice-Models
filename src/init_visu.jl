@@ -17,9 +17,9 @@ function init_thetas(space;params)
         thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,type=type1defect) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
         space.periodic = false
     elseif init == "pair"
-        thetas = create_pair_vortices(L,r0=r0,q=q,type=type2defect)
+        thetas = create_pair_vortices(L,r=r,q=q,type=type2defect)
     elseif init in ["2pairs" , "2pair"]
-        thetas = create_2pairs_vortices(L,r0=r0,q=q,type=type2defect)
+        thetas = create_2pairs_vortices(L,r=r,q=q,type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
     if isa(model,MovingXY) make_holes!(thetas,rho) end
