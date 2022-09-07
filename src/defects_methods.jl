@@ -39,11 +39,11 @@ function get_vorticity(thetasmodpi::Matrix{T},model::AbstractModel{T},lattice::A
     return charge
 end
 
-function spot_defects(thetas,model::AbstractModel,lattice::AbstractLattice)
+function spot_defects(thetas,model::AbstractModel{T},lattice::AbstractLattice; seuil=4) where T<:AbstractFloat
     L = lattice.L
     if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
-    list_vortices_plus  = Tuple{Int,Int}[]
-    list_vortices_minus = Tuple{Int,Int}[]
+    vortices_plus  = Tuple{Int,Int,T}[]
+    vortices_minus = Tuple{Int,Int,T}[]
 
     #= Relaxation of a fictitious system (it won't evolve the actual system)
     at 0 temperature so that vortices are easier to detect (no spurious doubles because of temperature variations)
@@ -58,53 +58,48 @@ function spot_defects(thetas,model::AbstractModel,lattice::AbstractLattice)
     for i in range_bc
         for j in range_bc
             q = get_vorticity(thetasmodpi,model,lattice,i,j)
-            if     q > + 0.1 push!(list_vortices_plus,(i,j)) # we want to keep ±½ defects, and not rounding errors
-            elseif q < - 0.1 push!(list_vortices_minus,(i,j))
+            if     q > + 0.1 push!(vortices_plus,(i,j,q)) # we want to keep ±½ defects, and not rounding errors
+            elseif q < - 0.1 push!(vortices_minus,(i,j,q))
             end
         end
     end
     #= In this list, there might be doubles/triples (2/3 locations for the
     same physical vortex). We thus seek for numerically identified vortices
     which are neighbours and with the same charge to delete them. =#
+    vortices_to_keep_plus  = vortices_to_keep(vortices_plus,lattice,seuil)
+    vortices_to_keep_minus = vortices_to_keep(vortices_minus,lattice,seuil)
 
-    seuil = 4
+    # return vortices_plus,vortices_minus
+    return vortices_plus[vortices_to_keep_plus],vortices_minus[vortices_to_keep_minus]
+end
 
-    elements_to_keep_minus = trues(length(list_vortices_minus))
-    for i in 2:length(list_vortices_minus)
+function vortices_to_keep(vortices,lattice,seuil)
+    elements_to_keep = trues(length(vortices))
+    for i in 2:length(vortices)
         for j in 1:i-1
-            if dist(lattice,list_vortices_minus[i],list_vortices_minus[j]) ≤ seuil
-                elements_to_keep_minus[i] = false
+            if dist(lattice,vortices[i][1:2],vortices[j][1:2]) ≤ seuil
+                elements_to_keep[i] = false
                 # break # will only break the inner for loop and continue the outer one
             end
         end
     end
-    elements_to_keep_plus  = trues(length(list_vortices_plus))
-    for i in 2:length(list_vortices_plus)
-        for j in 1:i-1
-            if dist(lattice,list_vortices_plus[i],list_vortices_plus[j]) ≤ seuil
-                elements_to_keep_plus[i] = false
-                # break # will only break the inner for loop and continue the outer one
-            end
-        end
-    end
-    # return list_vortices_plus,list_vortices_minus
-    return list_vortices_plus[elements_to_keep_plus],list_vortices_minus[elements_to_keep_minus]
+    return elements_to_keep
 end
 
-function spot_single_default_global(thetas::Matrix{T},model,lattice)::Tuple{Tuple{Int16,Int16},T} where T<:AbstractFloat
-    L = size(thetas)[1]
-    list_defaults = Tuple{Int16,Int16,T}[]
-    for i in 2:L-1
-        for j in 2:L-1
-            q = get_vorticity(thetas,model,lattice,i,j)
-            if abs(q) > 0.1 # to avoid rounding errors
-                push!(list_defaults,(i,j,q))
-            end
-        end
-    end
-    @assert length(list_defaults) == 1
-    return list_defaults[1][1:2],list_defaults[1][3]
-end
+# function spot_single_default_global(thetas::Matrix{T},model::AbstractModel,lattice::AbstractLattice)::Tuple{Tuple{Int16,Int16},T} where T<:AbstractFloat
+#     L = size(thetas)[1]
+#     list_defaults = Tuple{Int16,Int16,T}[]
+#     for i in 2:L-1
+#         for j in 2:L-1
+#             q = get_vorticity(thetas,model,lattice,i,j)
+#             if abs(q) > 0.1 # to avoid rounding errors
+#                 push!(list_defaults,(i,j,q))
+#             end
+#         end
+#     end
+#     @assert length(list_defaults) == 1
+#     return list_defaults[1][1:2],list_defaults[1][3]
+# end
 
 
 #is it even useful now ?
@@ -210,82 +205,53 @@ end
 ## Defect Tracking (with a lot of defects, creation and annihilation)
 mutable struct Defect
     id::Int
-    charge::Float32
-    hist::Vector{Tuple{Float32,Float32}}
-    annihilation_time::Union{Nothing,Int}
-    creation_time::Int
-    id_annihilator::Union{Nothing,Int}
+    charge::Number
+    hist::Vector{Tuple{Number,Number}}
+    annihilation_time::Union{Float64,Nothing}
+    creation_time::Float64
+    id_annihilator::Union{Int,Nothing}
 
-    function Defect(;id,charge,loc,t) # constructor
-        new(id,charge,[loc],nothing,t,nothing)
-    end
+    Defect(id,charge,loc,t) = new(id,charge,[loc],nothing,t,nothing)
 end
-    function last_loc(d::Defect)     return d.hist[end] end
-    function creation_loc(d::Defect) return d.hist[1] end
+last_loc(d::Defect) = d.hist[end]
+creation_loc(d::Defect) = d.hist[1]
+push_position!(loc,d::Defect) = push!(d.hist,loc)
 
 mutable struct DefectTracker
-    Np::Int # length = number of (+) defects
-    Nm::Int # length = number of (-) defects
-    Npactive::Int
-    Nmactive::Int
     defectsP::Vector{Defect} # the id of a defect is its index in this vector
-    defectsM::Vector{Defect} # so there is a (+)defect with id=1 AND and a (-)defect with id=1
+    defectsN::Vector{Defect} # so there is a (+)defect with id=1 AND and a (-)defect with id=1
     current_time::Float64 # latest update time (by convention, the creation time of the whole data structure = 0)
 
     function DefectTracker(thetas,model,lattice) # constructor
         vortices,antivortices = spot_defects(thetas,model,lattice)
-        Np = length(vortices) ; Nm = length(antivortices)
-        new(Np,Nm,Np,Nm,[Defect(id=i,charge=+1/2,loc=vortices[i],t=model.t) for i in 1:Np],[Defect(id=i,charge=-1/2,loc=antivortices[i],t=model.t) for i in 1:Nm],model.t)
+        defectsP = [Defect(id=i,charge=vortices[i][3],loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
+        defectsN = [Defect(id=i,charge=antivortices[i][3],loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
+        new(defectsP,defectsN,model.t)
     end
 end
+number_defectsP(dt::DefectTracker) = length(dt.defectsP)
+number_defectsN(dt::DefectTracker) = length(dt.defectsN)
+number_defects(dt::DefectTracker)  = length(dt.defectsN)  + length(dt.defectsN)
+number_active_defectsP(dt::DefectTracker) = count(isnothing,[d.annihilation_time for d in dt.defectsP])
+number_active_defectsN(dt::DefectTracker) = count(isnothing,[d.annihilation_time for d in dt.defectsN])
+number_active_defects(dt::DefectTracker)  = number_active_defectsN(dt) + number_active_defectsP(dt)
 
-function total_tracked(dt::DefectTracker) return dt.Np + dt.Nm end
-
-function SD(dt::DefectTracker,L)
-        lengthsP  = [length(dt.defectsP[n].hist) for n in 1:dt.Np]
-        lengthsM  = [length(dt.defectsM[n].hist) for n in 1:dt.Nm]
-        maxlength = maximum(vcat(lengthsP,lengthsM))
-        SDp = NaN*zeros(dt.Np,maxlength) # square displacement for positive defects
-        SDm = NaN*zeros(dt.Nm,maxlength) # square displacement for negative defects
-
-        for n in 1:dt.Np
-            SDp[n,1:lengthsP[n]] = ([dist(dt.defectsP[n].hist[i] , creation_loc(dt.defectsP[n]),L,squared=true) for i in 1:lengthsP[n]])
-            # SDp[n,1:lengthsP[n]] = reverse([dist(dt.defectsP[n].hist[i] , last_loc(dt.defectsP[n]),L,squared=true) for i in 1:lengthsP[n]])
-        end
-        for n in 1:dt.Nm
-            SDm[n,1:lengthsM[n]] = ([dist(dt.defectsM[n].hist[i] , creation_loc(dt.defectsM[n]),L,squared=true) for i in 1:lengthsM[n]])
-            # SDm[n,1:lengthsM[n]] = reverse([dist(dt.defectsM[n].hist[i] , last_loc(dt.defectsM[n]),L,squared=true) for i in 1:lengthsM[n]])
-        end
-
-
-        MSDp = nanmean(SDp,1)[1,:]
-        MSDm = nanmean(SDm,1)[1,:]
-        MSD  = (MSDm .+ MSDp)/2
-
-        return SDp,SDm,MSDp,MSDm,MSD
+function ID_active_defects(dt::DefectTracker)
+    activeP = Int[]
+    for i in 1:number_defectsP(dt)
+        if dt.defectsP[i].annihilation_time == nothing push!(activeP,i) end
     end
-
-function add_defect!(dt::DefectTracker;charge,loc,t)
-    if charge > 0
-        dt.Np += 1
-        push!(dt.defectsP,Defect(id=dt.Np,charge=charge,loc=loc,t=t))
-    else
-        dt.Nm += 1
-        push!(dt.defectsM,Defect(id=dt.Nm,charge=charge,loc=loc,t=t))
+    activeP = Int[]
+    for i in 1:number_defectsN(dt)
+        if dt.defectsN[i].annihilation_time == nothing push!(activeN,i) end
     end
+    return activeP,activeN
 end
 
-function defects_active(dt::DefectTracker)
-    P = [] ; M = []
-    for n in 1:dt.Np
-        defect = dt.defectsP[n]
-        if defect.annihilation_time == nothing push!(P,defect) end
+function add_defect!(dt::DefectTracker;charge,loc)
+    if charge > 0 push!(dt.defectsP,Defect(id=1+number_defectsP(dt),charge=charge,loc=loc,t=dt.current_time))
+    else          push!(dt.defectsN,Defect(id=1+number_defectsN(dt),charge=charge,loc=loc,t=dt.current_time))
     end
-    for n in 1:dt.Nm
-        defect = dt.defectM[n]
-        if defect.annihilation_time == nothing push!(P,defect) end
-    end
-    return P,M,length(P)+length(M)
 end
 
 function pair_up_hungarian(dt::DefectTracker,new,old,L,charge)
@@ -314,7 +280,7 @@ function pair_up_hungarian(dt::DefectTracker,new,old,L,charge)
     else # if charge < 0
         for i in eachindex(assignment)
             for j in 1:dt.Nm
-                if assignment[i] ≠ 0 && dt.defectsM[j].annihilation_time == nothing && last_loc(dt.defectsM[j]) == old[proposal[i]]
+                if assignment[i] ≠ 0 && dt.defectsN[j].annihilation_time == nothing && last_loc(dt.defectsN[j]) == old[proposal[i]]
                     assignment[i] = j
                     break
                 end
@@ -326,9 +292,9 @@ end
 
 function find_closest_before_annihilation(dt,old_loc_defect,L)
     distance = Inf ; ID_antidefect = -1 # dummy
-    for i in each(dt.defectsM)
-        if dt.defectsM[i].annihilation_time == dt.current_time # it has just annihilated
-            tmp = dist(old_loc_defect,last_loc(dt.defectsM[i]),L)
+    for i in each(dt.defectsN)
+        if dt.defectsN[i].annihilation_time == dt.current_time # it has just annihilated
+            tmp = dist(old_loc_defect,last_loc(dt.defectsN[i]),L)
             if tmp < distance
                 distance = tmp
                 ID_antidefect = i
@@ -336,11 +302,10 @@ function find_closest_before_annihilation(dt,old_loc_defect,L)
         end
     end
     if ID_antidefect == -1
-        println([dt.defectsM[i].annihilation_time == dt.current_time for i in 1:dt.Nm])
+        println([dt.defectsN[i].annihilation_time == dt.current_time for i in 1:dt.Nm])
     end
-    return ID_antidefect,last_loc(dt.defectsM[ID_antidefect])
+    return ID_antidefect,last_loc(dt.defectsN[ID_antidefect])
 end
-
 
 # estimation_location_annihilation() has been replaced by mean_2_positions()
 function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
@@ -349,60 +314,78 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
         ID_antivortex,old_loc_antivortex = find_closest_before_annihilation(dt,old_loc_vortex,L)
 
         dt.defectsP[i].id_annihilator = ID_antivortex
-        dt.defectsM[ID_antivortex].id_annihilator = i
+        dt.defectsN[ID_antivortex].id_annihilator = i
 
         # dt.defectsP[i].annihilation_time = dt.current_time
-        # dt.defectsM[ID_antivortex].annihilation_time = dt.current_time
+        # dt.defectsN[ID_antivortex].annihilation_time = dt.current_time
 
         estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,L)
         push!(dt.defectsP[i].hist,estimate)
-        push!(dt.defectsM[ID_antivortex].hist,estimate)
+        push!(dt.defectsN[ID_antivortex].hist,estimate)
     end
     return dt
 end
 
 
+function update_and_track(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,dft::DefectTracker,tmax::Number,every::Number) where T<:AbstractFloat
+    next_tracking_time = model.t
+    while model.t < tmax
+        update!(thetas,model,lattice)
+        if model.t ≥ next_tracking_time
+            next_tracking_time += every
 
-function update_DefectTracker(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},BC,
-    vortices_new::Vector{Tuple{Int,Int}},antivortices_new::Vector{Tuple{Int,Int}},
-    vortices_old::Vector{Tuple{Int,Int}},antivortices_old::Vector{Tuple{Int,Int}},t)
+            defectsP,defectsN = spot_defects(thetas,model,lattice)
 
-    dt.current_time = t
+            dft.current_time = model.t
+            update_DefectTracker!(dft,thetas,lattice.periodic,defectsP,defectsN)
+        end
+    end
+end
+
+function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},BC,vortices_new::VecTup,antivortices_new::VecTup) where VecTup<:Vector{Tuple{Int,Int,Number}}
 
     # if BC == "periodic" @assert length(vortices_new) == length(antivortices_new) && length(vortices_old) == length(antivortices_old) end
-    Np_new,Np_old = length(vortices_new),length(vortices_old)
-    Nm_new,Nm_old = length(antivortices_new),length(antivortices_old)
-    N_old = Np_old + Nm_old ; N_new = Np_new + Nm_new
+    locP_old    = [dt.defectsP[i][1:2] for i in each(dt.defectsP)]
+    locN_old    = [dt.defectsN[i][1:2] for i in each(dt.defectsN)]
+    chargeP_old = [dt.defectsP[i][3]   for i in each(dt.defectsP)]
+    chargeN_old = [dt.defectsN[i][3]   for i in each(dt.defectsN)]
 
-    dt.Npactive = Np_new
-    dt.Nmactive = Nm_new
+    locP_new    = [vortices_new[i][1:2]     for i in each(vortices_new)]
+    locN_new    = [antivortices_new[i][1:2] for i in each(antivortices_new)]
+    chargeP_new = [vortices_new[i][3]       for i in each(vortices_new)]
+    chargeN_new = [antivortices_new[i][3]   for i in each(antivortices_new)]
+
+    Np_new,Np_old = length(locP_new),length(locP_old)
+    Nn_new,Nn_old = length(locN_new),length(locN_old)
+    N_old = Np_old + Nn_old
+    N_new = Np_new + Nn_new
 
     # Special simple cases to deal with upstream
     if N_new == N_old == 0 # do nothing, otherwise, "reducing over empty collection blablabla"
 
-    elseif Nm_new == Nm_old == 0 && Np_new == Np_old > 0 # there are only (+) defects and no creation/annihilation
-        assignment_vortices = pair_up_hungarian(dt,vortices_new,vortices_old,L,+1/2)
-        for i in 1:Np_new push!(dt.defectsP[assignment_vortices[i]].hist,vortices_new[i]) end
+    elseif Nn_new == Nn_old == 0 && Np_new == Np_old > 0 # there are only (+) defects and no creation/annihilation
+        assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,L,+1/2) # the 1/2 is a dummy, the only important info is the sign of the charge
+        for i in 1:Np_new push_position!(dt.defectsP[assignment_vortices[i]],locP_new[i]) end
 
     elseif Np_new == Np_old == 0 && Nm_new == Nm_old > 0 # there are only (-) defects and no creation/annihilation
-        assignment_antivortices = pair_up_hungarian(dt,antivortices_new,antivortices_old,L,-1/2)
-        for i in 1:Nm_new push!(dt.defectsM[assignment_antivortices[i]].hist,antivortices_new[i]) end
+        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,L,-1/2) # the 1/2 is a dummy, the only important info is the sign of the charge
+        for i in 1:Nm_new push_position!(dt.defectsN[assignment_antivortices[i]],locN_new[i]) end
 
     elseif N_new > 0 && N_old == 0
-        for i in 1:Np_new add_defect(dt,charge=+1/2,loc=vortices_new[i],t=t) end
-        for i in 1:Nm_new add_defect(dt,charge=-1/2,loc=antivortices_new[i],t=t) end
+        for i in 1:Np_new add_defect!(dt,charge=chargeP_new[i],loc=locP_new[i]) end
+        for i in 1:Nm_new add_defect!(dt,charge=chargeN_new,loc=locN_new[i]) end
 
     elseif N_new == 0 && N_old > 0 # (+)(-) >> plus rien
-        id_just_annihilated_defectP,id_just_annihilated_defectM,~ = defects_alive(dt) # seek for not yet annihilated defects
+        id_just_annihilated_defectP,id_just_annihilated_defectM,~ = ID_active_defects(dt) # seek for not yet annihilated defects
         for i in id_just_annihilated_defectP dt.defectsP[i].annihilation_time = t end
-        for i in id_just_annihilated_defectM dt.defectsM[i].annihilation_time = t end
+        for i in id_just_annihilated_defectM dt.defectsN[i].annihilation_time = t end
         # annihilation_time is already taken care of in the annihilate_defects function
         dt = annihilate_defects(dt::DefectTracker,id_just_annihilated_defectP,L)
 
     elseif Np_new > 0 && Np_old > 0 && Nm_old > 0 && Nm_new == 0  # (+)(+)(-) >> (+) par exemple
-        assignment_vortices = pair_up_hungarian(dt,vortices_new,vortices_old,L,+1/2)
+        assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,L,+1/2)
         # Update living vortices. NB : the annihilated vortex is absent from the assignment vector : proceed without the condition "≠ 0"
-        for i in eachindex(assignment_vortices) push!(dt.defectsP[assignment_vortices[i]].hist,vortices_new[i]) end
+        for i in eachindex(assignment_vortices) push_position!(dt.defectsP[assignment_vortices[i]],locP_new[i]) end
         # Identify annihilated defects
         ID_annihilated_vortices = [] ; ID_annihilated_antivortices = []
         for i in 1:dt.Np
@@ -410,67 +393,68 @@ function update_DefectTracker(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},
                 push!(ID_annihilated_vortices,i)
             end
         end
-        ID_annihilated_antivortices = defects_alive(dt)[2] # in this special case, there is no antivortices left in the "new" timestep
+        ID_annihilated_antivortices = ID_active_defects(dt)[2] # in this special case, there is no antivortices left in the "new" timestep
 
         for i in ID_annihilated_vortices     dt.defectsP[i].annihilation_time = t end
-        for i in ID_annihilated_antivortices dt.defectsM[i].annihilation_time = t end
+        for i in ID_annihilated_antivortices dt.defectsN[i].annihilation_time = t end
         dt = annihilate_defects(dt,ID_annihilated_vortices,L)
 
     elseif Nm_new > 0 && Nm_old > 0 && Np_old > 0 && Np_new == 0  # (+)(-)(-) >> (-) par exemple
-        assignment_antivortices = pair_up_hungarian(dt,antivortices_new,antivortices_old,L,-1/2)
+        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,L,-1/2)
         # Update living antivortices. NB : the annihilated antivortex is absent from the assignment vector : proceed without the condition "≠ 0"
-        for i in eachindex(assignment_antivortices) push!(dt.defectsM[assignment_antivortices[i]].hist,antivortices_new[i]) end
+        for i in eachindex(assignment_antivortices) push_position!(dt.defectsN[assignment_antivortices[i]],locN_new[i]) end
         # Identify annihilated defects
         ID_annihilated_vortices = [] ; ID_annihilated_antivortices = []
         for i in 1:dt.Nm
-            if i ∉ assignment_antivortices && dt.defectsM[i].annihilation_time == nothing # a vortex has just annihilated if its ID is not in the assignment list AND if its annihilation time is still "nothing"
+            if i ∉ assignment_antivortices && dt.defectsN[i].annihilation_time == nothing # a vortex has just annihilated if its ID is not in the assignment list AND if its annihilation time is still "nothing"
                 push!(ID_annihilated_antivortices,i)
             end
         end
-        ID_annihilated_vortices = defects_alive(dt)[1] # in this special case, there is no vortices left in the "new" timestep
+        ID_annihilated_vortices = ID_active_defects(dt)[1] # in this special case, there is no vortices left in the "new" timestep
 
         for i in ID_annihilated_vortices     dt.defectsP[i].annihilation_time = t end
-        for i in ID_annihilated_antivortices dt.defectsM[i].annihilation_time = t end
+        for i in ID_annihilated_antivortices dt.defectsN[i].annihilation_time = t end
 
         dt = annihilate_defects(dt,ID_annihilated_vortices,L)
     else # end of special cases
+
     # GENERAL TREATMENT
-        assignment_vortices     = pair_up_hungarian(dt,vortices_new,vortices_old,L,+1/2)
-        assignment_antivortices = pair_up_hungarian(dt,antivortices_new,antivortices_old,L,-1/2)
+        assignment_vortices     = pair_up_hungarian(dt,locP_new,locP_old,L,+1/2)
+        assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,L,-1/2)
 
         # CASE 1 : no creation, no annihilation : simply update the data structure
         if N_new == N_old
-            for i in 1:Np_new push!(dt.defectsP[assignment_vortices[i]].hist,vortices_new[i]) end
-            for i in 1:Nm_new push!(dt.defectsM[assignment_antivortices[i]].hist,antivortices_new[i]) end
+            for i in 1:Np_new push_position!(dt.defectsP[assignment_vortices[i]],locP_new[i]) end
+            for i in 1:Nm_new push_position!(dt.defectsN[assignment_antivortices[i]],locN_new[i]) end
 
         # CASE 2 : creation !
     elseif N_new > N_old
             # Take care of the newly created defects
             ind_created_vortex = findall(iszero,assignment_vortices) # newly created vortex -> the assignment vector contains a 0
             loc_created_vortex = vortices_new[ind_created_vortex]
-            for j in each(loc_created_vortex) add_defect(dt,charge=+1/2,loc=loc_created_vortex[j],t=t) end
+            for j in each(loc_created_vortex) add_defect!(dt,charge=chargeP_new,loc=loc_created_vortex[j]) end
 
             ind_created_antivortex = findall(iszero,assignment_antivortices)
             loc_created_antivortex = antivortices_new[ind_created_antivortex]
-            for j in each(loc_created_antivortex) add_defect(dt,charge=-1/2,loc=loc_created_antivortex[j],t=t) end
+            for j in each(loc_created_antivortex) add_defect!(dt,charge=chargeN_new,loc=loc_created_antivortex[j]) end
 
             # Update the ancient defects' positions
             for i in eachindex(assignment_vortices)
                 if assignment_vortices[i] ≠ 0 # avoid newly created defects
-                    push!(dt.defectsP[assignment_vortices[i]].hist,vortices_new[i])
+                    push_position!(dt.defectsP[assignment_vortices[i]],locP_new[i])
                 end
             end
             for i in eachindex(assignment_antivortices)
                 if assignment_antivortices[i] ≠ 0 # avoid newly created defects
-                    push!(dt.defectsM[assignment_antivortices[i]].hist,antivortices_new[i])
+                    push_position!(dt.defectsN[assignment_antivortices[i]],locN_new[i])
                 end
             end
 
         # CASE 3 : annihilation !
     elseif N_new < N_old
              # Update living vortices. NB : the annihilated vortex is absent from the assignment vector : proceed without the condition "≠ 0"
-             for i in eachindex(assignment_vortices)     push!(dt.defectsP[assignment_vortices[i]].hist,vortices_new[i]) end
-             for i in eachindex(assignment_antivortices) push!(dt.defectsM[assignment_antivortices[i]].hist,antivortices_new[i]) end
+             for i in eachindex(assignment_vortices)     push_position!(dt.defectsP[assignment_vortices[i]],locP_new[i]) end
+             for i in eachindex(assignment_antivortices) push_position!(dt.defectsN[assignment_antivortices[i]],locN_new[i]) end
 
             # Identify annihilated defects
             ID_annihilated_vortices = [] ; ID_annihilated_antivortices = []
@@ -481,8 +465,8 @@ function update_DefectTracker(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},
                 end
             end
             for i in 1:dt.Nm
-                if i ∉ assignment_antivortices && dt.defectsM[i].annihilation_time == nothing
-                    dt.defectsM[i].annihilation_time = t
+                if i ∉ assignment_antivortices && dt.defectsN[i].annihilation_time == nothing
+                    dt.defectsN[i].annihilation_time = t
                     push!(ID_annihilated_antivortices,i)
                 end
             end
@@ -493,6 +477,30 @@ function update_DefectTracker(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},
     end # end of special cases & general treatment
     return dt
 end
+
+# function SD(dt::DefectTracker,L)
+#     lengthsP  = [length(dt.defectsP[n].hist) for n in 1:dt.Np]
+#     lengthsM  = [length(dt.defectsN[n].hist) for n in 1:dt.Nm]
+#     maxlength = maximum(vcat(lengthsP,lengthsM))
+#     SDp = NaN*zeros(dt.Np,maxlength) # square displacement for positive defects
+#     SDm = NaN*zeros(dt.Nm,maxlength) # square displacement for negative defects
+#
+#     for n in 1:dt.Np
+#         SDp[n,1:lengthsP[n]] = ([dist(dt.defectsP[n].hist[i] , creation_loc(dt.defectsP[n]),L,squared=true) for i in 1:lengthsP[n]])
+#         # SDp[n,1:lengthsP[n]] = reverse([dist(dt.defectsP[n].hist[i] , last_loc(dt.defectsP[n]),L,squared=true) for i in 1:lengthsP[n]])
+#     end
+#     for n in 1:dt.Nm
+#         SDm[n,1:lengthsM[n]] = ([dist(dt.defectsN[n].hist[i] , creation_loc(dt.defectsN[n]),L,squared=true) for i in 1:lengthsM[n]])
+#         # SDm[n,1:lengthsM[n]] = reverse([dist(dt.defectsN[n].hist[i] , last_loc(dt.defectsN[n]),L,squared=true) for i in 1:lengthsM[n]])
+#     end
+#
+#
+#     MSDp = nanmean(SDp,1)[1,:]
+#     MSDm = nanmean(SDm,1)[1,:]
+#     MSD  = (MSDm .+ MSDp)/2
+#
+#     return SDp,SDm,MSDp,MSDm,MSD
+# end
 
 ## Small helpful methods for scripts
 function number_defects(model::AbstractModel,lattice::AbstractLattice)
