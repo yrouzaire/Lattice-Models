@@ -8,7 +8,7 @@ include(srcdir("../parameters.jl"));
 model = XY(params)
 lattice = TriangularLattice(L,periodic=true,single=true)
 thetas = init_thetas(lattice,params=params)
-spot_defects(thetas,model,lattice)
+defectsP,defectsN = spot_defects(thetas,model,lattice)
 
 dft = DefectTracker(thetas,model,lattice)
 update!(thetas,model,lattice)
