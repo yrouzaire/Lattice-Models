@@ -75,5 +75,5 @@ function VisionXY(params)
 
     if vision ≠ 2π @assert symmetry == "polar" "I am not sure how to interpret a vision cone with nematic symmetry" end
 
-    return VisionXY{float_type}(T,vision,symmetry,dt,float_type(0))
+    return VisionXY{float_type}(T,vision,symmetry,dt,zero(float_type))
 end
