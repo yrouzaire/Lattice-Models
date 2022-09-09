@@ -7,7 +7,7 @@ Var = 0.2
 A = 1.
 vision = 5π/3
 rho = 0.95
-antiferro = true
+algo = "A"
 
 # Numerical Parameters
 dt = 1E-2
@@ -22,7 +22,7 @@ type1defect = "divergent"
 type2defect = ["sink" , "convergent"]
 
 # Containers
-params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"antiferro"=>antiferro)
+params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"algo"=>algo)
 params_num  = Dict("dt"=>dt,"float_type"=>float_type,"width_proposal"=>width_proposal)
 params_init = Dict("init"=>init,"q"=>q,"r0"=>r0,"type1defect"=>type1defect,"type2defect"=>type2defect)
 

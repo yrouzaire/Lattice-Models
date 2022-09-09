@@ -219,29 +219,26 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLatti
 end
 
 function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
-    # Part 1: Align or antialign
-    if model.antiferro
-        proposal_1a = model.width_proposal*randn(FT)+theta1
-        ccos = cos(theta1 - theta2)
-        if ccos > 0
-             J = +1 # ferro
-        else J = -1 # antiferro
-        end
-        dE = -J*(cos(theta1 - proposal_1a) - ccos)
-        if rand() < exp(-dE/model.T) # Metropolis Monte Carlo
-            @inbounds thetas[pos1...] = proposal_1a
-            theta1 = proposal_1a
-        end
-    end
-    i,j = pos1
-    proposal_1b = model.width_proposal*randn(FT)+theta1
-    sum1 = proposal_1b + theta1
-    neighbours_1 = 2get_neighbours(thetas,model,lattice,i,j,bulk)
-    @fastmath dE = sin(proposal_1b - theta1)*sum(sin,sum1 .- neighbours_1)
-    if rand() < exp(-dE/model.T)
-        @inbounds thetas[i,j] = proposal_1b
-    end
 
+    proposal = model.width_proposal*randn(FT)+theta1
+    if model.algo == "A" # Model A. Align nematically with all NN
+        i,j = pos1
+        neighbours = 2get_neighbours(thetas,model,lattice,i,j,bulk)
+        dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
+        # dE = sin(proposal - theta1) * sum(sin,proposal + theta1 .- neighbours ) # should be computationally faster
+    elseif model.algo == "B" # align nematically wrt collided spin
+        dE = -1/2 * ( cos(2(theta2 - proposal)) - cos(2(theta2 - theta1)))
+    elseif model.algo == "C" # align F/AF wrt collided spin
+        ccos = cos(theta1 - theta2)
+        if ccos > 0  J = +1.0 # ferro
+        else J = -1.0 # antiferro
+        end
+        dE = -J*(cos(theta1 - proposal) - ccos)
+    else error("Unknown Model")
+    end
+    if rand() < exp(-dE/model.T) # Metropolis Monte Carlo
+        @inbounds thetas[pos1...] = proposal
+    end
     return thetas
 end
 

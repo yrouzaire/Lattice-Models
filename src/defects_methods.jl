@@ -277,6 +277,13 @@ number_active_defectsP(dt::DefectTracker) = count(isnothing,[d.annihilation_time
 number_active_defectsN(dt::DefectTracker) = count(isnothing,[d.annihilation_time for d in dt.defectsN])
 number_active_defects(dt::DefectTracker)  = number_active_defectsN(dt) + number_active_defectsP(dt)
 
+function t_bounds(dft::DefectTracker)
+    alldefects = vcat(dft.defectsP,dft.defectsN)
+    tmin = minimum([d.creation_time for d in alldefects])
+    tmax = maximum([d.annihilation_time for d in alldefects])
+    return tmin, tmax
+end
+
 function ID_active_defects(dt::DefectTracker)
     activeP = Int[]
     for i in 1:number_defectsP(dt)
@@ -543,30 +550,41 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
     return dt
 end
 
-# function SD(dt::DefectTracker,L)
-#     lengthsP  = [length(dt.defectsP[n].hist) for n in 1:dt.Np]
-#     lengthsM  = [length(dt.defectsN[n].hist) for n in 1:dt.Nm]
-#     maxlength = maximum(vcat(lengthsP,lengthsM))
-#     SDp = NaN*zeros(dt.Np,maxlength) # square displacement for positive defects
-#     SDm = NaN*zeros(dt.Nm,maxlength) # square displacement for negative defects
-#
-#     for n in 1:dt.Np
-#         SDp[n,1:lengthsP[n]] = ([dist(dt.defectsP[n].hist[i] , creation_loc(dt.defectsP[n]),L,squared=true) for i in 1:lengthsP[n]])
-#         # SDp[n,1:lengthsP[n]] = reverse([dist(dt.defectsP[n].hist[i] , last_loc(dt.defectsP[n]),L,squared=true) for i in 1:lengthsP[n]])
-#     end
-#     for n in 1:dt.Nm
-#         SDm[n,1:lengthsM[n]] = ([dist(dt.defectsN[n].hist[i] , creation_loc(dt.defectsN[n]),L,squared=true) for i in 1:lengthsM[n]])
-#         # SDm[n,1:lengthsM[n]] = reverse([dist(dt.defectsN[n].hist[i] , last_loc(dt.defectsN[n]),L,squared=true) for i in 1:lengthsM[n]])
-#     end
-#
-#
-#     MSDp = nanmean(SDp,1)[1,:]
-#     MSDm = nanmean(SDm,1)[1,:]
-#     MSD  = (MSDm .+ MSDp)/2
-#
-#     return SDp,SDm,MSDp,MSDm,MSD
-# end
+function MSD(dft::DefectTracker,model::AbstractModel,lattice::AbstractLattice)
+    nP = number_defectsP(dft)
+    nN = number_defectsN(dft)
+    tmin,tmax = t_bounds(dft) # (tmin,tmax) = timestamps of (first defect creation , last defect annihilation)
 
+    hasfield(typeof(model),:dt) ? dummy_dt = model.dt : dummy_dt = 1
+
+    # Compute the SD
+    SD_P = NaN*zeros(nP,Int(tmax))
+    SD_N = NaN*zeros(nN,Int(tmax))
+    for n in 1:nP
+        defect = dft.defectsP[n]
+        index_creation = round(Int,defect.creation_time/dummy_dt)
+        index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
+        SD_P[n,index_creation:index_annihilation] = square_displacement(defect,lattice)
+    end
+    for n in 1:nN
+        defect = dft.defectsN[n]
+        index_creation = round(Int,defect.creation_time/dummy_dt)
+        index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
+        SD_N[n,index_creation:index_annihilation] = square_displacement(defect,lattice)
+    end
+
+    # Now average to compute the MSD
+    MSD_P = nanmean(SD_P,1)[1,:]
+    MSD_N = nanmean(SD_N,1)[1,:]
+    MSD_N = nanmean(hcat(SD_M,SD_N),1)[1,:]
+
+    return MSD, MSD_P, MSD_N
+end
+
+function square_displacement(d::Defect,lattice::AbstractLattice)
+    loc_t0 = creation_loc(d)
+    return [dist(lattice,pos,loc_t0) for loc in d.hist]
+end
 ## Small helpful methods for scripts
 function number_defects(model::AbstractModel,lattice::AbstractLattice)
     a,b = spot_defects(thetas,T,BC)

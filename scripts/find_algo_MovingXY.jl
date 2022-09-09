@@ -6,22 +6,37 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 ## Parameters
 include(srcdir("../parameters.jl"));
 
-#= Tests that the algo has to pass
+#= Qualitative tests that the algo has to pass
 1. Numerical Stability from lowtemp
 2. Numerical Stability from lowtemp_nematic
 3. Good Looking for XY limit from hightemp
 4. Good Looking for nematic defects (comet shaped and triangle)
 =#
 
+#= Quantitative tests that the algo has to pass
+1. XY T_kt=0.45 and C(r,t)
+2.
+=#
+
+#= Summary of Algorithms
+A. Upon collision, align nematically wrt all NN.
+B. Upon collision, align nematically wrt collided spin
+C. Upon collision, align F/AF wrt collided spin
+In all cases,
+    - only the colliding spin is updated.
+    - the proposal is taken from a gaussian centered on the current orientation
+    - the proposal is accepted with Metropolis proba (to ensure a well controlled limit at eq)
+=#
+
 ## Test 1 Numerical Stability from lowtemp
 params["init"] = "lowtemp"
-    params["antiferro"] = false
+    params["algo"] = "B"
     params["q"] = -1/2
-    params["width_proposal"] = 0.1
+    params["width_proposal"] = 0.05
     params["symmetry"] = "nematic"
 
-model = XY(params)
+model = MovingXY(params)
     lattice = TriangularLattice(L,periodic=true)
     thetas = init_thetas(lattice,params=params)
-    update!(thetas,model,lattice,1)
+    update!(thetas,model,lattice,500)
     plot_thetas(thetas,model,lattice,defects=true)
