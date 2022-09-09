@@ -11,7 +11,7 @@ include(srcdir("../parameters.jl"));
     dft = DefectTracker(thetas,model,lattice)
 
     # update_and_track!(thetas,model,lattice,dft,50,.1)
-    update_and_track_plot!(thetas,model,lattice,dft,50,20,defects=true)
+    update_and_track_plot!(thetas,model,lattice,dft,500,10,defects=true)
 
 number_active_defects(dft)
 last_loc(dft.defectsN[1])
