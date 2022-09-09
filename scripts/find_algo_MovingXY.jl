@@ -23,5 +23,5 @@ params["init"] = "lowtemp"
 model = XY(params)
     lattice = TriangularLattice(L,periodic=true)
     thetas = init_thetas(lattice,params=params)
-    update!(thetas,model,lattice,100)
+    update!(thetas,model,lattice,1)
     plot_thetas(thetas,model,lattice,defects=true)

@@ -21,7 +21,7 @@ function XY(params)
     @unpack T,symmetry,dt,float_type,rho = params
     T,dt,rho = convert.(float_type,(T,dt,rho))
 
-    return XY{float_type}(T,symmetry,dt,float_type(0),rho)
+    return XY{float_type}(T,symmetry,dt,zero(float_type),rho)
 end
 
 
@@ -41,7 +41,7 @@ function ForcedXY(params)
 
     omegas = sqrt(Var)*randn(float_type,L,L)
 
-    return ForcedXY{float_type}(T,Var,symmetry,omegas,dt,float_type(0),rho)
+    return ForcedXY{float_type}(T,Var,symmetry,omegas,dt,zero(float_type),rho)
 end
 
 ## ------------------------- Moving XY -------------------------
@@ -59,7 +59,7 @@ function MovingXY(params)
     @unpack T,A,rho,symmetry,antiferro,propulsion,float_type,width_proposal = params
     T,A,rho,width_proposal = convert.(float_type,(T,A,rho,width_proposal))
 
-    return MovingXY{float_type}(T,A,symmetry,propulsion,float_type(0),rho,antiferro,width_proposal)
+    return MovingXY{float_type}(T,A,symmetry,propulsion,zero(float_type),rho,antiferro,width_proposal)
 end
 
 

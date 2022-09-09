@@ -82,7 +82,7 @@ end
 function precondition!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
     remove_isolates!(thetas,model,lattice)
     fill_holes!(thetas,model,lattice)
-    relax!(thetas)
+    relax!(thetas,model)
 end
 
 function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)

@@ -151,10 +151,10 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
 end
 
 # Meant to relax reconstruction for spotting defects
-function relax!(thetas::Matrix{T}) where T<:AbstractFloat
+function relax!(thetas::Matrix{T},model::AbstractModel{T}) where T<:AbstractFloat
     dummy_dt = T(1E-2)
     trelax = T(1.0)
-    dummy_model = XY{T}(zero(T),"polar",dummy_dt,zero(T))
+    dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
     dummy_lattice = SquareLattice(size(thetas,1),true,true,"euclidian")
     update!(thetas,dummy_model,dummy_lattice,trelax)
 end

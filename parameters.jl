@@ -18,7 +18,7 @@ width_proposal = 0.01
 init = "pair"
 q = 1
 r0 = Int(L/2)
-type1defect = "clockwise"
+type1defect = "divergent"
 type2defect = ["sink" , "convergent"]
 
 # Containers
