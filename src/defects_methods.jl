@@ -377,20 +377,16 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
 end
 
 
-function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,dft::DefectTracker,tmax::Number,every::Number;plot=false,defects=false) where T<:AbstractFloat
+function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,dft::DefectTracker,tmax::Number,every::Number) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
-        if model.t ≥ next_tracking_time
+        if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
             next_tracking_time += every
             dft.current_time = model.t
             update_DefectTracker!(dft,thetas,model,lattice)
-            if plot display(plot_thetas(thetas,model,lattice,kwargs...))  end
         end
     end
-    # One more time to end at the same time than the model
-    dft.current_time = model.t
-    update_DefectTracker!(dft,thetas,model,lattice)
     return dft
 end
 

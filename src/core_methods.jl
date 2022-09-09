@@ -77,7 +77,7 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Squ
             thetas[ip,j],
             thetas[ip,jp]]
     end
-    if isa(model,MovingXY) return filter!(!isnan,angles)
+    if model.rho < 1 return filter!(!isnan,angles)
     else return angles
     end
 end
@@ -221,8 +221,8 @@ end
 function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
 
     proposal = model.width_proposal*randn(FT)+theta1
+    i,j = pos1
     if model.algo == "A" # Model A. Align nematically with all NN
-        i,j = pos1
         neighbours = 2get_neighbours(thetas,model,lattice,i,j,bulk)
         dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
         # dE = sin(proposal - theta1) * sum(sin,proposal + theta1 .- neighbours ) # should be computationally faster
@@ -234,10 +234,23 @@ function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},th
         else J = -1.0 # antiferro
         end
         dE = -J*(cos(theta1 - proposal) - ccos)
+    elseif model.algo == "CA"
+        ccos = cos(theta1 - theta2)
+        if ccos > 0  J = +1.0 # ferro
+        else J = -1.0 # antiferro
+        end
+        dE = -J*(cos(theta1 - proposal) - ccos)
+        if rand() < exp(-dE/model.T) # Metropolis Monte Carlo
+            @inbounds thetas[i,j] = proposal
+        end
+        proposal = model.width_proposal*randn(FT)+thetas[i,j]
+        neighbours = 2get_neighbours(thetas,model,lattice,i,j,bulk)
+        dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
+        # the last Monte Carlo step, corresponding to the case "A", is performed by the last step (common to all cases)
     else error("Unknown Model")
     end
     if rand() < exp(-dE/model.T) # Metropolis Monte Carlo
-        @inbounds thetas[pos1...] = proposal
+        @inbounds thetas[i,j] = proposal
     end
     return thetas
 end

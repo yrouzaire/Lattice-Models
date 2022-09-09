@@ -28,12 +28,13 @@ In all cases,
     - the proposal is accepted with Metropolis proba (to ensure a well controlled limit at eq)
 =#
 
+params["algo"] = "B"
+params["width_proposal"] = 0.05
+params["symmetry"] = "nematic"
+
 ## Test 1 Numerical Stability from lowtemp
 params["init"] = "lowtemp"
-    params["algo"] = "B"
     params["q"] = -1/2
-    params["width_proposal"] = 0.05
-    params["symmetry"] = "nematic"
 
 model = MovingXY(params)
     lattice = TriangularLattice(L,periodic=true)

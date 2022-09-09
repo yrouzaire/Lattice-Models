@@ -5,14 +5,16 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 ## Code for update_and_track
 include(srcdir("../parameters.jl"));
-    model = MovingXY(params)
-    lattice = SquareLattice(L,periodic=true,single=true)
-    thetas = init_thetas(lattice,params=params)
-    dft = DefectTracker(thetas,model,lattice)
+model = XY(params)
+lattice = SquareLattice(L,periodic=true,single=true)
+thetas = init_thetas(lattice,params=params)
+dft = DefectTracker(thetas,model,lattice)
 
-    # update_and_track!(thetas,model,lattice,dft,50,.1)
-    update_and_track_plot!(thetas,model,lattice,dft,500,10,defects=true)
+update_and_track!(thetas,model,lattice,dft,5,.1)
+update_and_track_plot!(thetas,model,lattice,dft,10,1,defects=true)
 
+
+MSD(dft,model,lattice)
 number_active_defects(dft)
 last_loc(dft.defectsN[1])
 last_loc(dft.defectsP[1])
