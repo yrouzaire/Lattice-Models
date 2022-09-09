@@ -219,7 +219,7 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLatti
 end
 
 function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
-
+    @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
     proposal = model.width_proposal*randn(FT)+theta1
     i,j = pos1
     if model.algo == "A" # Model A. Align nematically with all NN
@@ -243,7 +243,7 @@ function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},th
         if rand() < exp(-dE/model.T) # Metropolis Monte Carlo
             @inbounds thetas[i,j] = proposal
         end
-        proposal = model.width_proposal*randn(FT)+thetas[i,j]
+        proposal = model.width_proposal*randn(FT)+thetas[i,j] # new proposal
         neighbours = 2get_neighbours(thetas,model,lattice,i,j,bulk)
         dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
         # the last Monte Carlo step, corresponding to the case "A", is performed by the last step (common to all cases)

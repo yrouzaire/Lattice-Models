@@ -28,16 +28,15 @@ In all cases,
     - the proposal is accepted with Metropolis proba (to ensure a well controlled limit at eq)
 =#
 
-params["algo"] = "B"
+params["algo"] = "A"
 params["width_proposal"] = 0.05
 params["symmetry"] = "nematic"
 
-## Test 1 Numerical Stability from lowtemp
-params["init"] = "lowtemp"
+params["init"] = "hightemp"
     params["q"] = -1/2
 
 model = MovingXY(params)
     lattice = TriangularLattice(L,periodic=true)
     thetas = init_thetas(lattice,params=params)
-    update!(thetas,model,lattice,500)
-    plot_thetas(thetas,model,lattice,defects=true)
+update!(thetas,model,lattice,3000)
+    plot_thetas(thetas,model,lattice,defects=false)
