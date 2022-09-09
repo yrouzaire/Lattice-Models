@@ -583,7 +583,17 @@ end
 
 function square_displacement(d::Defect,lattice::AbstractLattice)
     loc_t0 = creation_loc(d)
-    return [dist(lattice,pos,loc_t0) for loc in d.hist]
+    return [dist(lattice,pos,loc_t0) for loc in d.hist] .^ 2
+end
+
+function interdefect_distance(dft,defect1,defect2,lattice)
+    # TODO take care of case with creation and/or annihilation time different.
+    # So far, this care is left to the user...
+    @assert defect1.creation_time == defect2.creation_time
+    @assert defect1.annihilation_time == defect2.annihilation_time
+
+    R = [dist(lattice,defect1.hist[t],defect2.hist[t]) for t in each(defect1.hist)]
+    return R
 end
 ## Small helpful methods for scripts
 function number_defects(model::AbstractModel,lattice::AbstractLattice)
