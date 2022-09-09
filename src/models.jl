@@ -14,12 +14,14 @@ mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     symmetry::String
     dt::AbstractFloat
     t::AbstractFloat
+    rho::AbstractFloat
+
 end
 function XY(params)
-    @unpack T,symmetry,dt,float_type = params
-    T,dt = convert.(float_type,(T,dt))
+    @unpack T,symmetry,dt,float_type,rho = params
+    T,dt,rho = convert.(float_type,(T,dt,rho))
 
-    return XY{float_type}(T,symmetry,dt,float_type(0))
+    return XY{float_type}(T,symmetry,dt,float_type(0),rho)
 end
 
 
@@ -31,14 +33,15 @@ mutable struct ForcedXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     const omegas::Matrix{AbstractFloat}
     dt::AbstractFloat
     t::AbstractFloat
+    rho::AbstractFloat
 end
 function ForcedXY(params)
-    @unpack L,T,Var,symmetry,dt,float_type  = params
-    T,Var,dt = convert.(float_type,(T,Var,dt))
+    @unpack L,T,Var,symmetry,dt,float_type,rho  = params
+    T,Var,dt,rho = convert.(float_type,(T,Var,dt,rho))
 
     omegas = sqrt(Var)*randn(float_type,L,L)
 
-    return ForcedXY{float_type}(T,Var,symmetry,omegas,dt,float_type(0))
+    return ForcedXY{float_type}(T,Var,symmetry,omegas,dt,float_type(0),rho)
 end
 
 ## ------------------------- Moving XY -------------------------
@@ -67,13 +70,13 @@ mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     symmetry::String
     dt::AbstractFloat
     t::AbstractFloat
+    rho::AbstractFloat
 end
 function VisionXY(params)
-    @unpack T,vision,symmetry,dt,float_type = params
-
-    T,vision,dt = convert.(float_type,(T,vision,dt))
+    @unpack T,vision,symmetry,dt,float_type,rho = params
+    T,vision,dt,rho = convert.(float_type,(T,vision,dt,rho))
 
     if vision ≠ 2π @assert symmetry == "polar" "I am not sure how to interpret a vision cone with nematic symmetry" end
 
-    return VisionXY{float_type}(T,vision,symmetry,dt,zero(float_type))
+    return VisionXY{float_type}(T,vision,symmetry,dt,zero(float_type),rho)
 end

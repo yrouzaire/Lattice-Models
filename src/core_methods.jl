@@ -43,6 +43,7 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
     end
 end
 
+
 function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::SquareLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
     L = lattice.L
     # convention depuis la droite et sens trigo

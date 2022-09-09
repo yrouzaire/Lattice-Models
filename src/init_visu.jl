@@ -22,7 +22,7 @@ function init_thetas(space;params)
         thetas = create_2pairs_vortices(L,r0=r0,q=q,type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
-    if isa(model,MovingXY) make_holes!(thetas,rho) end
+    if model.rho make_holes!(thetas,rho) end
     return float_type.(thetas)
 end
 
