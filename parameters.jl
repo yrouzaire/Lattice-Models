@@ -6,7 +6,7 @@ propulsion = "polar"
 Var = 0.2
 A = 1.
 vision = 5π/3
-rho = 0.95
+rho = .5
 algo = "A"
 
 # Numerical Parameters
