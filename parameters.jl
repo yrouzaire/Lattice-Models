@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 32
+L = 16
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"

@@ -34,8 +34,6 @@ but now, for 'directions obliques', it depends on the parity of "i"
 
 =#
 
-# Faire la roue des couleurs
-
 ## Step 2 OK
 include(srcdir("../parameters.jl"));
     params["init"] = "single"
@@ -80,3 +78,122 @@ include(srcdir("../parameters.jl"));
     p = plot_thetas(thetas,model,lattice,defects=true)
     window = 15
     display_quiver!(p,thetas,window)
+
+## Plot the different defects and defect pairs
+
+
+# +1 Defects
+plotsP1 = []
+    for type in ["source","sink","clockwise","counterclockwise"]
+        q = +1
+        thetas = initialize(L,init,q,type,r0,rho)
+        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
+        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+        title!("+1 "*type)
+
+        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
+        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        push!(plotsP1,p)
+    end
+pP1 = plot(plotsP1...,layout=(1,4),size=(1600,800))
+
+# -1 Defects
+plotsM1 = []
+    for type in ["convergent","divergent","threefold1","threefold2"]
+        q = -1
+        thetas = initialize(L,init,q,type,r0,rho)
+        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
+        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+        title!("-1")
+
+        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
+        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        push!(plotsM1,p)
+    end
+pM1 = plot(plotsM1...,layout=(1,4),size=(1600,800))
+
+# +1/2 Defects
+L = 20 ; init = "isolated" ; rho = 1
+    r0 = 1 ; T = 1 # dummies
+    plotsP12 = []
+    for type in ["source","sink","clockwise","counterclockwise"]
+        q = +1/2
+        thetas = initialize(L,init,q,type,r0,rho)
+        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
+        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+        title!("+½ "*type)
+
+        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
+        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        push!(plotsP12,p)
+    end
+pP12 = plot(plotsP12...,layout=(1,4),size=(1600,800))
+
+# -1/2 Defects
+L = 20 ; init = "isolated" ; rho = 1
+    r0 = 1 ; T = 1 # dummies
+    plotsM12 = []
+    for type in ["convergent","divergent","threefold1","threefold2"]
+        q = -1/2
+        thetas = initialize(L,init,q,type,r0,rho)
+        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
+        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+        title!("-½ "*type)
+
+        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
+        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        push!(plotsM12,p)
+    end
+pM12 = plot(plotsM12...,layout=(1,4),size=(1600,800))
+
+# 4 ≠ Pairs (all the others are equivalent to one of those)
+L = 20 ; init = "pair" ; rho = 1
+    r0 = 10 ; T = 1 # dummies
+    plotsPairs = []
+    defect_plus_type = "sink"
+    for type in [[defect_plus_type,"convergent"],[defect_plus_type,"divergent"],[defect_plus_type,"threefold1"],[defect_plus_type,"threefold2"]]
+        q = 1/2
+        thetas = initialize(L,init,q,type,r0,rho)
+        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
+        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+        title!(type[1]*" & "*type[2])
+
+        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
+        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        push!(plotsPairs,p)
+    end
+pPairs2 = plot(plotsPairs...,layout=(1,4),size=(1600,800))
+
+# savefig(pP1,"figures/illustration_defects/P1_defects.png")
+# savefig(pP1,"figures/illustration_defects/P1_defects.svg")
+#
+# savefig(pP12,"figures/illustration_defects/P12_defects.png")
+# savefig(pP12,"figures/illustration_defects/P12_defects.svg")
+#
+# savefig(pM1,"figures/illustration_defects/M1_defects.png")
+# savefig(pM1,"figures/illustration_defects/M1_defects.svg")
+#
+# savefig(pM12,"figures/illustration_defects/M12_defects.png")
+# savefig(pM12,"figures/illustration_defects/M12_defects.svg")
+#
+# savefig(pPairs1,"figures/illustration_defects/Pairs1_defects.png")
+# savefig(pPairs1,"figures/illustration_defects/Pairs1_defects.svg")
+#
+# savefig(pPairs2,"figures/illustration_defects/Pairs2_defects.png")
+# savefig(pPairs2,"figures/illustration_defects/Pairs2_defects.svg")
+#
+# savefig(pPairs3,"figures/illustration_defects/Pairs3_defects.png")
+# savefig(pPairs3,"figures/illustration_defects/Pairs3_defects.svg")
+#
+# savefig(pPairs4,"figures/illustration_defects/Pairs4_defects.png")
+# savefig(pPairs4,"figures/illustration_defects/Pairs4_defects.svg")
