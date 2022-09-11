@@ -23,7 +23,6 @@ function init_thetas(space;params)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
     if model.rho < 1 make_holes!(thetas,rho) end
-    # thetas = mod.(thetas,sym(model)*pi)
     return float_type.(thetas)
 end
 
@@ -35,13 +34,13 @@ function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type)
     thetas = zeros(L,L)
     for y in 1:L , x in 1:L
         # q > 0
-        if     type == "clockwise"            thetas[x,y] = q * atan(y-y0,x-x0)
-        elseif type == "counterclockwise"     thetas[x,y] = q * atan(y-y0,x-x0) + pi
+        if     type == "counterclockwise"     thetas[x,y] = q * atan(y-y0,x-x0)
+        elseif type == "clockwise"            thetas[x,y] = q * atan(y-y0,x-x0) + pi
         elseif type == "sink"                 thetas[x,y] = q * atan(y-y0,x-x0) + pi/2
         elseif type == "source"               thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
         # q = -1/2 (when q = -1, I think they are all equivalent)
-        elseif type in ["threefold1"]          thetas[x,y] = q * atan(y-y0,x-x0)
-        elseif type in ["threefold2"]          thetas[x,y] = q * atan(y-y0,x-x0) + pi
+        elseif type in ["threefold2"]          thetas[x,y] = q * atan(y-y0,x-x0)
+        elseif type in ["threefold1"]          thetas[x,y] = q * atan(y-y0,x-x0) + pi
         elseif type in ["divergent" ,"split"]     thetas[x,y] = q * atan(y-y0,x-x0) + pi/2
         elseif type in ["convergent","join"]      thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
         end
@@ -58,8 +57,8 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
     if isa(type,String)
         if     type in ["pair1","source_split"] type_pos,type_neg = "source","threefold1"
         elseif type in ["pair2","sink_join"]    type_pos,type_neg = "source","threefold2"
-        elseif type in ["pair3","cw_31"]        type_pos,type_neg = "source","split"
-        elseif type in ["pair4","ccw_32"]       type_pos,type_neg = "source","join"
+        elseif type in ["pair3","cw_31"]        type_pos,type_neg = "source","join"
+        elseif type in ["pair4","ccw_32"]       type_pos,type_neg = "source","split"
         else error("Type Unknown!")
         end
     elseif isa(type,Vector{String})
@@ -70,7 +69,7 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
     thetas = create_single_defect(L,round(Int,L/2+r0/2),round(Int,L/2),q=+q,type=type_pos) +
              create_single_defect(L,round(Int,L/2-r0/2),round(Int,L/2),q=-q,type=type_neg)
 
-             # return smooth_border!(thetas)
+    # return smooth_border!(thetas)
     return (thetas)
 end
 
@@ -142,7 +141,8 @@ function display_quiver!(p,thetas_zoom,window)
     end
     return p
 end
-# Note : after returning the plots with quiver, one has to add xlims!(1,2window+1) ; ylims!(1,2window+1)
+# Note : after returning the plots with quiver, one has to add
+# xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 ## ------------------------ Movies  ------------------------
 function movies(thetas,model,lattice;defects=false,saving_times,transients)
