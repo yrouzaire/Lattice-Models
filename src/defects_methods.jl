@@ -70,14 +70,40 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
             end
         end
     end
+    return merge_duplicates(vortices_plus,lattice),merge_duplicates(vortices_minus,lattice)
+
     #= In this list, there might be doubles/triples (2/3 locations for the
     same physical vortex). We thus seek for numerically identified vortices
     which are neighbours and with the same charge to delete them. =#
-    vortices_to_keep_plus  = vortices_to_keep(vortices_plus,lattice,seuil)
-    vortices_to_keep_minus = vortices_to_keep(vortices_minus,lattice,seuil)
-
-    return vortices_plus,vortices_minus
+    # vortices_to_keep_plus  = vortices_to_keep(vortices_plus,lattice,seuil)
+    # vortices_to_keep_minus = vortices_to_keep(vortices_minus,lattice,seuil)
+    #
+    # return vortices_plus,vortices_minus
     # return vortices_plus[vortices_to_keep_plus],vortices_minus[vortices_to_keep_minus]
+end
+
+function merge_duplicates(list,lattice;radius=2)
+    #= In this list, there might be doubles/triples (2/3 locations for the
+    same physical vortex). We thus seek for numerically identified vortices
+    which are neighbours and with the same charge to delete them. =#
+    pos    = [list[i][1:2] for i in each(list)]
+    charge = [list[i][3]   for i in each(list)]
+    dealt_with = falses(length(pos))
+
+    merged_duplicates = []
+    for i in 1:length(pos)
+        if !dealt_with[i]
+            tmp = []
+            for j in i:length(pos) # includes defect "i"
+                if dist(lattice,pos[i],pos[j]) ≤ radius && charge[i] == charge[j]
+                    dealt_with[j] = true
+                    push!(tmp,pos[j])
+                end
+            end
+            push!(merged_duplicates,mean_N_positions(tmp,lattice.L,true))
+        end
+    end
+    return merged_duplicates
 end
 
 function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
