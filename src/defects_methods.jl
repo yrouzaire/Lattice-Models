@@ -9,6 +9,7 @@ function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     #= This function returns the signed arclength on the unit trigonometric circle .
     Clockwise        >> sign -
     Counterclockwise >> sign +
+    WARNING
     Note that the inputs thetas need to lie within [0,π] or [0,2π], depending on the symmetry of the model =#
     dtheta = theta2 - theta1
     dtheta_abs = abs(theta2 - theta1)
@@ -22,15 +23,19 @@ function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     return signe*shortest_unsigned_arclength
 end
 
-function get_vorticity(thetasmodpi::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,i::Int,j::Int)::T where T<:AbstractFloat
-    #= Note : thetasmodpi = mod.(thetas,symm)
-        By convention, for a TriangularLattice, the neighbours have the following ordering
-           3   2
-        4    x   1
-           5   6
+function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,i::Int,j::Int)::T where T<:AbstractFloat
+    #= Note : thetasmod = mod.(thetas,symm*pi)
+        By convention, for a SquareLattice, the neighbours have the following ordering
+           2
+        3  x  1
+           4
+       By convention, for a TriangularLattice, the neighbours have the following ordering
+          3  2
+        4  x  1
+          5  6
         =#
-    symm = sym(model)
-    angles_corners = invoke(get_neighbours,Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},   thetasmodpi,model,lattice,i,j,is_in_bulk(i,j,lattice.L))
+    symm = sym(model)*pi
+    angles_corners = invoke(get_neighbours,Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},   thetasmod,model,lattice,i,j,is_in_bulk(i,j,lattice.L))
     # the invoke trick above is so that the neighbors are all considered, even in the Non Reciprocal case
     perimeter_covered = 0.0
     for i in 1:length(angles_corners)-1
@@ -44,7 +49,7 @@ function get_vorticity(thetasmodpi::Matrix{T},model::AbstractModel{T},lattice::A
     return charge
 end
 
-function spot_defects(thetas,model::AbstractModel{T},lattice::AbstractLattice; seuil=4) where T<:AbstractFloat
+function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice; seuil=4) where T<:AbstractFloat
     L = lattice.L
     if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
     vortices_plus  = Tuple{Int,Int,T}[]
@@ -55,15 +60,14 @@ function spot_defects(thetas,model::AbstractModel{T},lattice::AbstractLattice; s
     After some crude benchamarks, it seems that the number of relaxation loops requiered to erase all the doubles
     is approximately 20T. Though, if possible, the lesser the better because vortices might move during this process -> inadéquation
     entre la position affichée des défauts et le heatmap.  =#
-    # thetas_prerelaxed = remove_isolate(copy(thetas),L)
-    # for n in 1:10 thetas_prerelaxed = align(thetas_prerelaxed,L,0,0,"polar",BC) end
-    # thetasmodpi = mod.(fill_relax_holes(thetas_prerelaxed),π)
-    # thetasmodpi = cg_gaussian_field(remove_isolate(copy(thetas),L))
-    thetasmodpi = mod.(copy(thetas),sym(model))
-    if model.rho < 1 precondition!(thetasmodpi,model,lattice) end
+    if     model.symmetry == "nematic" modd = T(pi)
+    elseif model.symmetry == "polar"   modd = T(2pi)
+    end
+    thetasmod = mod.(copy(thetas),modd)
+    if model.rho < 1 precondition!(thetasmod,model,lattice) end
     for i in range_bc
         for j in range_bc
-            q = get_vorticity(thetasmodpi,model,lattice,i,j)
+            q = get_vorticity(thetasmod,model,lattice,i,j)
             if     q > + 0.1 push!(vortices_plus,(i,j,q)) # we want to keep ±½ defects, and not rounding errors
             elseif q < - 0.1 push!(vortices_minus,(i,j,q))
             end

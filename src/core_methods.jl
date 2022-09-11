@@ -84,13 +84,17 @@ end
 
 function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     # default case, nothing to worry about
-    return sum(sin,angles_neighbours .- theta,init=0) # init = 0 in case angles_neighbours is empty
+    if model.symmetry == "polar"
+        return sum(sin,(angles_neighbours .- theta),init=0) # init = 0 in case angles_neighbours is empty
+    elseif model.symmetry == "nematic"
+        return sum(sin,2.0*(angles_neighbours .- theta),init=0) # init = 0 in case angles_neighbours is empty
+    else error("Symmetry unknown")
+    end
 end
 
 function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     weights  = zeros(T,length(angles_neighbours))
-    symm     = sym(model)
-    theta0   = mod(theta,symm)
+    theta0   = mod(theta,sym(model)*pi)
     if     isa(lattice,TriangularLattice) constant = T(π/3)
     elseif isa(lattice,SquareLattice)     constant = T(π/2)
     end
@@ -105,7 +109,7 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
         end
     end
 
-    return sum(sin.(angles_neighbours .- theta) .* weights , init = 0) # init = 0 in case angles_neighbours is empty
+    return sum(sin.(sym(model)(angles_neighbours .- theta)) .* weights  , init = 0) # init = 0 in case angles_neighbours is empty
 end
 
 ## ------------------------ Update ------------------------

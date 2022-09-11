@@ -1,13 +1,13 @@
 # Physical Parameters
-L = 200
-T = 0.2
+L = 100
+T = 0.1
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.2
 A = 1.
 vision = 5π/3
-rho = .5
-algo = "A"
+rho = 1
+algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
 dt = 1E-2
@@ -16,9 +16,9 @@ width_proposal = 0.01
 
 # Initialisation
 init = "pair"
-q = 1
+q = 1/2
 r0 = Int(L/2)
-type1defect = "divergent"
+type1defect = "source"
 type2defect = ["sink" , "convergent"]
 
 # Containers

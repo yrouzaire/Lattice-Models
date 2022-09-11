@@ -23,6 +23,7 @@ function init_thetas(space;params)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
     if model.rho < 1 make_holes!(thetas,rho) end
+    # thetas = mod.(thetas,sym(model)*pi)
     return float_type.(thetas)
 end
 
@@ -86,8 +87,10 @@ end
 
 ## ------------------------ Visualization  ------------------------
 function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(485,400))
-    symm = sym(model)
-    p = heatmap(mod.(thetas',symm),c=cols,clims=(0,symm),size=size,
+    if model.symmetry == "nematic" modd = pi
+    elseif model.symmetry == "polar" modd = 2pi
+    end
+    p = heatmap(mod.(thetas',modd),c=cols,clims=(0,modd),size=size,
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
@@ -96,8 +99,8 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
         locN = [defects_m[i][1:2] for i in each(defects_m)]
         highlight_defects!(p,lattice.L,locP,locN)
     end
-    xlims!((0,lattice.L))
-    ylims!((0,lattice.L))
+    # xlims!((0,lattice.L))
+    # ylims!((0,lattice.L))
     return p
 end
 
@@ -113,11 +116,11 @@ function highlight_defects!(p,L,defects_p,defects_m,symbP=:circle,symbM=:utriang
     return p
 end
 
-function display_quiver!(p,thetas,window)
+function display_quiver!(p,thetas_zoom,window)
     p
     for j in 1:2window+1
         quiver!(j*ones(2window+1),collect(1:2window+1),
-        quiver=(cos.(thetas'[j,:]),-sin.(thetas'[j,:])),
+        quiver=(cos.(thetas_zoom'[j,:]),-sin.(thetas_zoom'[j,:])),
         c=:white,lw=0.8)
     end
     return p
