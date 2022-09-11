@@ -37,18 +37,12 @@ include(srcdir("../parameters.jl"));
     params["symmetry"] = "nematic"
     params["init"] = "single"
     params["q"] = 1/2
-    params["type1defect"] = "sink"
+    params["rho"] = 1
     model = XY(params)
-    lattice = SquareLattice(L,periodic=true,single=true)
+    lattice = TriangularLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
+    # update!(thetas,model,lattice,1)
     p = plot_thetas(thetas,model,lattice,defects=true)
-    # display_quiver!(p,thetas,window)
-
-spot_defects(thetas,model,lattice)
-get_vorticity(thetas,model,lattice,50,50)
-get_vorticity(thetas,model,lattice,50,51)
-get_vorticity(thetas,model,lattice,50,49)
-get_vorticity(thetas,model,lattice,49,50)
 
 
 ## Issue locating defects v1

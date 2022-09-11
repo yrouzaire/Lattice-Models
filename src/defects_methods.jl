@@ -61,7 +61,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     elseif model.symmetry == "polar"   modd = T(2pi)
     end
     thetasmod = mod.(copy(thetas),modd)
-    if model.rho < 1 precondition!(thetasmod,model,lattice) end
+    if model.rho < 1 preconditionning!(thetasmod,model,lattice) end
     for i in range_bc
         for j in range_bc
             q = get_vorticity(thetasmod,model,lattice,i,j)
@@ -80,7 +80,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     # return vortices_plus[vortices_to_keep_plus],vortices_minus[vortices_to_keep_minus]
 end
 
-function precondition!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
+function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
     remove_isolates!(thetas,model,lattice)
     fill_holes!(thetas,model,lattice)
     relax!(thetas,model)
