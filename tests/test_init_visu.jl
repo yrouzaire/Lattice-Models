@@ -44,4 +44,12 @@ thetas = init_thetas(model,lattice,init="pair",q=1/2,r0=60,type=["source","diver
 
 thetas = init_thetas(model,lattice,init="2pair",q=1/2,r0=60,type=["source","divergent"])
     plot_theta(thetas,model,lattice)
-&
+
+## Test init pair the new way
+include(srcdir("../parameters.jl"));
+    params["init"] = "pair"
+    params["type2defect"] = "pair1"
+    model = XY(params)
+    lattice = TriangularLattice(L)
+    thetas = init_thetas(lattice,params=params)
+    plot_theta(thetas,model,lattice)

@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 32
+L = 20
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -15,7 +15,7 @@ float_type = Float32
 width_proposal = 0.01
 
 # Initialisation
-init = "pair"
+init = "single"
 q = 1/2
 r0 = Int(L/2)
 type1defect = "source"

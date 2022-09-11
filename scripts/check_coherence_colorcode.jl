@@ -76,81 +76,76 @@ include(srcdir("../parameters.jl"));
     lattice = SquareLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
     p = plot_thetas(thetas,model,lattice,defects=true)
-    window = 15
+    window = 9
     display_quiver!(p,thetas,window)
 
 ## Plot the different defects and defect pairs
+include(srcdir("../parameters.jl"));
+    cols = cgrad([:black,:blue,:green,:orange,:red,:black])
+    params["L"] = 20
+    windows = Int(params["L"]/2-1)
+    model = XY(params) # in fact, both useless for plotting defects at t = 0
+    lattice = SquareLattice(L,periodic=true,single=true) # in fact, both useless for plotting defects at t = 0
+
 # +1 Defects
 plotsP1 = []
+    params["q"] = +1
+    params["symmetry"] = "polar"
+    params["init"] = "single"
     for type in ["source","sink","clockwise","counterclockwise"]
-        q = +1
-        thetas = init_thetas(L,init,q,type,r0,rho)
-        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
-        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-        title!("+1 "*type)
-
-        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
-        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-
-        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        params["type1defect"] = type
+        thetas = init_thetas(lattice,params=params)
+        p = plot_thetas(thetas,model,lattice,colorbar=false,title="+1 "*type,size=(400,400))
+        display_quiver!(p,thetas,window)
+        xlims!(1,2window+1) ; ylims!(1,2window+1)
         push!(plotsP1,p)
     end
-pP1 = plot(plotsP1...,layout=(1,4),size=(1600,800))
+    pP1 = plot(plotsP1...,layout=(1,4),size=(400*4,400))
 
 # -1 Defects
 plotsM1 = []
+    params["q"] = -1
+    params["symmetry"] = "polar"
+    params["init"] = "single"
     for type in ["convergent","divergent","threefold1","threefold2"]
-        q = -1
-        thetas = initialize(L,init,q,type,r0,rho)
-        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
-        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-        title!("-1")
-
-        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
-        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-
-        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        params["type1defect"] = type
+        thetas = init_thetas(lattice,params=params)
+        p = plot_thetas(thetas,model,lattice,colorbar=false,title="-1",size=(400,400))
+        display_quiver!(p,thetas,window)
+        xlims!(1,2window+1) ; ylims!(1,2window+1)
         push!(plotsM1,p)
     end
-pM1 = plot(plotsM1...,layout=(1,4),size=(1600,800))
+    pM1 = plot(plotsM1...,layout=(1,4),size=(400*4,400))
 
 # +1/2 Defects
-L = 20 ; init = "isolated" ; rho = 1
-    r0 = 1 ; T = 1 # dummies
-    plotsP12 = []
+plotsP12 = []
+    params["q"] = +1/2
+    params["symmetry"] = "polar"
+    params["init"] = "single"
     for type in ["source","sink","clockwise","counterclockwise"]
-        q = +1/2
-        thetas = initialize(L,init,q,type,r0,rho)
-        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
-        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-        title!("+½ "*type)
-
-        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
-        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-
-        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+        params["type1defect"] = type
+        thetas = init_thetas(lattice,params=params)
+        p = plot_thetas(thetas,model,lattice,colorbar=false,title="+1/2 "*type,size=(400,400))
+        display_quiver!(p,thetas,window)
+        xlims!(1,2window+1) ; ylims!(1,2window+1)
         push!(plotsP12,p)
     end
-pP12 = plot(plotsP12...,layout=(1,4),size=(1600,800))
+    pP12 = plot(plotsP12...,layout=(1,4),size=(400*4,400))
 
 # -1/2 Defects
-L = 20 ; init = "isolated" ; rho = 1
-    r0 = 1 ; T = 1 # dummies
-    plotsM12 = []
-    for type in ["convergent","divergent","threefold1","threefold2"]
-        q = -1/2
-        thetas = initialize(L,init,q,type,r0,rho)
-        p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
-        display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-        title!("-½ "*type)
-
-        p2 = heatmap(mod.(thetas,2π),c=cols,clims=(0,2π),size=(512,512),colorbar=false,aspect_ratio=1,axis=false)
-        display_quiver(p2,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
-
-        p=plot(p1,p2,layout=(2,1),size=(1024,512))
+plotsM12 = []
+    params["q"] = -1/2
+    params["symmetry"] = "polar"
+    params["init"] = "single"
+    for type in ["join","split","threefold1","threefold2"]
+        params["type1defect"] = type
+        thetas = init_thetas(lattice,params=params)
+        p = plot_thetas(thetas,model,lattice,colorbar=false,title="-1/2 "*type,size=(400,400))
+        display_quiver!(p,thetas,window)
+        xlims!(1,2window+1) ; ylims!(1,2window+1)
         push!(plotsM12,p)
     end
-pM12 = plot(plotsM12...,layout=(1,4),size=(1600,800))
+    pM12 = plot(plotsM12...,layout=(1,4),size=(400*4,400))
 
 # 4 ≠ Pairs (all the others are equivalent to one of those)
 L = 20 ; init = "pair" ; rho = 1

@@ -27,8 +27,11 @@ function init_thetas(space;params)
     return float_type.(thetas)
 end
 
-function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="source")
-    @assert (q > 0 && type in ["source","sink","clockwise","counterclockwise"]) || (q < 0 && type in ["convergent","divergent","threefold1","threefold2"])
+function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type)
+    condition1 = (q > 0 && type in ["source","sink","clockwise","counterclockwise"])
+    condition2 = (q < 0 && type in ["convergent","divergent","threefold1","threefold2"])
+    @assert condition1 || condition2 
+
     thetas = zeros(L,L)
     for y in 1:L , x in 1:L
         # q > 0
@@ -55,7 +58,8 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
     thetas = create_single_defect(L,round(Int,L/2+r0/2),round(Int,L/2),q=+q,type=type[1]) +
              create_single_defect(L,round(Int,L/2-r0/2),round(Int,L/2),q=-q,type=type[2])
 
-    return smooth_border!(thetas)
+             # return smooth_border!(thetas)
+    return (thetas)
 end
 
 function smooth_border!(thetas)
@@ -70,7 +74,7 @@ function smooth_border!(thetas)
             thetas[i,mod1(Int(cst-j+1),L)] = smoothed_values[j]
         end
     end
-    return thetas # in fact, this procedure is insensible to relax!() since already smooth
+    return thetas # in fact, this procedure is fairly insensible to relax!() since already smooth
 end
 
 function create_2pairs_vortices(L;r0,q,type)
