@@ -121,7 +121,7 @@ function display_quiver!(p,thetas_zoom,window)
     for j in 1:2window+1
         quiver!(j*ones(2window+1),collect(1:2window+1),
         # quiver=(sin.(thetas_zoom[j,:]),-cos.(thetas_zoom[j,:])), # original
-        quiver=(cos.(thetas_zoom[j,:]),sin.(thetas_zoom[j,:])), 
+        quiver=(-sin.(thetas_zoom[j,:]),cos.(thetas_zoom[j,:])),
         c=:white,lw=0.8)
     end
     return p
