@@ -36,11 +36,6 @@ include(srcdir("../parameters.jl"));
     thetas = init_thetas(lattice,params=params)
     display(plot_thetas(thetas,model,lattice,defects=true))
 
-spot_defects(thetas,model,lattice)
-get_vorticity(thetas,model,lattice,50,50)
-get_vorticity(thetas,model,lattice,50,51)
-get_vorticity(thetas,model,lattice,50,49)
-get_vorticity(thetas,model,lattice,49,50)
 
 ## Step 3
 include(srcdir("../parameters.jl"));

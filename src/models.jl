@@ -3,10 +3,6 @@ using Parameters
 # export XY, ForcedXY, VisionXY
 
 abstract type AbstractModel{AbstractFloat} end
-function sym(model::AbstractModel{T}) where T<:AbstractFloat
-    model.symmetry == "polar" ? symm = 2π : symm = π
-    return T(symm)
-end
 
 ## ---------------------------- Classical XY Model ----------------------------
 mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
