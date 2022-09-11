@@ -35,9 +35,9 @@ include(srcdir("../parameters.jl"));
 ## Issue locating defects v2
 include(srcdir("../parameters.jl"));
     params["symmetry"] = "nematic"
-    params["init"] = "single"
+    params["init"] = "pair"
     params["q"] = 1/2
-    params["rho"] = 1
+    params["rho"] = .8
     model = XY(params)
     lattice = SquareLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
