@@ -32,22 +32,39 @@ include(srcdir("../parameters.jl"));
     # thetas0 = copy(thetas)
     # plot_thetas(precondition!(thetas0,model,lattice),model,lattice,defects=true)
 
-## Issue locating defects
+## Issue locating defects v2
+include(srcdir("../parameters.jl"));
+    params["symmetry"] = "nematic"
+    params["init"] = "single"
+    params["q"] = 1/2
+    params["type1defect"] = "sink"
+    model = XY(params)
+    lattice = SquareLattice(L,periodic=true,single=true)
+    thetas = init_thetas(lattice,params=params)
+    p = plot_thetas(thetas,model,lattice,defects=true)
+    # display_quiver!(p,thetas,window)
+
+spot_defects(thetas,model,lattice)
+get_vorticity(thetas,model,lattice,50,50)
+get_vorticity(thetas,model,lattice,50,51)
+get_vorticity(thetas,model,lattice,50,49)
+get_vorticity(thetas,model,lattice,49,50)
+
+
+## Issue locating defects v1
 include(srcdir("../parameters.jl"));
     params["symmetry"] = "polar"
     params["q"] = 1
     model = XY(params)
     lattice = SquareLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
-    z = @elapsed update!(thetas,model,lattice,0.)
+    z = @elapsed update!(thetas,model,lattice,0.3)
 
-    thetas_zoom = thetas[40:60,70:90]
+thetas_zoom = thetas[15:35,40:60]
     p=plot_thetas(thetas_zoom,model,lattice,defects=true)
-    xlims!(1,2window+1) ; ylims!(1,2window+1)
-
     window = 10
     display_quiver!(p,thetas_zoom,window)
-    # xlims!(1,2window+1) ; ylims!(1,2window+1)
+    xlims!(1,2window+1) ; ylims!(1,2window+1)
 &
 
 

@@ -34,7 +34,9 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
         4  x  1
           5  6
         =#
-    symm = sym(model)*pi
+    if     model.symmetry == "nematic" symm = T(pi)
+    elseif model.symmetry == "polar"   symm = T(2pi)
+    end
     angles_corners = invoke(get_neighbours,Tuple{Matrix{T},AbstractModel{T},typeof(lattice),Int,Int,Bool},   thetasmod,model,lattice,i,j,is_in_bulk(i,j,lattice.L))
     # the invoke trick above is so that the neighbors are all considered, even in the Non Reciprocal case
     perimeter_covered = 0.0
@@ -55,11 +57,6 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     vortices_plus  = Tuple{Int,Int,T}[]
     vortices_minus = Tuple{Int,Int,T}[]
 
-    #= Relaxation of a fictitious system (it won't evolve the actual system)
-    at 0 temperature so that vortices are easier to detect (no spurious doubles because of temperature variations)
-    After some crude benchamarks, it seems that the number of relaxation loops requiered to erase all the doubles
-    is approximately 20T. Though, if possible, the lesser the better because vortices might move during this process -> inadéquation
-    entre la position affichée des défauts et le heatmap.  =#
     if     model.symmetry == "nematic" modd = T(pi)
     elseif model.symmetry == "polar"   modd = T(2pi)
     end
@@ -79,8 +76,8 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     vortices_to_keep_plus  = vortices_to_keep(vortices_plus,lattice,seuil)
     vortices_to_keep_minus = vortices_to_keep(vortices_minus,lattice,seuil)
 
-    # return vortices_plus,vortices_minus
-    return vortices_plus[vortices_to_keep_plus],vortices_minus[vortices_to_keep_minus]
+    return vortices_plus,vortices_minus
+    # return vortices_plus[vortices_to_keep_plus],vortices_minus[vortices_to_keep_minus]
 end
 
 function precondition!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
