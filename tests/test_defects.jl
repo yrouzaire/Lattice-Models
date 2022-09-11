@@ -39,7 +39,7 @@ include(srcdir("../parameters.jl"));
     params["q"] = 1/2
     params["rho"] = 1
     model = XY(params)
-    lattice = TriangularLattice(L,periodic=true,single=true)
+    lattice = SquareLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
     # update!(thetas,model,lattice,1)
     p = plot_thetas(thetas,model,lattice,defects=true)
