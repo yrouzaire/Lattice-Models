@@ -33,11 +33,10 @@ params["width_proposal"] = 0.05
 params["symmetry"] = "nematic"
 
 params["init"] = "hightemp"
-    params["A"] = 1.
     params["q"] = -1/2
 
 model = MovingXY(params)
     lattice = TriangularLattice(L,periodic=true)
     thetas = init_thetas(lattice,params=params)
 update!(thetas,model,lattice,3000)
-    plot_thetas(thetas,model,lattice,defects=true)
+    plot_thetas(thetas,model,lattice,defects=false)
