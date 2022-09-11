@@ -80,13 +80,11 @@ include(srcdir("../parameters.jl"));
     display_quiver!(p,thetas,window)
 
 ## Plot the different defects and defect pairs
-
-
 # +1 Defects
 plotsP1 = []
     for type in ["source","sink","clockwise","counterclockwise"]
         q = +1
-        thetas = initialize(L,init,q,type,r0,rho)
+        thetas = init_thetas(L,init,q,type,r0,rho)
         p1 = heatmap(mod.(thetas,π),c=cols,clims=(0,π),size=(512,512),aspect_ratio=1,axis=false)
         display_quiver(p1,thetas,window) ; xlims!(1,2window+1) ; ylims!(1,2window+1)
         title!("+1 "*type)

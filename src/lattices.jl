@@ -117,3 +117,11 @@ end
 # mean_2_positions((50,50),(60,60),l) == (55,55)
 # mean_2_positions((10,10),(90,90),l) == (100,100)
 # mean_2_positions((49,66),(51,61),l) == (50.0, 63.5)
+
+function mean_N_positions(vec_pos,L,should_take_mod::Bool=true)
+    averaged_pos = vec_pos[1]
+    for i in 2:length(vec_pos)
+        averaged_pos = mean_2_positions(averaged_pos,vec_pos[i],L,should_take_mod)
+    end
+    return averaged_pos
+end
