@@ -9,14 +9,6 @@
 # Or else the script may fail as it will execute in your top level home directory /home/username
 #$ -cwd
 
-tr -d '\r' < script.sh > script_bis.sh
-rm script.sh
-mv script_bis.sh script.sh
-
-tr -d '\r' < bash_loop.sh > bash_loop_bis.sh
-rm bash_loop.sh
-mv bash_loop_bis.sh bash_loop.sh
-
 # Uncomment the following line if you want to know in which host your job was executed
 echo "Running on " `hostname`
 # Now comes the commands to be executed
