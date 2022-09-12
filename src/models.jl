@@ -13,6 +13,7 @@ mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     rho::AbstractFloat
 
 end
+
 function XY(params)
     @unpack T,symmetry,dt,float_type,rho = params
     T,dt,rho = convert.(float_type,(T,dt,rho))
