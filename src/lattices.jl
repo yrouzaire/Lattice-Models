@@ -2,18 +2,18 @@
 abstract type AbstractLattice end
 
 mutable struct TriangularLattice <: AbstractLattice
-    const L::Int
+    L::Int
     periodic::Bool
-    const single::Bool
-    const metric::String
+    single::Bool
+    metric::String
 end
 TriangularLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = TriangularLattice(L,periodic,single,metric)
 
 mutable struct SquareLattice <: AbstractLattice
-    const L::Int
+    L::Int
     periodic::Bool
-    const single::Bool
-    const metric::String
+    single::Bool
+    metric::String
 end
 SquareLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = SquareLattice(L,periodic,single,metric)
 

@@ -26,7 +26,7 @@ mutable struct ForcedXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     Var::AbstractFloat
     symmetry::String
-    const omegas::Matrix{AbstractFloat}
+    omegas::Matrix{AbstractFloat}
     dt::AbstractFloat
     t::AbstractFloat
     rho::AbstractFloat
