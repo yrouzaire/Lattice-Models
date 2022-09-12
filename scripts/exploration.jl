@@ -6,13 +6,13 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 ## Tracking a pair over time
 include(srcdir("../parameters.jl"));
 model = XY(params)
-lattice = SquareLattice(L,periodic=true,single=true)
+lattice = TriangularLattice(L,periodic=true,single=true)
 thetas = init_thetas(lattice,params=params)
-plot_thetas(thetas,model,lattice,defects=true)
 dft = DefectTracker(thetas,model,lattice)
 
-tmax,every = 10,1
-update_and_track!(thetas,model,lattice,dft,tmax,every)
+tmax,every = 1000,5
+z = @elapsed update_and_track!(thetas,model,lattice,dft,tmax,every)
+prinz(z)
 
 ## Simple simulation and plots from hightemp
 include(srcdir("../parameters.jl"));
