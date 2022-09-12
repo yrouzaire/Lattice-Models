@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 32
+L = 200
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -16,10 +16,10 @@ width_proposal = 0.01
 
 # Initialisation
 init = "pair"
-q = 1/2
+q = 1
 r0 = Int(L/2)
 type1defect = "source"
-type2defect = ["sink" , "convergent"]
+type2defect = "pair1"
 
 # Containers
 params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"algo"=>algo)
