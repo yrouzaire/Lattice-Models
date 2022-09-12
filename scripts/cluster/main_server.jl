@@ -17,4 +17,4 @@ prinz(z)
 
 comments = ""
 
-@save "data/dft_XY_r$(real).jld2" params runtime=z comments thetas model lattice
+@save "data/dft_XY_r$(real).jld2" params runtime=z comments thetas model lattice dft tmax every
