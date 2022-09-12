@@ -12,8 +12,10 @@
 echo "Running on " `hostname`
 # Now comes the commands to be executed
 # Copy exe and required input files to the local disk on the node
-cp -r main_server.jl methods.jl data $TMPDIR
-cp -r * $TMPDIR
+cp -r data $TMPDIR
+cp -r src $TMPDIR
+cp -r main_server.jl parameters.jl $TMPDIR
+# cp -r * $TMPDIR
 # Change to the execution directory
 cd $TMPDIR/
 # And run the program
