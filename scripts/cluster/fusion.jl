@@ -2,8 +2,9 @@ using JLD2,Parameters
 
 R = 40
 base_filename = "data/dft_XY"
-indices = [] ; for r in 1:R  if isfile(filename_base*"_r$r.jld") push!(indices,r) end end
+indices = [] ; for r in 1:R  if isfile(base_filename*"_r$r.jld") push!(indices,r) end end
 println("There are $(length(indices))/$R files.")
+
 @unpack params,comments,model,lattice = load(base_filename*"_r1.jld")
 
 dfts     = Vector{Any}(missing,R)
