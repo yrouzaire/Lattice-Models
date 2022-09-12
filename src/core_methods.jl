@@ -84,11 +84,14 @@ end
 
 function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     # default case, nothing to worry about
-    if model.symmetry == "polar"
-        return sum(sin,(angles_neighbours .- theta),init=0) # init = 0 in case angles_neighbours is empty
-    elseif model.symmetry == "nematic"
-        return sum(sin,2.0*(angles_neighbours .- theta),init=0) # init = 0 in case angles_neighbours is empty
-    else error("Symmetry unknown")
+    if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
+    else
+        if model.symmetry == "polar"
+            return sum(sin,(angles_neighbours .- theta))
+        elseif model.symmetry == "nematic"
+            return sum(sin,2.0*(angles_neighbours .- theta))
+        else error("Symmetry unknown")
+        end
     end
 end
 

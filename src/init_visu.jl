@@ -90,7 +90,7 @@ end
 
 function create_2pairs_vortices(L;r0,q,type)
     @assert isinteger(r0/4) "R0 has to be a multiple of 4 !"
-    return create_pair_vortices(L;r0,q,type) + create_pair_vortices(L;r0=r0/2,q,type)'
+    return create_pair_vortices(L,r0=r0,q=q,type=type) + create_pair_vortices(L,r0=r0/2,q=q,type=type)'
 end
 
 function make_holes!(thetas,rho)

@@ -5,7 +5,7 @@ using Plots,JLD2 # for plotting methods such as @animate etc
 include("IDrealisation.jl") ;
 
 ## Scan parameters
-include("parameters.jl"));
+include("parameters.jl");
 model = XY(params)
 lattice = TriangularLattice(L,periodic=true,single=true)
 thetas = init_thetas(lattice,params=params)
