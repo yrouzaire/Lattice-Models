@@ -8,6 +8,15 @@
 # One needs to tell the queue system to use the current directory as the working directory
 # Or else the script may fail as it will execute in your top level home directory /home/username
 #$ -cwd
+
+tr -d '\r' < script.sh > script_bis.sh
+rm script.sh
+mv script_bis.sh script.sh
+
+tr -d '\r' < bash_loop.sh > bash_loop_bis.sh
+rm bash_loop.sh
+mv bash_loop_bis.sh bash_loop.sh
+
 # Uncomment the following line if you want to know in which host your job was executed
 echo "Running on " `hostname`
 # Now comes the commands to be executed
@@ -20,6 +29,6 @@ cp -r * $TMPDIR
 cd $TMPDIR/
 # And run the program
 echo "real="$1 >> IDrealisation.jl # "dollar 1" means the first arg given to the bash script
-julia main_server.jl
+~/julia-1.3.0-rc5/bin/julia main_server.jl
 # Finally, we copy back all important output to the working directory (before it was scp -r data nodo00:$SGE_O_WORKDIR)
 scp -r data $SGE_O_WORKDIR
