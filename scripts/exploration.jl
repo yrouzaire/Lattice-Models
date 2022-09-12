@@ -10,6 +10,10 @@ lattice = SquareLattice(L,periodic=true,single=true)
 thetas = init_thetas(lattice,params=params)
 plot_thetas(thetas,model,lattice,defects=true)
 dft = DefectTracker(thetas,model,lattice)
+
+tmax,every = 10,1
+update_and_track!(thetas,model,lattice,dft,tmax,every)
+
 ## Simple simulation and plots from hightemp
 include(srcdir("../parameters.jl"));
 model = XY(params)
