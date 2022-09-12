@@ -71,15 +71,6 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
         end
     end
     return merge_duplicates(vortices_plus,lattice),merge_duplicates(vortices_minus,lattice)
-
-    #= In this list, there might be doubles/triples (2/3 locations for the
-    same physical vortex). We thus seek for numerically identified vortices
-    which are neighbours and with the same charge to delete them. =#
-    # vortices_to_keep_plus  = vortices_to_keep(vortices_plus,lattice,seuil)
-    # vortices_to_keep_minus = vortices_to_keep(vortices_minus,lattice,seuil)
-    #
-    # return vortices_plus,vortices_minus
-    # return vortices_plus[vortices_to_keep_plus],vortices_minus[vortices_to_keep_minus]
 end
 
 function merge_duplicates(list,lattice;radius=2)
@@ -100,7 +91,8 @@ function merge_duplicates(list,lattice;radius=2)
                     push!(tmp,pos[j])
                 end
             end
-            push!(merged_duplicates,mean_N_positions(tmp,lattice.L,true))
+            mean_loc_defect = mean_N_positions(tmp,lattice.L,true)
+            push!(merged_duplicates,(mean_loc_defect[1],mean_loc_defect[2],charge[i]))
         end
     end
     return merged_duplicates

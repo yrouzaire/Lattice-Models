@@ -68,9 +68,9 @@ x0,y0 = round(Int,L/4),round(Int,L/4)
 ## Step 4 and 4bis OK alhamdoullah
 include(srcdir("../parameters.jl"));
     params["init"] = "single"
-    params["q"] = -1/2
-    params["rho"] = .95
-    params["type1defect"] = "convergent"
+    params["q"] = 1/2
+    params["rho"] = 1
+    params["type1defect"] = "counterclockwise"
     params["symmetry"] = "polar"
     model = XY(params)
     lattice = SquareLattice(L,periodic=true,single=true)
