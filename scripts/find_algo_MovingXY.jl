@@ -38,5 +38,5 @@ params["init"] = "hightemp"
 model = MovingXY(params)
     lattice = TriangularLattice(L,periodic=true)
     thetas = init_thetas(lattice,params=params)
-update!(thetas,model,lattice,3000)
+update!(thetas,model,lattice,3)
     plot_thetas(thetas,model,lattice,defects=false)

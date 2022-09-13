@@ -298,8 +298,14 @@ number_active_defects(dt::DefectTracker)  = number_active_defectsN(dt) + number_
 
 function t_bounds(dft::DefectTracker)
     alldefects = vcat(dft.defectsP,dft.defectsN)
-    tmin = minimum([d.creation_time for d in alldefects])
-    tmax = maximum([d.annihilation_time for d in alldefects])
+    creation_times     = filter(!isnothing,[d.creation_time for d in alldefects])
+    annihilation_times = filter(!isnothing,[d.annihilation_time for d in alldefects])
+    if isempty(creation_times) tmin = 0.0
+    else tmin = minimum(creation_times)
+    end
+    if isempty(annihilation_times) tmax = dft.current_time
+    else tmax = maximum(creation_times)
+    end
     return tmin, tmax
 end
 
@@ -573,12 +579,15 @@ function MSD(dft::DefectTracker,model::AbstractModel,lattice::AbstractLattice)
     hasfield(typeof(model),:dt) ? dummy_dt = model.dt : dummy_dt = 1
 
     # Compute the SD
-    SD_P = NaN*zeros(nP,Int(tmax))
-    SD_N = NaN*zeros(nN,Int(tmax))
+    SD_P = NaN*zeros(nP,round(Int,tmax))
+    SD_N = NaN*zeros(nN,round(Int,tmax))
     for n in 1:nP
         defect = dft.defectsP[n]
-        index_creation = round(Int,defect.creation_time/dummy_dt)
-        index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
+        index_creation = round(Int,defect.creation_time/dummy_dt) + 1
+        if isnothing(defect.annihilation_time) index_annihilation = round(Int,dft.current_time/dummy_dt)
+        else index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
+        end
+        # TODO
         SD_P[n,index_creation:index_annihilation] = square_displacement(defect,lattice)
     end
     for n in 1:nN
@@ -598,7 +607,7 @@ end
 
 function square_displacement(d::Defect,lattice::AbstractLattice)
     loc_t0 = creation_loc(d)
-    return [dist(lattice,pos,loc_t0) for loc in d.hist] .^ 2
+    return [dist(lattice,loc,loc_t0) for loc in d.hist] .^ 2
 end
 
 function interdefect_distance(dft,defect1,defect2,lattice)
