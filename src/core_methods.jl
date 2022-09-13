@@ -171,7 +171,7 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) 
         for i in 2:L-1
             proposal = proposals[i,j] ; theta = thetas[i,j]
             angle_neighbours = 2get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-            dE = 1/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
+            @fastmath dE = 1.0/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
             if rand() < exp(-dE/T) @inbounds thetas[i,j] = proposal end
         end
     end
@@ -182,13 +182,13 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) 
         for j in [1,L] , i in 1:L
             proposal = proposals[i,j] ; theta = thetas[i,j]
             angle_neighbours = 2get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-            dE = 1/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
+            @fastmath dE = 1.0/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
             if rand() < exp(-dE/T) @inbounds thetas[i,j] = proposal end
         end
         for j in 2:L-1 , i in [1,L]
             proposal = proposals[i,j] ; theta = thetas[i,j]
             angle_neighbours = 2get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-            dE = 1/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
+            @fastmath dE = 1.0/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
             if rand() < exp(-dE/T) @inbounds thetas[i,j] = proposal end
         end
     end
