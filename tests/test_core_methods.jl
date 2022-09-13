@@ -1,6 +1,8 @@
-include("../src/core_methods.jl");
-include("../src/init_visu.jl");
-include("../src/misc.jl");
+using DrWatson ; @quickactivate "LatticeModels"
+ include(srcdir("LatticeModels.jl"))
+ using Plots,ColorSchemes,LaTeXStrings
+ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
+
 
 using BenchmarkTools
 using Plots,ColorSchemes,LaTeXStrings
@@ -50,15 +52,17 @@ update!(thetas,model,lattice,tmax)
 model.t
 
 ## Visual verification
-model = MovingXY(params_phys,params_num)
+include(srcdir("../parameters.jl"));
+model = MCXY(params)
 lattice = TriangularLattice(L,periodic=true)
-thetas = init_thetas(model,lattice,init="pair",q=1,r0=60,float_type=float_type,type=["sink","convergent"])
-plot_theta(thetas,model,lattice)
-tmax = 1000
+thetas = init_thetas(lattice,params=params)
+plot_thetas(thetas,model,lattice)
+tmax = 10000
     z = @elapsed update!(thetas,model,lattice,tmax)
-    plot_theta(thetas,model,lattice)
+    plot_thetas(thetas,model,lattice)
     # ok tout semble correspondre à mes attentes
 prinz(z)
+plot_thetas(thetas,model,lattice,defects=true)
 
 ## Check chebychev Metric
 model = ForceXY(params_phys,params_num)
