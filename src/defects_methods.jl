@@ -51,7 +51,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
     return charge
 end
 
-function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice; seuil=4) where T<:AbstractFloat
+function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
     L = lattice.L
     if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
     vortices_plus  = Tuple{Int,Int,T}[]
@@ -73,7 +73,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     return merge_duplicates(vortices_plus,lattice),merge_duplicates(vortices_minus,lattice)
 end
 
-function merge_duplicates(list,lattice;radius=2)
+function merge_duplicates(list,lattice;radius=4)
     #= In this list, there might be doubles/triples (2/3 locations for the
     same physical vortex). We thus seek for numerically identified vortices
     which are neighbours and with the same charge to delete them. =#

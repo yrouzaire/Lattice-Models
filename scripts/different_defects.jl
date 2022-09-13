@@ -108,19 +108,21 @@ plots_pairs = []
 ## Discriminate between same q but different defects : divergence and rotationnal ?
 # First implement, then test on my defects, then export to recognition by DefectTracker
 include(srcdir("../parameters.jl"));
-lattice = SquareLattice(L)
-thetas = init_thetas(lattice,params=params)
-model = XY(params)
-window = 9 # for L = 20
+params["type1defect"] = "source"
+    params["q"] = 1
+    lattice = SquareLattice(L)
+    thetas = init_thetas(lattice,params=params)
+    model = XY(params)
+    window = 9 # for L = 20
 
 
-p = plot_thetas(thetas,model,lattice)
+p = plot_thetas(thetas,model,lattice,defects=true)
     display_quiver!(p,thetas,window)
     xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 divergence,rotational = get_div_rot(thetas)
-heatmap(divergence',aspect_ratio=1,size=(485,400))
-heatmap(rotational',aspect_ratio=1,size=(485,400))
+heatmap(divergence',aspect_ratio=1,size=(485,400),c=cgrad([:blue,:white,:red]))
+heatmap(rotational',aspect_ratio=1,size=(485,400),c=cgrad([:blue,:white,:red]))
 p
 
 get_divergence(get_neighbours(thetas,model,lattice,10,10))
