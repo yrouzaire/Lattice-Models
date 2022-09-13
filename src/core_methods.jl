@@ -111,10 +111,10 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
             @inbounds weights[n] = 1.0
         end
     end
-
-    return sum(sin.(sym(model)(angles_neighbours .- theta)) .* weights  , init = 0) # init = 0 in case angles_neighbours is empty
+    if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
+    else return sum(sin.(sym(model)(angles_neighbours .- theta)) .* weights)
+    end
 end
-
 ## ------------------------ Update ------------------------
 # NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
 function update!(thetas::Matrix{<:T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
@@ -157,14 +157,46 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
     return thetas
 end
 
-# Meant to relax reconstruction for spotting defects
-function relax!(thetas::Matrix{T},model::AbstractModel{T}) where T<:AbstractFloat
-    dummy_dt = T(1E-2)
-    trelax = T(1.0)
-    dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
-    dummy_lattice = SquareLattice(size(thetas,1),true,true,"euclidian")
-    update!(thetas,dummy_model,dummy_lattice,trelax)
+function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+    thetas_old = copy(thetas)
+    L  = lattice.L
+    T  = model.T
+    proposals = mod.(  2*sqrt(T)*randn(L,L) + thetas , FT(2pi) ) # standard deviation two times the standard deviation of the
+    model.symmetry == "polar" ? coeff_symmetry = 1.0 : coeff_symmetry = 2.0
+    coeff_symmetry2 = coeff_symmetry / 2.0
+
+    # In Bulk
+    ij_in_bulk = true
+    for j in 2:L-1
+        for i in 2:L-1
+            proposal = proposals[i,j] ; theta = thetas[i,j]
+            angle_neighbours = 2get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
+            dE = 1/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
+            if rand() < exp(-dE/T) @inbounds thetas[i,j] = proposal end
+        end
+    end
+
+    # On the borders
+    ij_in_bulk = false
+    if lattice.periodic # if not periodic, juste leave the edge unchanged, otherwise get_neighbours too complicated
+        for j in [1,L] , i in 1:L
+            proposal = proposals[i,j] ; theta = thetas[i,j]
+            angle_neighbours = 2get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
+            dE = 1/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
+            if rand() < exp(-dE/T) @inbounds thetas[i,j] = proposal end
+        end
+        for j in 2:L-1 , i in [1,L]
+            proposal = proposals[i,j] ; theta = thetas[i,j]
+            angle_neighbours = 2get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
+            dE = 1/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta)) * sum(sin,coeff_symmetry2*(proposal + theta .- angle_neighbours))
+            if rand() < exp(-dE/T) @inbounds thetas[i,j] = proposal end
+        end
+    end
+
+    model.t += 1
+    return thetas
 end
+
 
 function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
@@ -290,4 +322,13 @@ function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::
         index_nearest_neighbour = 1
     end
     return nearest_neighbours[index_nearest_neighbour]
+end
+
+# Meant to relax reconstruction for spotting defects
+function relax!(thetas::Matrix{T},model::AbstractModel{T}) where T<:AbstractFloat
+    dummy_dt = T(1E-2)
+    trelax = T(1.0)
+    dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
+    dummy_lattice = SquareLattice(size(thetas,1),true,true,"euclidian")
+    update!(thetas,dummy_model,dummy_lattice,trelax)
 end

@@ -5,6 +5,7 @@ using Parameters
 abstract type AbstractModel{AbstractFloat} end
 
 ## ---------------------------- Classical XY Model ----------------------------
+# Langevin
 mutable struct XY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     symmetry::String
@@ -19,6 +20,22 @@ function XY(params)
     T,dt,rho = convert.(float_type,(T,dt,rho))
 
     return XY{float_type}(T,symmetry,dt,zero(float_type),rho)
+end
+
+# MonteCarlo
+mutable struct MCXY{AbstractFloat} <: AbstractModel{AbstractFloat}
+    T::AbstractFloat
+    symmetry::String
+    t::AbstractFloat
+    rho::AbstractFloat
+
+end
+
+function MCXY(params)
+    @unpack T,symmetry,float_type,rho = params
+    T,rho = convert.(float_type,(T,rho))
+
+    return MCXY{float_type}(T,symmetry,zero(float_type),rho)
 end
 
 

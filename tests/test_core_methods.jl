@@ -11,9 +11,9 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 include(srcdir("../parameters.jl"));
 
 ## Benchmark update
-model = MovingXY(params_phys,params_num)
+model = XY(params)
 lattice = TriangularLattice(L,periodic=true)
-thetas = init_thetas(model,lattice,init="hightemp",q=1,r0=60,float_type=float_type,type=["source","divergent"])
+thetas = init_thetas(lattice,params)
 update!(thetas,model,lattice)
 @btime update!(thetas,model,lattice)
 #= Runtimes
