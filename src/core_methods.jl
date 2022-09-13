@@ -161,7 +161,7 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) 
     thetas_old = copy(thetas)
     L  = lattice.L
     T  = model.T
-    proposals = mod.(  2*sqrt(T)*randn(L,L) + thetas , FT(2pi) ) # standard deviation two times the standard deviation of the
+    proposals = mod.(  2sqrt(T)*randn(L,L) + thetas ,2pi) # standard deviation two times the standard deviation of the
     model.symmetry == "polar" ? coeff_symmetry = 1.0 : coeff_symmetry = 2.0
     coeff_symmetry2 = coeff_symmetry / 2.0
 
