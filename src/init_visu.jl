@@ -149,8 +149,8 @@ function movies(thetas,model,lattice;defects=false,saving_times,transients)
     anim = @animate for t in saving_times
         println("$(round(t/saving_times[end]*100,digits=2)) %")
         update!(thetas,model,lattice,t)  # updates until time = t
-        if t<transients p = plot_theta(thetas,model,lattice,defects=false,size=(512,512))
-        else            p = plot_theta(thetas,model,lattice,defects=defects,size=(512,512))
+        if t<transients p = plot_thetas(thetas,model,lattice,defects=false,size=(512,512))
+        else            p = plot_thetas(thetas,model,lattice,defects=defects,size=(512,512))
         end
     end
     return anim

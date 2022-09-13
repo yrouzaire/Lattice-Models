@@ -84,8 +84,8 @@ include(srcdir("../parameters.jl"));
     cols = cgrad([:black,:blue,:green,:orange,:red,:black])
     params["L"] = 20
     windows = Int(params["L"]/2-1)
-    model = XY(params) # in fact, both useless for plotting defects at t = 0
-    lattice = SquareLattice(L,periodic=true,single=true) # in fact, both useless for plotting defects at t = 0
+    model = XY(params) # in fact, useless for plotting defects at t = 0
+    lattice = SquareLattice(L,periodic=true,single=true) # in fact, useless for plotting defects at t = 0
 
 # +1 Defects
 plotsP1 = []
