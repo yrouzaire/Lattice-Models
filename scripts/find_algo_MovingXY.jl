@@ -3,9 +3,6 @@ include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
-## Parameters
-include(srcdir("../parameters.jl"));
-
 #= Qualitative tests that the algo has to pass
 1. Numerical Stability from lowtemp
 2. Numerical Stability from lowtemp_nematic
@@ -28,15 +25,36 @@ In all cases,
     - the proposal is accepted with Metropolis proba (to ensure a well controlled limit at eq)
 =#
 
+## Parameters
+include(srcdir("../parameters.jl"));
+
 params["algo"] = "A"
-params["width_proposal"] = 0.05
-params["symmetry"] = "nematic"
+    params["rho"] = 0.95
+    params["width_proposal"] = 0.1
+    params["symmetry"] = "nematic"
+    params["A"] = 3
 
-params["init"] = "hightemp"
-    params["q"] = -1/2
+    params["init"] = "hightemp"
+    params["type1defect"] = "source"
+    params["type2defect"] = "pair4"
+    params["q"] = 1/2
+    params["r0"] = 40
 
-model = MovingXY(params)
-    lattice = TriangularLattice(L,periodic=true)
+model = XY(params)
+    lattice = SquareLattice(L,periodic=true)
     thetas = init_thetas(lattice,params=params)
-update!(thetas,model,lattice,3)
+update!(thetas,model,lattice,1000)
     plot_thetas(thetas,model,lattice,defects=false)
+update!(thetas,model,lattice,2000)
+    plot_thetas(thetas,model,lattice,defects=false)
+update!(thetas,model,lattice,3000)
+    plot_thetas(thetas,model,lattice,defects=false)
+update!(thetas,model,lattice,4000)
+    plot_thetas(thetas,model,lattice,defects=false)
+update!(thetas,model,lattice,5000)
+    plot_thetas(thetas,model,lattice,defects=true)
+
+spot_defects(thetas,model,lattice)
+
+
+## Optimize dt for XY
