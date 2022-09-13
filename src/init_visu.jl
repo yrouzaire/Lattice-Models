@@ -22,7 +22,7 @@ function init_thetas(space;params)
         thetas = create_2pairs_vortices(L,r0=r0,q=q,type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
-    if model.rho < 1 make_holes!(thetas,rho) end
+    if rho < 1 make_holes!(thetas,rho) end
     return float_type.(thetas)
 end
 
@@ -101,7 +101,7 @@ function make_holes!(thetas,rho)
 end
 
 ## ------------------------ Visualization  ------------------------
-function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(485,400))
+function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
     if     model.symmetry == "nematic" modd = pi
     elseif model.symmetry == "polar"   modd = 2pi
     end

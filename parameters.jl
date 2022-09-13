@@ -12,11 +12,11 @@ algo = "A" # rule for collision!() for model = MovingXY
 # Numerical Parameters
 dt = 1E-2
 float_type = Float32
-width_proposal = 0.01
+width_proposal = 2sqrt(T)
 
 # Initialisation
 init = "hightemp"
-q = 1
+q = 1/2
 r0 = Int(L/2)
 type1defect = "source"
 type2defect = "pair1"

@@ -56,10 +56,10 @@ update!(thetas,model,lattice,5000)
 
 spot_defects(thetas,model,lattice)
 
-
 ## Do some movies
+include(srcdir("../parameters.jl"));
 lattice = TriangularLattice(L)
-saving_times = vcat(0:10:700,700:100:20000) ; transients = saving_times[end]/3
+saving_times = vcat(0:10:700,700:100:10000) ; transients = saving_times[end]/3
 
 # params["rho"] = 1
 #     model = MCXY(params)
@@ -76,21 +76,21 @@ saving_times = vcat(0:10:700,700:100:20000) ; transients = saving_times[end]/3
 
 params["rho"] = 1
     params["A"] = 0.5
-    model = MCXY(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
-    z = @elapsed anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
+    z = @elapsed anim = movies(thetas,model,lattice,defects=false,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
     prinz(z)
-    
+
     params["A"] = 0
-    model = MCXY(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
 
 
     params["A"] = 1
-    model = MCXY(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
