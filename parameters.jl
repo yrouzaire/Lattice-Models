@@ -1,13 +1,13 @@
 # Physical Parameters
-L = 200
-T = 0.1
+L = 100
+T = 0.
 symmetry = "nematic"
 propulsion = "polar"
-Var = 0.2
-A = 1.
+Var = 0.1
+A = 1
 vision = 5π/3
-rho = 1
-algo = "A" # rule for collision!() for model = MovingXY
+rho = 0.95
+algo = "B" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
 dt = 1E-2

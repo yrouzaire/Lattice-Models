@@ -13,11 +13,12 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 include(srcdir("../parameters.jl"));
 
 ## Benchmark update
-model = MCXY(params)
+model = MovingXY(params)
 lattice = TriangularLattice(L,periodic=true)
 thetas = init_thetas(lattice,params=params)
-update!(thetas,model,lattice)
-@btime update!(thetas,model,lattice)
+update!(thetas,model,lattice,20000)
+    plot_thetas(thetas,model,lattice)
+@btime update!($thetas,$model,$lattice)
 #= Runtimes
 WN = Wrapped Normal ; VM = VonMises ; AF = antiferro
 Avec WN, AF = false update takes 11 ms
