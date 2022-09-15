@@ -126,60 +126,66 @@ function mean_N_positions(vec_pos,L,should_take_mod::Bool=true)
     return averaged_pos
 end
 
-function get_div_rot(thetas::Matrix{T}) where T<:AbstractFloat
+# coordinate-free methods based on scalar products (does not force SquareLattice)
+function get_div_rot(thetas::Matrix{T},lattice::AbstractLattice) where T<:AbstractFloat # coordinate-free
     L = size(thetas,1)
-    dummy_rho = one(T) # so that the NaN do not get filtered out, I need them here
-    rho1_model = XY{T}(zero(T),"polar",zero(T),zero(T),dummy_rho)
-
     divergence = NaN*zeros(L,L)
     rotational = NaN*zeros(L,L)
     for j in 1:L , i in 1:L
-        angles_neighbours = get_neighbours(thetas,rho1_model,lattice,i,j,is_in_bulk(i,j,L))
-        # angles_neighbours = invoke(get_neighbours, Tuple{Matrix{T},AbstractModel,SquareLattice,Int,Int,Bool}   ,thetas,dummy_model,lattice,i,j,is_in_bulk(i,j,L))
-        divergence[i,j] = get_divergence(angles_neighbours,cst)
-        rotational[i,j] = get_rotational(angles_neighbours,cst)
+        divergence[i,j] , rotational[i,j] = get_div_rot(thetas,i,j,lattice)
     end
-    return divergence/surface_unit_cell , rotational/surface_unit_cell
+    return divergence , rotational
 end
 
+function get_div_rot(thetas::Matrix{T},i,j,lattice::AbstractLattice) where T<:AbstractFloat # coordinate-free
+    L = size(thetas,1)
 
-# function get_div_rot(thetas::Matrix{T}) where T<:AbstractFloat
+    dummy_rho = one(T) # so that the NaN do not get filtered out, I need them here
+    rho1_model = XY{T}(zero(T),"polar",zero(T),zero(T),dummy_rho)
+
+    if isa(lattice,TriangularLattice) cst = π/3 # ; surface_unit_cell = 3sqrt(3)/2
+    elseif isa(lattice,SquareLattice) cst = π/2 # ; surface_unit_cell = 2
+    end
+
+    angles_neighbours = get_neighbours(thetas,rho1_model,lattice,i,j,is_in_bulk(i,j,L))
+    div = 0.0
+    rot = 0.0
+    for k in 1:length(angles_neighbours)
+        if !isnan(angles_neighbours[k]) # normally it should not be, since preconditionning! first, but one never knows.
+            div += cos((k-1)*cst) * cos(angles_neighbours[k]) + sin((k-1)*cst) * sin(angles_neighbours[k])
+            rot += cos(k*cst) * cos(angles_neighbours[k]) + sin(k*cst) * sin(angles_neighbours[k])
+        end
+    end
+    return div,rot
+    #= No division by surface_unit_cell because eventually
+    we do not care about the actual numerical value,
+    only its sign. =#
+end
+
+# methods based on derivatives (forces SquareLattice)
+# function get_div_rot(thetas::Matrix{T}) where T<:AbstractFloat # derivative based
 #     L = size(thetas,1)
-#     dummy_rho = one(T) # so that the NaN do not get filtered out, I need them here
-#     rho1_model = XY{T}(zero(T),"polar",zero(T),zero(T),dummy_rho)
-#
-#     # Au final, peu importe le lattice n'est qu'une discrétisation, ici, prenons la plus simple : SquareLattice
-#     square_lattice = SquareLattice(L)
-#     surface_unit_cell = 2
-#     cst = π/2
-#
 #     divergence = NaN*zeros(L,L)
 #     rotational = NaN*zeros(L,L)
 #     for j in 1:L , i in 1:L
-#         angles_neighbours = get_neighbours(thetas,rho1_model,square_lattice,i,j,is_in_bulk(i,j,L))
-#         # angles_neighbours = invoke(get_neighbours, Tuple{Matrix{T},AbstractModel,SquareLattice,Int,Int,Bool}   ,thetas,dummy_model,lattice,i,j,is_in_bulk(i,j,L))
-#         divergence[i,j] = get_divergence(angles_neighbours,cst)
-#         rotational[i,j] = get_rotational(angles_neighbours,cst)
+#         divergence[i,j] , rotational[i,j] = get_div_rot(thetas,i,j)
 #     end
-#     return divergence/surface_unit_cell , rotational/surface_unit_cell
+#     return divergence , rotational
 # end
-
-# function get_divergence(angles_neighbours,cst=π/2)
-#     div = 0.0
-#     for k in 1:length(angles_neighbours)
-#         if !isnan(angles_neighbours[k])
-#             div += cos((k-1)*cst)*cos(angles_neighbours[k]) + sin((k-1)*cst)*sin(angles_neighbours[k])
-#         end
-#     end
-#     return div
-# end
-
-# function get_rotational(angles_neighbours,cst=π/2)
-#     rot = 0.0
-#     for k in 1:length(angles_neighbours)
-#         if !isnan(angles_neighbours[k])
-#             rot += cos(k*cst)*cos(angles_neighbours[k]) + sin(k*cst)*sin(angles_neighbours[k])
-#         end
-#     end
-#     return rot
+#
+# function get_div_rot(thetas::Matrix{T},i,j) where T<:AbstractFloat # derivative based
+#     L = size(thetas,1)
+#
+#     dummy_rho = one(T) # so that the NaN do not get filtered out, I need them here
+#     rho1_model = XY{T}(zero(T),"polar",zero(T),zero(T),dummy_rho)
+#     square_lattice = SquareLattice(L,periodic=false)
+#
+#     angles_neighbours = get_neighbours(thetas,rho1_model,square_lattice,i,j,is_in_bulk(i,j,L))
+#     # TODO check the order of angles_neighbours[1 or 3] and whether 2pi systematiquement
+#     dx_theta = arclength(angles_neighbours[3],angles_neighbours[1],2pi)/2
+#     dy_theta = arclength(angles_neighbours[4],angles_neighbours[2],2pi)/2
+#     theta = thetas[i,j]
+#     div = -sin(theta)*dx_theta + cos(theta)*dy_theta
+#     rot =  cos(theta)*dx_theta + sin(theta)*dy_theta
+#     return div,rot
 # end
