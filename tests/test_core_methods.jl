@@ -16,8 +16,8 @@ include(srcdir("../parameters.jl"));
 model = MovingXY(params)
 lattice = TriangularLattice(L,periodic=true)
 thetas = init_thetas(lattice,params=params)
-update!(thetas,model,lattice,20000)
-    plot_thetas(thetas,model,lattice)
+update!(thetas,model,lattice,10)
+    # plot_thetas(thetas,model,lattice)
 @btime update!($thetas,$model,$lattice)
 #= Runtimes
 WN = Wrapped Normal ; VM = VonMises ; AF = antiferro
@@ -54,11 +54,11 @@ model.t
 
 ## Visual verification
 include(srcdir("../parameters.jl"));
-model = MCXY(params)
+model = MovingXY(params)
 lattice = TriangularLattice(L,periodic=true)
 thetas = init_thetas(lattice,params=params)
 plot_thetas(thetas,model,lattice)
-tmax = 10000
+tmax = 1000
     z = @elapsed update!(thetas,model,lattice,tmax)
     plot_thetas(thetas,model,lattice)
     # ok tout semble correspondre à mes attentes

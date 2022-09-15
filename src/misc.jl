@@ -1,5 +1,5 @@
 logspace(x1, x2, n) = [10.0 ^y for y in range(log10(x1), log10(x2), length=n)]
-prinz(z) = println("Runtime : $(round(Int,z)) seconds = $(round(z/60,digits=2)) minutes = $(round(z/3600,digits=2)) hours.")
+prinz(z) = println("Runtime : $(round(Int,z)) seconds = $(round(z/60,digits=2)) minutes = $(round(z/3600,digits=2)) hours.") 
 each = eachindex
 
 nanmean(x) = mean(filter(!isnan,x))

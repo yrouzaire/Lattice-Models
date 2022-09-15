@@ -62,6 +62,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     end
     thetasmod = mod.(copy(thetas),modd)
     if model.rho < 1 preconditionning!(thetasmod,model,lattice) end
+    trelax = 0.3 ; relax!(thetasmod,model,trelax) end
     for i in range_bc
         for j in range_bc
             q = get_vorticity(thetasmod,model,lattice,i,j)
@@ -101,7 +102,8 @@ end
 function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
     remove_isolates!(thetas,model,lattice)
     fill_holes!(thetas,model,lattice)
-    relax!(thetas,model)
+    trelax = 0.5
+    relax!(thetas,model,trelax)
 end
 
 function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
@@ -266,13 +268,17 @@ end
 mutable struct Defect
     id::Int
     charge::Number
+    div::Number
+    rot::Number
+    type::String
     hist::Vector{Tuple{Number,Number}}
     annihilation_time::Union{Float64,Nothing}
     creation_time::Float64
     id_annihilator::Union{Int,Nothing}
-
-    Defect(;id,charge,loc,t) = new(id,charge,[loc],nothing,t,nothing)
 end
+function Defect(;id,charge,div,rot,loc,t)
+
+    new(id,charge,[loc],nothing,t,nothing)
 last_loc(d::Defect) = d.hist[end]
 creation_loc(d::Defect) = d.hist[1]
 push_position!(d::Defect,loc) = push!(d.hist,loc)

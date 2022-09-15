@@ -108,27 +108,55 @@ plots_pairs = []
 ## Discriminate between same q but different defects : divergence and rotationnal ?
 # First implement, then test on my defects, then export to recognition by DefectTracker
 include(srcdir("../parameters.jl"));
-params["type1defect"] = "join"
-    params["q"] = -1
+params["type1defect"] = "source"
+    params["q"] = 1/2
     lattice = SquareLattice(L)
     thetas = init_thetas(lattice,params=params)
     model = XY(params)
     window = 9 # for L = 20
     divergence,rotational = get_div_rot(thetas,lattice)
 
-# p = plot_thetas(thetas,model,lattice,defects=true)
-#     display_quiver!(p,thetas,window)
-#     xlims!(1,2window+1) ; ylims!(1,2window+1)
-#     pos = spot_defects(thetas,model,lattice)[2][1][1:2]
-#     scatter!(pos,m=:xcross,c=:white)
+p = plot_thetas(thetas,model,lattice,defects=true)
+    display_quiver!(p,thetas,window)
+    xlims!(1,2window+1) ; ylims!(1,2window+1)
+    pos = spot_defects(thetas,model,lattice)[1][1][1:2]
+    scatter!(pos,m=:xcross,c=:white)
 
-heatmap(divergence',aspect_ratio=1,size=(485,400),c=cgrad([:blue,:white,:red]))
-    pos = spot_defects(thetas,model,lattice)[2][1][1:2]
+heatmap(divergence',aspect_ratio=1,size=(485,450),c=cgrad([:blue,:white,:red]),title="div")
+    pos = spot_defects(thetas,model,lattice)[1][1][1:2]
     scatter!(pos,m=:xcross,c=:black)
-heatmap(rotational',aspect_ratio=1,size=(485,400),c=cgrad([:blue,:white,:red]))
-    pos = spot_defects(thetas,model,lattice)[2][1][1:2]
+heatmap(rotational',aspect_ratio=1,size=(485,450),c=cgrad([:blue,:white,:red]),title="rot")
+    pos = spot_defects(thetas,model,lattice)[1][1][1:2]
     scatter!(pos,m=:xcross,c=:black)
-
 
 get_divergence(get_neighbours(thetas,model,lattice,10,10))
 get_rotational(get_neighbours(thetas,model,lattice,10,10))
+
+## Now observe them in a noisy environnement
+include(srcdir("../parameters.jl"));
+params["type1defect"] = "join"
+    params["q"] = -1/2
+    params["T"] = 0.2
+    lattice = TriangularLattice(L)
+    model = XY(params)
+    thetas = init_thetas(lattice,params=params)
+    update!(thetas,model,lattice,5)
+    relax!(thetas,model,0.5) # because in real use, theta will be relaxed for t=0.3
+    window = 9 # for L = 20
+    divergence,rotational = get_div_rot(thetas,lattice)
+
+    params["q"] > 0 ? ind = 1 : ind = 2
+    p = plot_thetas(thetas,model,lattice,defects=false)
+    display_quiver!(p,thetas,window)
+    xlims!(1,2window+1) ; ylims!(1,2window+1)
+    pos = spot_defects(thetas,model,lattice)[ind][1][1:2]
+    scatter!(pos,m=:xcross,ms=7,c=:white)
+    pd = heatmap(divergence',aspect_ratio=1,size=(485,400),c=cgrad([:blue,:white,:red]))
+        pos = spot_defects(thetas,model,lattice)[ind][1][1:2]
+        scatter!(pos,m=:xcross,ms=7,c=:black)
+        xlims!(1,2window+1) ; ylims!(1,2window+1)
+    pr = heatmap(rotational',aspect_ratio=1,size=(485,400),c=cgrad([:blue,:white,:red]))
+    pos = spot_defects(thetas,model,lattice)[ind][1][1:2]
+    scatter!(pos,m=:xcross,ms=7,c=:black)
+    xlims!(1,2window+1) ; ylims!(1,2window+1)
+    plot(p,pd,pr,layout=(3,1),size=(485,1200))

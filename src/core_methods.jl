@@ -308,7 +308,8 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
     if A == 0 angle = 2π*rand()
     else
         # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
-        angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
+        # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
+        angle = mod(rand(Cauchy(theta-pi,one(T)/A)),2pi) # Wrapped Cauchy
     end
     return angle
 end
@@ -325,10 +326,9 @@ function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::
 end
 
 # Meant to relax reconstruction for spotting defects
-function relax!(thetas::Matrix{T},model::AbstractModel{T}) where T<:AbstractFloat
+function relax!(thetas::Matrix{T},model::AbstractModel{T},trelax=0.5) where T<:AbstractFloat
     dummy_dt = T(1E-2)
-    trelax = T(1.0)
     dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
-    dummy_lattice = SquareLattice(size(thetas,1),true,true,"euclidian")
+    dummy_lattice = SquareLattice(size(thetas,1),true,true,"chebychev")
     update!(thetas,dummy_model,dummy_lattice,trelax)
 end
