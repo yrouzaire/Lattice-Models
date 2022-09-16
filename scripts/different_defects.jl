@@ -136,8 +136,8 @@ get_rotational(get_neighbours(thetas,model,lattice,10,10))
 include(srcdir("../parameters.jl"));
 params["type1defect"] = "join"
     params["q"] = -1/2
-    params["T"] = 0.2
-    lattice = TriangularLattice(L)
+    params["T"] = 0.3
+    lattice = TriangularLattice(L,)
     model = XY(params)
     thetas = init_thetas(lattice,params=params)
     update!(thetas,model,lattice,5)

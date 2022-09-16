@@ -53,7 +53,6 @@ end
 
 function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
     L = lattice.L
-    if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
     vortices_plus  = Tuple{Int,Int,T}[]
     vortices_minus = Tuple{Int,Int,T}[]
 
@@ -62,7 +61,8 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     end
     thetasmod = mod.(copy(thetas),modd)
     if model.rho < 1 preconditionning!(thetasmod,model,lattice) end
-    trelax = 0.3 ; relax!(thetasmod,model,trelax) end
+    trelax = 0.3 ; relax!(thetasmod,model,trelax)
+    if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
     for i in range_bc
         for j in range_bc
             q = get_vorticity(thetasmod,model,lattice,i,j)
@@ -268,20 +268,43 @@ end
 mutable struct Defect
     id::Int
     charge::Number
-    div::Number
-    rot::Number
-    type::String
+    # div::Number
+    # rot::Number
+    # type::Vector{String} # types might change over the simulation
     hist::Vector{Tuple{Number,Number}}
     annihilation_time::Union{Float64,Nothing}
     creation_time::Float64
     id_annihilator::Union{Int,Nothing}
+    Defect(;id,charge,loc,t) = new(id,charge,[loc],nothing,t,nothing)
 end
-function Defect(;id,charge,div,rot,loc,t)
-
-    new(id,charge,[loc],nothing,t,nothing)
+# function Defect(;id,charge,div,rot,loc,t)
+#     new(id,charge,[loc],nothing,t,nothing)
+# end
 last_loc(d::Defect) = d.hist[end]
 creation_loc(d::Defect) = d.hist[1]
 push_position!(d::Defect,loc) = push!(d.hist,loc)
+around_zero(x,seuil) = abs(x) < seuil
+function type(d::Defect)::String
+    seuil_div  = 2
+    seuil_rot  = 1
+    seuil_zero = 0.5
+
+    type = "unknown"
+    q,d,r = d.charge, d.div, d.rot
+    if q > 0
+        # no need to check rot, div is already a strong clue
+        if     d > +seuil_div type = "source"
+        elseif d < -seuil_div type = "sink"
+        end
+
+        # no need to check div, rot is already a strong clue
+        if     r > +seuil_rot type = "counterclockwise"
+        elseif r < -seuil_rot type = "clockwise"
+        end
+    elseif q < 0
+    end
+    return type
+end
 
 mutable struct DefectTracker
     defectsP::Vector{Defect} # the id of a defect is its index in this vector

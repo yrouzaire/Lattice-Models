@@ -144,6 +144,32 @@ end
 # Note : after returning the plots with quiver, one has to add
 # xlims!(1,2window+1) ; ylims!(1,2window+1)
 
+function zoom_quiver(thetas,model,lattice,i,j,window=5;defects=false)
+    L = lattice.L
+    # if iseven(window) window += 1 end
+    # window2 = Int((window-1)/2)
+
+    if at_least_at_distance_X_from_border(i,j,L,X=window+1)
+        thetas_zoom = thetas[i-window:i+window,j-window:j+window]
+        p=plot_thetas(thetas_zoom,model,lattice,defects=defects)
+        display_quiver!(p,thetas_zoom,window)
+        xlims!(1,2window+1) ; ylims!(1,2window+1)
+    else
+        if lattice.periodic
+            shift = 5
+            thetas_shifted = copy(thetas)
+            for i in 1:L thetas_shifted[i,:] = circshift(thetas_shifted[i,:],shift) end
+            for i in 1:L thetas_shifted[:,i] = circshift(thetas_shifted[:,i],shift) end
+            p = zoom_quiver(thetas_shifted,model,lattice,mod1(i-shift,L),mod1(j-shift,L),window)
+        else
+            error("Lattice should be periodic")
+        end
+    end
+    return p
+end
+# TODO : check why infinite loop -> StackOverflow 
+
+
 ## ------------------------ Movies  ------------------------
 function movies(thetas,model,lattice;defects=false,saving_times,transients)
     anim = @animate for t in saving_times
