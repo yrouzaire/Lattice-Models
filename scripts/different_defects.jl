@@ -149,7 +149,7 @@ params["type1defect"] = "join"
     p = plot_thetas(thetas,model,lattice,defects=false)
     display_quiver!(p,thetas,window)
     xlims!(1,2window+1) ; ylims!(1,2window+1)
-    pos = spot_defects(thetas,model,lattice)[ind][1][1:2]
+pos = spot_defects(thetas,model,lattice)[ind][1][1:2]
     scatter!(pos,m=:xcross,ms=7,c=:white)
     pd = heatmap(divergence',aspect_ratio=1,size=(485,400),c=cgrad([:blue,:white,:red]))
         pos = spot_defects(thetas,model,lattice)[ind][1][1:2]
@@ -160,3 +160,110 @@ params["type1defect"] = "join"
     scatter!(pos,m=:xcross,ms=7,c=:black)
     xlims!(1,2window+1) ; ylims!(1,2window+1)
     plot(p,pd,pr,layout=(3,1),size=(485,1200))
+
+## Create a dataset for later defects ML indentification
+#= The goal here is, for each defect type (8 or 16, depending
+on whether we take the +/- 1 defects), to create N noisy
+configurations (T is random, below ~0.3). Around 85% of them
+will be used for training, the rest for testing.
+
+Each config should be a zoom around the defect, a 11x11 square
+centered on the defect.
+=#
+N = 1000 # the number of config for each defect
+window = 5 # 5 x 5 square around the defect
+possible_defects = [(1/2,"source"),(1/2,"sink")]
+params["init"] = "single"
+params["symmetry"] = "nematic"
+params["L"] = 32
+X = zeros(Float32,2window+1,2window+1,N*length(possible_defects))
+Y = vcat([fill(possible_defects[i][2],N) for i in 1:length(possible_defects)]...)
+
+z = @elapsed for k in 1:length(possible_defects)
+    defect = possible_defects[k]
+    params["q"] , params["type1defect"] = defect
+    lattice = TriangularLattice(params["L"],periodic=false)
+    model = XY(params)
+    for n in 1:N
+        model.T = 0.1 #0.3*rand()
+        model.t = 0
+        thetas = init_thetas(lattice,params=params)
+        update!(thetas,model,lattice,1)
+        i,j = spot_defects(thetas,model,lattice)[1][1][1:2]
+        i = round(Int,i) ; j = round(Int,j)
+        X[:,:,(k-1)*N + n] = thetas[i-window:i+window,j-window:j+window]
+    end
+end
+ind = rand(1:size(X,3))
+    p = plot_thetas(X[:,:,ind],model,lattice,defects=false)
+    display_quiver!(p,X[:,:,ind],window)
+    xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+using JLD2
+# jldsave(datadir("for_ML/dataset0.jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 5, dt = 1E-2, Float32.")
+
+## See whether I can learn the features from a Dense Neural Network
+using JLD2,Parameters, Flux, Random
+using Flux:params, onehotbatch, crossentropy, onecold, throttle
+
+# @unpack X,Y,window,possible_defects,comments,N = load(datadir("for_ML/dataset0.jld2"))
+# permutation = randperm(size(X,3))
+# X = X[:,:,permutation]
+# Y = Y[permutation]
+# possible_labels = unique(Y)
+Ntrain = round(Int,0.85*length(Y))
+    L = 2window + 1
+    Xtrain = zeros(L*L,Ntrain) ; for i in 1:Ntrain  Xtrain[:,i] = vec(X[:,:,i]) end
+    Ytrain = onehotbatch(Y[1:Ntrain], possible_labels)
+
+    NN = Chain(
+    Dense(L*L,40, relu),
+    Dense(40, length(possible_labels)),
+    softmax)
+
+    opt = Adam()
+    loss(X, y) = crossentropy(NN(X), y)
+    progress = () -> @show(loss(X, y)) # callback to show loss
+
+    Nepochs = 1000
+    for i in 1:Nepochs
+        Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)
+    end
+
+
+# Check whether the NN has at least learnt the train set
+resultats = [onecold(NN(Xtrain[:,i])) == onecold(Ytrain[:,i]) for i in 1:Ntrain]
+    mean(resultats)
+
+# Visualize it
+ind = rand(1:Ntrain)
+    prediction = (onecold(NN(Xtrain[:,ind])) == onecold(Ytrain[:,ind]))
+    thetass = reshape(Xtrain[:,ind],2window + 1,2window + 1)
+    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytrain[:,ind])]*" , "*string(prediction))
+    display_quiver!(p,thetass,window)
+## TestSet
+Ntest  = length(Y) - Ntrain
+    Xtest = zeros(L*L,Ntest)
+    for i in 1:Ntest  Xtest[:,i] = vec(X[:,:,N-i+1]) end
+    Ytest = onehotbatch(Y[Ntrain+1:end], possible_labels)
+
+    resultats = [onecold(NN(Xtest[:,i])) == onecold(Ytest[:,i]) for i in 1:Ntest]
+    mean(resultats)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+&
