@@ -57,3 +57,7 @@ include(srcdir("../parameters.jl"));
     p = plot_thetas(thetas,model,lattice,colorbar=false)
     display_quiver!(p,thetas,window)
     xlims!(1,2window+1) ; ylims!(1,2window+1)
+
+
+window = 6
+zoom_quiver(thetas,model,lattice,5,10,window)
