@@ -136,12 +136,12 @@ get_rotational(get_neighbours(thetas,model,lattice,10,10))
 include(srcdir("../parameters.jl"));
 params["type1defect"] = "join"
     params["q"] = -1/2
-    params["T"] = 0.3
+    params["T"] = 0.2
     lattice = TriangularLattice(L,)
     model = XY(params)
     thetas = init_thetas(lattice,params=params)
     update!(thetas,model,lattice,5)
-    relax!(thetas,model,0.5) # because in real use, theta will be relaxed for t=0.3
+    # relax!(thetas,model,0.5) # because in real use, theta will be relaxed for t=0.3
     window = 9 # for L = 20
     divergence,rotational = get_div_rot(thetas,lattice)
 
@@ -172,7 +172,9 @@ centered on the defect.
 =#
 N = 1000 # the number of config for each defect
 window = 5 # 5 x 5 square around the defect
-possible_defects = [(1/2,"source"),(1/2,"sink")]
+# possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise")]
+# possible_defects = [(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
+possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise"),(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
 params["init"] = "single"
 params["symmetry"] = "nematic"
 params["L"] = 32
@@ -184,12 +186,13 @@ z = @elapsed for k in 1:length(possible_defects)
     params["q"] , params["type1defect"] = defect
     lattice = TriangularLattice(params["L"],periodic=false)
     model = XY(params)
+    params["q"] > 0 ? ind = 1 : ind = 2
     for n in 1:N
-        model.T = 0.1 #0.3*rand()
+        model.T = 0.3*rand()
         model.t = 0
         thetas = init_thetas(lattice,params=params)
-        update!(thetas,model,lattice,1)
-        i,j = spot_defects(thetas,model,lattice)[1][1][1:2]
+        update!(thetas,model,lattice,2)
+        i,j = spot_defects(thetas,model,lattice)[ind][1][1:2]
         i = round(Int,i) ; j = round(Int,j)
         X[:,:,(k-1)*N + n] = thetas[i-window:i+window,j-window:j+window]
     end
@@ -200,21 +203,22 @@ ind = rand(1:size(X,3))
     xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 using JLD2
-# jldsave(datadir("for_ML/dataset0.jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 5, dt = 1E-2, Float32.")
+# jldsave(datadir("for_ML/dataset_T0.3Random_all12defects_N1000.jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 1, dt = 1E-2, Float32.")
 
 ## See whether I can learn the features from a Dense Neural Network
 using JLD2,Parameters, Flux, Random
 using Flux:params, onehotbatch, crossentropy, onecold, throttle
 
-# @unpack X,Y,window,possible_defects,comments,N = load(datadir("for_ML/dataset0.jld2"))
-# permutation = randperm(size(X,3))
-# X = X[:,:,permutation]
-# Y = Y[permutation]
-# possible_labels = unique(Y)
-Ntrain = round(Int,0.85*length(Y))
+# @unpack X,Y,window,possible_defects,comments,N = load(datadir("for_ML/dataset_T0.1_source_sink_N1000.jld2"))
+permutation = randperm(size(X,3))
+X_shuffled = X[:,:,permutation]
+Y_shuffled = Y[permutation]
+possible_labels = unique(Y)
+NN = 0
+Ntrain = round(Int,0.8*length(Y))
     L = 2window + 1
-    Xtrain = zeros(L*L,Ntrain) ; for i in 1:Ntrain  Xtrain[:,i] = vec(X[:,:,i]) end
-    Ytrain = onehotbatch(Y[1:Ntrain], possible_labels)
+    Xtrain = zeros(L*L,Ntrain) ; for i in 1:Ntrain  Xtrain[:,i] = vec(X_shuffled[:,:,i]) end
+    Ytrain = onehotbatch(Y_shuffled[1:Ntrain], possible_labels)
 
     NN = Chain(
     Dense(L*L,40, relu),
@@ -225,7 +229,7 @@ Ntrain = round(Int,0.85*length(Y))
     loss(X, y) = crossentropy(NN(X), y)
     progress = () -> @show(loss(X, y)) # callback to show loss
 
-    Nepochs = 1000
+    Nepochs = 500
     for i in 1:Nepochs
         Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     end
@@ -241,29 +245,49 @@ ind = rand(1:Ntrain)
     thetass = reshape(Xtrain[:,ind],2window + 1,2window + 1)
     p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytrain[:,ind])]*" , "*string(prediction))
     display_quiver!(p,thetass,window)
+
 ## TestSet
 Ntest  = length(Y) - Ntrain
     Xtest = zeros(L*L,Ntest)
-    for i in 1:Ntest  Xtest[:,i] = vec(X[:,:,N-i+1]) end
-    Ytest = onehotbatch(Y[Ntrain+1:end], possible_labels)
+    for i in 1:Ntest  Xtest[:,i] = vec(X_shuffled[:,:,Ntrain+i]) end
+    Ytest = onehotbatch(Y_shuffled[Ntrain+1:end], possible_labels)
 
     resultats = [onecold(NN(Xtest[:,i])) == onecold(Ytest[:,i]) for i in 1:Ntest]
     mean(resultats)
 
+# Visualize it
+ind = rand(1:Ntest)
+    prediction = (onecold(NN((Xtest[:,ind]))) == onecold(Ytest[:,ind]))
+    thetass = reshape(Xtest[:,ind],2window + 1,2window + 1)
+    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytest[:,ind])]*" , "*string(prediction))
+    display_quiver!(p,thetass,window)
 
+# jldsave(datadir("for_ML/NN_all_12_defects.jl");NN)
 
+## Test it on completely new images
+using Flux
+using Flux:onecold
+NN = load(datadir("for_ML/NN_all_12_defects.jl"),"NN")
+NN(rand(121))
+onecold(NN(rand(121)))
 
+# Generate new defect
+lattice = TriangularLattice(L)
+model = XY(params)
+thetas = init_thetas(lattice,params=params)
+# update!(thetas,model,lattice,200)
+p=plot_thetas(thetas,model,lattice) # plot the whole field, to then zoom on specific defects
 
+i,j = (118,35) # loc where zoom
+window = 5
+relax!(thetas,model,0.1)
+thetas_zoom = (thetas[i-window:i+window,j-window:j+window])
+    p=plot_thetas(thetas_zoom,model,lattice)
+    display_quiver!(p,thetas_zoom,window)
+onecold(NN(vec(thetas_zoom))) # check whether its corresponds to reality
 
+# update for a little time at "high temperature" T = 0.4 to see whether the algo is robust
+model.T = 0.4
+update!(thetas,model,lattice,202)
 
-
-
-
-
-
-
-
-
-
-
-&
+# Conclusion : le champ theta est très brouillon (even at T small for rho = 1) mais ca a l'air de fonctionner

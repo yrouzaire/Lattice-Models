@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 20
+L = 200
 T = 0.1
 symmetry = "nematic"
 propulsion = "polar"
@@ -15,10 +15,10 @@ float_type = Float32
 width_proposal = 2sqrt(T)
 
 # Initialisation
-init = "single"
-q = 1/2
+init = "hightemp"
+q = -1/2
 r0 = Int(L/2)
-type1defect = "source"
+type1defect = "split"
 type2defect = "pair1"
 
 # Containers
