@@ -51,7 +51,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
     return charge
 end
 
-function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
+function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_types=true) where T<:AbstractFloat
     L = lattice.L
     vortices_plus  = Tuple{Int,Int,T,String}[]
     vortices_minus = Tuple{Int,Int,T,String}[]
@@ -61,7 +61,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     end
     thetasmod = mod.(copy(thetas),modd)
     if model.rho < 1 preconditionning!(thetasmod,model,lattice) end
-    trelax = 0.3 ; relax!(thetasmod,model,trelax)
+    # trelax = 0.3 ; relax!(thetasmod,model,trelax)
     if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
     for i in range_bc
         for j in range_bc
@@ -74,7 +74,9 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     vortices_plus_no_duplicates  = merge_duplicates(vortices_plus,lattice)
     vortices_minus_no_duplicates = merge_duplicates(vortices_minus,lattice)
 
-    return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,thetas,lattice)
+    if find_types return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,relax!(copy(thetas),model,0.3),lattice)
+    else return vortices_plus_no_duplicates,vortices_minus_no_duplicates
+    end
 end
 
 function find_types(list_p,list_n,thetas,lattice)

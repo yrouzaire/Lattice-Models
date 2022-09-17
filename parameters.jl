@@ -1,6 +1,6 @@
 # Physical Parameters
-L = 100
-T = 0.1
+L = 32
+T = 0.2
 symmetry = "nematic"
 propulsion = "polar"
 Var = 0.1
@@ -16,9 +16,9 @@ width_proposal = 2sqrt(T)
 
 # Initialisation
 init = "single"
-q = -1/2
+q = 1/2
 r0 = Int(L/2)
-type1defect = "split"
+type1defect = "counterclockwise"
 type2defect = "pair1"
 
 # Containers
