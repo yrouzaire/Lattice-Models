@@ -53,8 +53,8 @@ end
 
 function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
     L = lattice.L
-    vortices_plus  = Tuple{Int,Int,T}[]
-    vortices_minus = Tuple{Int,Int,T}[]
+    vortices_plus  = Tuple{Int,Int,T,String}[]
+    vortices_minus = Tuple{Int,Int,T,String}[]
 
     if     model.symmetry == "nematic" modd = T(pi)
     elseif model.symmetry == "polar"   modd = T(2pi)
@@ -74,10 +74,10 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     vortices_plus_no_duplicates  = merge_duplicates(vortices_plus,lattice)
     vortices_minus_no_duplicates = merge_duplicates(vortices_minus,lattice)
 
-    vortices_plus_no_duplicates,vortices_minus_no_duplicates  = find_types!(vortices_plus_no_duplicates,vortices_minus_no_duplicates,thetas,lattice)
+    return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,thetas,lattice)
 end
 
-function find_types!(list_p,list_m,thetas,lattice)
+function find_types(list_p,list_n,thetas,lattice)
     # Positive defects
     pos_p    = [list_p[i][1:2] for i in each(list_p)]
     charge_p = [list_p[i][3]   for i in each(list_p)]
@@ -108,7 +108,7 @@ function find_types!(list_p,list_m,thetas,lattice)
                     and lattice not periodic. If so, leave the type value
                     unchanged, i.e "unknown" =#
                     ind_type = onecold(NN(vec(thetas_zoom)))
-                    type_p[i] = possible_defects[ind_type]
+                    type_p[n] = possible_defects[ind_type]
                 end
             end
         end
@@ -121,12 +121,18 @@ function find_types!(list_p,list_m,thetas,lattice)
                     and lattice not periodic. If so, leave the type value
                     unchanged, i.e "unknown" =#
                     ind_type = onecold(NN(vec(thetas_zoom)))
-                    type_n[i] = possible_defects[ind_type]
+                    type_n[n] = possible_defects[ind_type]
                 end
             end
         end
     end
-    return (pos_p,charge_p,type_p),(pos_p,charge_p,type_p)
+
+    list_p_updated = similar(list_p)
+    for i in each(list_p) list_p_updated[i] = (list_p[i][1],list_p[i][2],list_p[i][3],type_p[i]) end
+    list_n_updated = similar(list_n)
+    for i in each(list_n) list_n_updated[i] = (list_n[i][1],list_n[i][2],list_n[i][3],type_n[i]) end
+
+    return list_p_updated,list_n_updated
 end
 
 function alone_in_window(pos,pos_all,lattice,window)::Bool
@@ -161,7 +167,7 @@ function merge_duplicates(list,lattice;radius=4)
                 end
             end
             mean_loc_defect = mean_N_positions(tmp,lattice.L,true)
-            push!(merged_duplicates,(mean_loc_defect[1],mean_loc_defect[2],charge[i]),type[i])
+            push!(merged_duplicates,(mean_loc_defect[1],mean_loc_defect[2],charge[i],type[i]))
         end
     end
     return merged_duplicates
@@ -223,10 +229,10 @@ mutable struct Defect
     annihilation_time::Union{Float64,Nothing}
     creation_time::Float64
     id_annihilator::Union{Int,Nothing}
-
-    Defect(;id,charge,type,loc,t) = new(id,charge,[type],[loc],nothing,t,nothing)
-    Defect(;id,charge,loc,t) = new(id,charge,["unknown"],[loc],nothing,t,nothing)
 end
+Defect(;id,charge,type,loc,t) = Defect(id,charge,[type],[loc],nothing,t,nothing)
+Defect(;id,charge,loc,t) = Defect(id,charge,["unknown"],[loc],nothing,t,nothing)
+
 last_loc(d::Defect) = d.pos[end]
 creation_loc(d::Defect) = d.pos[1]
 push_position!(d::Defect,loc) = push!(d.hist,loc)
@@ -247,8 +253,8 @@ mutable struct DefectTracker
 
     function DefectTracker(thetas,model,lattice) # constructor
         vortices,antivortices = spot_defects(thetas,model,lattice)
-        defectsP = [Defect(id=i,charge=vortices[i][3],loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
-        defectsN = [Defect(id=i,charge=antivortices[i][3],loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
+        defectsP = [Defect(id=i,charge=vortices[i][3],type=vortices[i][4],loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
+        defectsN = [Defect(id=i,charge=antivortices[i][3],type=vortices[i][4],loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
         new(defectsP,defectsN,model.t)
     end
 end

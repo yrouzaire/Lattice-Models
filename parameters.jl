@@ -15,7 +15,7 @@ float_type = Float32
 width_proposal = 2sqrt(T)
 
 # Initialisation
-init = "hightemp"
+init = "single"
 q = 1/2
 r0 = Int(L/2)
 type1defect = "source"
