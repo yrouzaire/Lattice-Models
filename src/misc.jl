@@ -1,5 +1,5 @@
 logspace(x1, x2, n) = [10.0 ^y for y in range(log10(x1), log10(x2), length=n)]
-prinz(z) = println("Runtime : $(round(Int,z)) seconds = $(round(z/60,digits=2)) minutes = $(round(z/3600,digits=2)) hours.") 
+prinz(z) = println("Runtime : $(round(Int,z)) seconds = $(round(z/60,digits=2)) minutes = $(round(z/3600,digits=2)) hours.")
 each = eachindex
 
 nanmean(x) = mean(filter(!isnan,x))
@@ -8,6 +8,8 @@ nanstd(x) = std(filter(!isnan,x))
 nanstd(x,y) = mapslices(nanstd,x,dims=y)
 replace_nan_with_zeros(v) = map(x -> isnan(x) ? zero(x) : x, v)
 
+all_false(x::AbstractArray{Bool}) = iszero(sum(x))
+all_true(x::AbstractArray{Bool}) = isone(prod(x))
 
 import Base: +,-
 +(x::Vector{Tuple{T,T}},y::Vector{Tuple{T,T}}) where T<:Number = [x[i] .+ y[i] for i in 1:length(x)]

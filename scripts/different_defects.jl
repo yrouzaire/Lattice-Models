@@ -209,11 +209,11 @@ using JLD2
 using JLD2,Parameters, Flux, Random
 using Flux:params, onehotbatch, crossentropy, onecold, throttle
 
-# @unpack X,Y,window,possible_defects,comments,N = load(datadir("for_ML/dataset_T0.1_source_sink_N1000.jld2"))
-permutation = randperm(size(X,3))
-X_shuffled = X[:,:,permutation]
-Y_shuffled = Y[permutation]
-possible_labels = unique(Y)
+# @unpack X,Y,window,possible_defects,comments,N = load(datadir("for_ML/dataset_T0.3Random_all12defects_N1000.jld2"))
+# permutation = randperm(size(X,3))
+# X_shuffled = X[:,:,permutation]
+# Y_shuffled = Y[permutation]
+# possible_labels = unique(Y)
 NN = 0
 Ntrain = round(Int,0.8*length(Y))
     L = 2window + 1
@@ -257,12 +257,16 @@ Ntest  = length(Y) - Ntrain
 
 # Visualize it
 ind = rand(1:Ntest)
+ind = findfirst(x->x==false,resultats)
     prediction = (onecold(NN((Xtest[:,ind]))) == onecold(Ytest[:,ind]))
     thetass = reshape(Xtest[:,ind],2window + 1,2window + 1)
     p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytest[:,ind])]*" , "*string(prediction))
     display_quiver!(p,thetass,window)
 
-# jldsave(datadir("for_ML/NN_all_12_defects.jl");NN)
+## Save NN
+# cd("D:/Documents/Research/projects/LatticeModels")
+# comments="Evolution time = 2, dt = 1E-2, Float32, T<0.3 random, 1000config per defect, originally from 32x32 lattices, 500 epochs to train NN "
+# jldsave("NN_all_12_defects.jld2";NN,possible_defects=possible_labels,comments=comments)
 
 ## Test it on completely new images
 using Flux
@@ -285,6 +289,7 @@ thetas_zoom = (thetas[i-window:i+window,j-window:j+window])
     p=plot_thetas(thetas_zoom,model,lattice)
     display_quiver!(p,thetas_zoom,window)
 onecold(NN(vec(thetas_zoom))) # check whether its corresponds to reality
+# @btime onecold(NN(vec(thetas_zoom))) # 1.5 µs (including 0.05 µs for onecold(...))
 
 # update for a little time at "high temperature" T = 0.4 to see whether the algo is robust
 model.T = 0.4

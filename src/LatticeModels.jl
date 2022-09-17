@@ -7,3 +7,9 @@ include("defects_methods.jl")
 
 include("misc.jl")
 include("measurements.jl")
+
+using BenchmarkTools
+
+using Flux:onecold, Chain, Dense, softmax
+global const NN = load("NN_all_12_defects.jld","NN")
+global const possible_defects = load("NN_all_12_defects.jld","possible_defects")

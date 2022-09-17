@@ -66,12 +66,79 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     for i in range_bc
         for j in range_bc
             q = get_vorticity(thetasmod,model,lattice,i,j)
-            if     q > + 0.1 push!(vortices_plus,(i,j,q)) # we want to keep ±½ defects, and not rounding errors
-            elseif q < - 0.1 push!(vortices_minus,(i,j,q))
+            if     q > + 0.1 push!(vortices_plus,(i,j,q,"unknown")) # we want to keep ±½ defects, and not rounding errors
+            elseif q < - 0.1 push!(vortices_minus,(i,j,q,"unknown"))
             end
         end
     end
-    return merge_duplicates(vortices_plus,lattice),merge_duplicates(vortices_minus,lattice)
+    vortices_plus_no_duplicates  = merge_duplicates(vortices_plus,lattice)
+    vortices_minus_no_duplicates = merge_duplicates(vortices_minus,lattice)
+
+    vortices_plus_no_duplicates,vortices_minus_no_duplicates  = find_types!(vortices_plus_no_duplicates,vortices_minus_no_duplicates,thetas,lattice)
+end
+
+function find_types!(list_p,list_m,thetas,lattice)
+    # Positive defects
+    pos_p    = [list_p[i][1:2] for i in each(list_p)]
+    charge_p = [list_p[i][3]   for i in each(list_p)]
+    type_p   = [list_p[i][4]   for i in each(list_p)]
+    # Negative defects
+    pos_n    = [list_n[i][1:2] for i in each(list_n)]
+    charge_n = [list_n[i][3]   for i in each(list_n)]
+    type_n   = [list_n[i][4]   for i in each(list_n)]
+    # All defects together
+    pos_all = vcat(pos_n,pos_p)
+    type_all = vcat(type_n,type_p)
+
+    window = 5
+    total_number_defects = length(pos_n) + length(pos_p)
+    density_defects = total_number_defects / lattice.L^2
+    if density_defects < 1/(2window+1)^2
+        #= 11 x 11  window around the defect and we want this square
+        free of any other defect to proceed. If too crowded, don't
+        even enter the computationally expensive operations hereafter.
+        Recall that the default procedure is that an "unknown" cannot
+        replace a previously known type. =#
+        for n in each(pos_p)
+            if alone_in_window(pos_p[n],pos_all,lattice,window) # heavy, computes distance
+                i,j = pos_p[n]
+                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j)
+                if no_problem_go_ahead
+                    #= A problem could occur if defect close to boundary
+                    and lattice not periodic. If so, leave the type value
+                    unchanged, i.e "unknown" =#
+                    ind_type = onecold(NN(vec(thetas_zoom)))
+                    type_p[i] = possible_defects[ind_type]
+                end
+            end
+        end
+        for n in each(pos_n)
+            if alone_in_window(pos_n[n],pos_all,lattice,window) # heavy, computes distance
+                i,j = pos_n[n]
+                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j)
+                if no_problem_go_ahead
+                    #= A problem could occur if defect close to boundary
+                    and lattice not periodic. If so, leave the type value
+                    unchanged, i.e "unknown" =#
+                    ind_type = onecold(NN(vec(thetas_zoom)))
+                    type_n[i] = possible_defects[ind_type]
+                end
+            end
+        end
+    end
+    return (pos_p,charge_p,type_p),(pos_p,charge_p,type_p)
+end
+
+function alone_in_window(pos,pos_all,lattice,window)::Bool
+    alone_in_window = true
+    for loc in pos_all
+        distance = dist(lattice,pos,loc)
+        if 0 < distance ≤ window+1 # take margin because non integer positions might get rounded
+            alone_in_window = false
+            break
+        end
+    end
+    return alone_in_window
 end
 
 function merge_duplicates(list,lattice;radius=4)
@@ -80,6 +147,7 @@ function merge_duplicates(list,lattice;radius=4)
     which are neighbours and with the same charge to delete them. =#
     pos    = [list[i][1:2] for i in each(list)]
     charge = [list[i][3]   for i in each(list)]
+    type   = [list[i][4]   for i in each(list)]
     dealt_with = falses(length(pos))
 
     merged_duplicates = []
@@ -93,7 +161,7 @@ function merge_duplicates(list,lattice;radius=4)
                 end
             end
             mean_loc_defect = mean_N_positions(tmp,lattice.L,true)
-            push!(merged_duplicates,(mean_loc_defect[1],mean_loc_defect[2],charge[i]))
+            push!(merged_duplicates,(mean_loc_defect[1],mean_loc_defect[2],charge[i]),type[i])
         end
     end
     return merged_duplicates
@@ -133,178 +201,44 @@ function fill_holes!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract
     return thetas
 end
 
-
-
-function vortices_to_keep(vortices,lattice,seuil)
-    elements_to_keep = trues(length(vortices))
-    for i in 2:length(vortices)
-        for j in 1:i-1
-            if dist(lattice,vortices[i][1:2],vortices[j][1:2]) ≤ seuil
-                elements_to_keep[i] = false
-                # break # will only break the inner for loop and continue the outer one
-            end
-        end
-    end
-    return elements_to_keep
-end
-
-# function spot_single_default_global(thetas::Matrix{T},model::AbstractModel,lattice::AbstractLattice)::Tuple{Tuple{Int16,Int16},T} where T<:AbstractFloat
-#     L = size(thetas)[1]
-#     list_defaults = Tuple{Int16,Int16,T}[]
-#     for i in 2:L-1
-#         for j in 2:L-1
-#             q = get_vorticity(thetas,model,lattice,i,j)
-#             if abs(q) > 0.1 # to avoid rounding errors
-#                 push!(list_defaults,(i,j,q))
-#             end
-#         end
-#     end
-#     @assert length(list_defaults) == 1
-#     return list_defaults[1][1:2],list_defaults[1][3]
-# end
-
-
-#is it even useful now ?
-# function spot_single_default_local(thetas::Matrix{<:AbstractFloat},last_loc::T,known_loc::T,Q::Number,margin::Int=6)::Tuple{T,Bool} where T<:Tuple{Int16,Int16}
-#     # V    is the location (x,y,q) of the default
-#     #= The search for the new location of the default will scan a square of
-#     dimension 2margin x 2margin (within the limits of the LxL lattice) ,
-#     with the last location as center. The whole method is O(margin²). =#
-#     L = size(thetas)[1]
-#     positions = []
-#
-#
-#     # Dimensions of the square
-#     j_low,j_high = max(1,last_loc[2]-margin) , min(L,last_loc[2]+margin)
-#     i_low,i_high = max(1,last_loc[1]-margin) , min(L,last_loc[1]+margin)
-#     for j in j_low:j_high
-#         for i in i_low:i_high
-#             q = get_vorticity(thetas,i,j,L)
-#             if abs(q) > 0.1
-#                 push!(positions,(i,j,q))
-#             end
-#         end
-#     end
-#
-#
-#     #= In this list, there might be doubles/triples (2/3 locations for the
-#     same physical vortex). We thus seek for numerically identified vortices
-#     which are neighbours and with the same charge to delete them. =#
-#     elements_to_keep = BitVector(ones(length(positions)))
-#     for i in 2:length(positions)
+# function vortices_to_keep(vortices,lattice,seuil)
+#     elements_to_keep = trues(length(vortices))
+#     for i in 2:length(vortices)
 #         for j in 1:i-1
-#             if positions[i][3] == positions[j][3] && isneighbour(positions[i][1:2],positions[j][1:2],L)
-#                 # if same charge and isneighbour(vortex_i,vortex_j) == true (for at least one j), we have a double, so we don't keep it
-#                 elements_to_keep[i] = 0
-#                 break # will only break the inner for loop and continue the outer one
+#             if dist(lattice,vortices[i][1:2],vortices[j][1:2]) ≤ seuil
+#                 elements_to_keep[i] = false
+#                 # break # will only break the inner for loop and continue the outer one
 #             end
 #         end
 #     end
-#     positions = positions[elements_to_keep]
-#     ℓ = length(positions)
-#     # println("ℓ = $positions")
-#
-#     #= Summary of what follows :
-#     ℓ = 0 : (i)   Controled Annihilation (encounter of the vortex with its antivortex)
-#             (ii)  Unexpected Annihilation (encounter of the vortex with another antivortex
-#             (iii) The (single) vortex left the lattice.
-#             In all three case, throw an explicit error and treat it later on.
-#
-#     ℓ = 1 : All good ! One is pretty sure that the only detected vortex is the same
-#     than the one of the previous timestep. The only case where we could be mistaken
-#     is if a pair of vortex enters the square and that our previous vortex annihilates
-#     with the newcomer antivortex. In this case, the only default remaining would be
-#     the newcomer vortex, and we would be clueless about it. The only signature would be a
-#     possible jump in space in the r(t) graph.
-#
-#     ℓ = 2 : If the other default is known/authorized, meaning that it is the former
-#     antivortex of the default we currently work on, that's not important and we keep
-#     going as if the vortex was alone. If the other defaut is NOT known/authorized,
-#     it will perturb the displacment of our vortex : don't save the current position
-#     by signalling it (alone = false)
-#
-#     ℓ ≥ 3 : We are sure to be in the bad case #2.  =#
-#     if ℓ == 1
-#         alone = true # no other default in the searched region
-#         most_probable = positions[1][1:2]
-#         #= Actually,  =#
-#     elseif ℓ > 1
-#         alone = false # by default. We deal we the special case ℓ = 2 just below.
-#
-#         if ℓ == 2 && ((known_loc[1],known_loc[2],-Q) in positions) ; alone = true ; end
-#         #= If ℓ == 2, one has 2 possibilities :
-#             - either the extra default is "known" (its the antidefault of
-#             the one we currently consider), in which case turn alone = true.
-#             - or it's not, in which case we leave alone = false.
-#             In any case, the following routine to determine the location of
-#             the default currenlty tracked is still completely valid.
-#         Note that when using this function for the study of a single vortex,
-#         one needs to provide an impossible known_loc, such as (-1,-1). =#
-#
-#         distances_to_last = [dist(positions[i][1:2],last_loc,L) for i in 1:ℓ]
-#         # Kill candidates with opposite polarity
-#         for i in 1:ℓ
-#             element = positions[i]
-#             if element[3] ≠ Q distances_to_last[i] = Inf end
-#         end
-#         most_probable = positions[sortperm(distances_to_last)][1]
-#         #= Returns the position with the smallest distance to the last location,
-#         hence we choose that one as the most probable candidate for the vortex we
-#         are considering. =#
-#
-#     else # dealing with the case ℓ = 0
-#
-#         close_from_boundary = last_loc[1] < 4 || last_loc[1] > L - 4 || last_loc[2] < 4 || last_loc[2] > L - 4
-#         if close_from_boundary                      error("The vortex left the lattice.")
-#         elseif dist(last_loc,known_loc,L) ≤ sqrt(5) error("Controlled annihilation.") # sqrt(5) is arbitrary
-#         else                                        error("Unexpected annihilation.") end
-#     end
-#     # println(1)
-#     # println(typeof(Int16.(most_probable[1:2])))
-#     return most_probable[1:2],alone
+#     return elements_to_keep
 # end
 
 ## Defect Tracking (with a lot of defects, creation and annihilation)
 mutable struct Defect
     id::Int
     charge::Number
-    # div::Number
-    # rot::Number
-    # type::Vector{String} # types might change over the simulation
-    hist::Vector{Tuple{Number,Number}}
+    type::Vector{String} # types might change over the simulation
+    pos::Vector{Tuple{Number,Number}}
     annihilation_time::Union{Float64,Nothing}
     creation_time::Float64
     id_annihilator::Union{Int,Nothing}
-    Defect(;id,charge,loc,t) = new(id,charge,[loc],nothing,t,nothing)
+
+    Defect(;id,charge,type,loc,t) = new(id,charge,[type],[loc],nothing,t,nothing)
+    Defect(;id,charge,loc,t) = new(id,charge,["unknown"],[loc],nothing,t,nothing)
 end
-# function Defect(;id,charge,div,rot,loc,t)
-#     new(id,charge,[loc],nothing,t,nothing)
-# end
-last_loc(d::Defect) = d.hist[end]
-creation_loc(d::Defect) = d.hist[1]
+last_loc(d::Defect) = d.pos[end]
+creation_loc(d::Defect) = d.pos[1]
 push_position!(d::Defect,loc) = push!(d.hist,loc)
-around_zero(x,seuil) = abs(x) < seuil
-function type(d::Defect)::String
-    seuil_div  = 2
-    seuil_rot  = 1
-    seuil_zero = 0.5
-
-    type = "unknown"
-    q,d,r = d.charge, d.div, d.rot
-    if q > 0
-        # no need to check rot, div is already a strong clue
-        if     d > +seuil_div type = "source"
-        elseif d < -seuil_div type = "sink"
-        end
-
-        # no need to check div, rot is already a strong clue
-        if     r > +seuil_rot type = "counterclockwise"
-        elseif r < -seuil_rot type = "clockwise"
-        end
-    elseif q < 0
-    end
-    return type
+last_type(d::Defect) = d.type[end]
+creation_type(d::Defect) = d.type[1]
+function number_type_changes(d::Defect)
+    number_changes = 0
+    for i in 2:length(d.type) if d.type[i] ≠ d.type[i-1] number_changes += 1 end end
+    return number_changes
 end
+
+
 
 mutable struct DefectTracker
     defectsP::Vector{Defect} # the id of a defect is its index in this vector
