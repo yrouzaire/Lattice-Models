@@ -102,7 +102,7 @@ function find_types!(list_p,list_m,thetas,lattice)
         for n in each(pos_p)
             if alone_in_window(pos_p[n],pos_all,lattice,window) # heavy, computes distance
                 i,j = pos_p[n]
-                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j)
+                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,window)
                 if no_problem_go_ahead
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value
@@ -115,7 +115,7 @@ function find_types!(list_p,list_m,thetas,lattice)
         for n in each(pos_n)
             if alone_in_window(pos_n[n],pos_all,lattice,window) # heavy, computes distance
                 i,j = pos_n[n]
-                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j)
+                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,window)
                 if no_problem_go_ahead
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value

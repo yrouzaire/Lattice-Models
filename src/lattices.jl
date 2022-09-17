@@ -189,3 +189,29 @@ end
 #     rot =  cos(theta)*dx_theta + sin(theta)*dy_theta
 #     return div,rot
 # end
+
+function zoom(thetas::Matrix{<:Number},lattice::AbstractLattice,i,j,window)
+    #= Returns a 2window+1 portion of thetas (centered on i,j),
+    together with a bool to say whether the operation has worked =#
+    L = lattice.L
+    i = round(Int,i)
+    j = round(Int,j)
+
+    if at_least_at_distance_X_from_border(i,j,L,X=window+1)
+        thetas_zoom = thetas[i-window:i+window,j-window:j+window]
+        no_problem_go_ahead = true
+    else
+        if lattice.periodic
+            shift = 20
+            thetas_shifted = copy(thetas)
+            for i in 1:L thetas_shifted[i,:] = circshift(thetas_shifted[i,:],shift) end
+            for i in 1:L thetas_shifted[:,i] = circshift(thetas_shifted[:,i],shift) end
+            return zoom(thetas_shifted,lattice,mod1(i+shift,L),mod1(j+shift,L),window)
+
+        else
+            no_problem_go_ahead = false
+            thetas_zoom = NaN
+        end
+    end
+    return no_problem_go_ahead,thetas_zoom
+end

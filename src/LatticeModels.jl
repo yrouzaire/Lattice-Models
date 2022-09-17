@@ -11,5 +11,5 @@ include("measurements.jl")
 using BenchmarkTools
 
 using Flux:onecold, Chain, Dense, softmax
-global const NN = load("NN_all_12_defects.jld","NN")
-global const possible_defects = load("NN_all_12_defects.jld","possible_defects")
+global const NN = load("NN_all_12_defects.jld2","NN")
+global const possible_defects = load("NN_all_12_defects.jld2","possible_defects")
