@@ -16,10 +16,11 @@ plot_thetas(thetas,model,lattice,defects=true)
 
 dft = DefectTracker(thetas,model,lattice)
 
-tmax,every = 1000,5
+tmax,every = 100,10
 
 z = @elapsed update_and_track_plot!(thetas,model,lattice,dft,tmax,every)
 prinz(z)
+dft
 
 ## Simple simulation and plots from hightemp
 include(srcdir("../parameters.jl"));

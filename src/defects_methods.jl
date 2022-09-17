@@ -230,8 +230,7 @@ mutable struct Defect
     creation_time::Float64
     id_annihilator::Union{Int,Nothing}
 end
-Defect(;id,charge,type,loc,t) = Defect(id,charge,[type],[loc],nothing,t,nothing)
-Defect(;id,charge,loc,t) = Defect(id,charge,["unknown"],[loc],nothing,t,nothing)
+Defect(;id,charge,loc,t,type="unknown") = Defect(id,charge,[type],[loc],nothing,t,nothing)
 
 last_loc(d::Defect) = d.pos[end]
 creation_loc(d::Defect) = d.pos[1]
@@ -262,7 +261,7 @@ mutable struct DefectTracker
     function DefectTracker(thetas,model,lattice) # constructor
         vortices,antivortices = spot_defects(thetas,model,lattice)
         defectsP = [Defect(id=i,charge=vortices[i][3],type=vortices[i][4],loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
-        defectsN = [Defect(id=i,charge=antivortices[i][3],type=vortices[i][4],loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
+        defectsN = [Defect(id=i,charge=antivortices[i][3],type=antivortices[i][4],loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
         new(defectsP,defectsN,model.t)
     end
 end
@@ -384,6 +383,7 @@ function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Ab
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
+            println("t = ",model.t)
             next_tracking_time += every
             dft.current_time = model.t
             update_DefectTracker!(dft,thetas,model,lattice)
@@ -397,6 +397,7 @@ function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattic
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
+            println("t = ",model.t)
             next_tracking_time += every
             dft.current_time = model.t
             update_DefectTracker!(dft,thetas,model,lattice)

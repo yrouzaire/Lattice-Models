@@ -16,9 +16,9 @@ width_proposal = 2sqrt(T)
 
 # Initialisation
 init = "single"
-q = 1/2
+q = -1/2
 r0 = Int(L/2)
-type1defect = "source"
+type1defect = "split"
 type2defect = "pair1"
 
 # Containers
