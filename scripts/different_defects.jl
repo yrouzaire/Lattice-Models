@@ -17,8 +17,8 @@ centered on the defect.
 N = 1000 # the number of config for each defect
 window = 7 # 7 x 7 square around the defect
 # possible_defects = [(1/2,"source"),(1/2,"sink")]
-possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise")]
-# possible_defects = [(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
+# possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise")]
+possible_defects = [(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
 # possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise"),(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
 params["init"] = "single"
 params["symmetry"] = "nematic"
@@ -52,7 +52,7 @@ ind = rand(1:size(X,3))
     xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 using JLD2
-# jldsave(datadir("for_ML/dataset_T0.3Random_all12defects_N$(N)_W$(window).jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 2, dt = 1E-2, Float32.")
+jldsave(datadir("for_ML/dataset_T0.3Random_negative12defects_N$(N)_W$(window).jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 4, dt = 1E-2, Float32.")
 
 ## See whether I can learn the features from a Dense Neural Network
 using JLD2,Parameters, Flux, Random
@@ -63,7 +63,8 @@ using Flux:params, onehotbatch, crossentropy, onecold, throttle
 # X_shuffled = X[:,:,permutation]
 # Y_shuffled = Y[permutation]
 # possible_labels = unique(Y)
-NN = 0
+Nepochs = 500
+
 Ntrain = round(Int,0.8*length(Y))
     L = 2window + 1
     Xtrain = zeros(L*L,Ntrain) ; for i in 1:Ntrain  Xtrain[:,i] = vec(X_shuffled[:,:,i]) end
@@ -78,7 +79,6 @@ Ntrain = round(Int,0.8*length(Y))
     loss(X, y) = crossentropy(NN(X), y)
     progress = () -> @show(loss(X, y)) # callback to show loss
 
-    Nepochs = 500
     for i in 1:Nepochs
         Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     end
@@ -105,19 +105,19 @@ Ntest  = length(Y) - Ntrain
     mean(resultats)
 
 # Visualize it
-model = XY(params)
-lattice = TriangularLattice(L,periodic=false)
+# model = XY(params)
+# lattice = TriangularLattice(L,periodic=false)
 ind = rand(1:Ntest)
 ind = rand(findall(x->x==false,resultats))
     prediction = (onecold(NN((Xtest[:,ind]))) == onecold(Ytest[:,ind]))
     thetass = reshape(Xtest[:,ind],2window + 1,2window + 1)
-    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytest[:,ind])]*" vs "*possible_defects[onecold(NN((Xtest[:,ind])))][2+])
+    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytest[:,ind])]*" vs "*possible_defects[onecold(NN((Xtest[:,ind])))][2])
     display_quiver!(p,thetass,window)
 
 ## Save NN
-# cd("D:/Documents/Research/projects/LatticeModels")
-# comments="Evolution time = 2, dt = 1E-2, Float32, T<0.3 random, 2000config per defect, originally from 32x32 lattices, 500 epochs to train NN "
-# jldsave("NN_all_12_defects.jld2";NN,possible_defects=possible_labels,comments=comments)
+cd("D:/Documents/Research/projects/LatticeModels")
+comments="Evolution time = 4, dt = 1E-2, Float32, T<0.3 random, $(N) config per defect, originally from 32x32 lattices, $(Nepochs) epochs to train NN "
+jldsave("NN_negative_12_defects_N$(N)_W$(window).jld2";NN,possible_defects=possible_labels,comments=comments)
 
 ## Test it on completely new images
 using Flux
