@@ -7,15 +7,16 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 ## Tracking defects over time (first single, then pair, then hightemp)
 include(srcdir("../parameters.jl"));
-    model = MovingXY(params)
+    model = XY(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
-update!(thetas,model,lattice,2000)
+update!(thetas,model,lattice,20)
 
 p=plot_thetas((thetas),model,lattice,defects=false)
     # display_quiver!(p,(thetas),13)
 
 dft = DefectTracker(thetas,model,lattice)
+update_DefectTracker!(dft,thetas,model,lattice)
 number_defects_types(dft)
 # dft.defectsP[1].type[1]
 # dft.defectsN[1].type[1]
