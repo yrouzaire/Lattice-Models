@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 32
+L = 12
 T = 0.2
 symmetry = "nematic"
 propulsion = "polar"
@@ -15,11 +15,11 @@ float_type = Float32
 width_proposal = 2sqrt(T)
 
 # Initialisation
-init = "single"
+init = "pair"
 q = 1/2
 r0 = Int(L/2)
-type1defect = "counterclockwise"
-type2defect = "pair1"
+type1defect = "clockwise"
+type2defect = "pair4"
 
 # Containers
 params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"algo"=>algo)

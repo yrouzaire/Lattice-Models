@@ -1,7 +1,7 @@
 using DrWatson ; @quickactivate "LatticeModels"
- include(srcdir("LatticeModels.jl"))
- using Plots,ColorSchemes,LaTeXStrings
- pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
+include(srcdir("LatticeModels.jl"))
+using Plots,ColorSchemes,LaTeXStrings
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
 include(srcdir("../parameters.jl"));
 
@@ -14,12 +14,12 @@ will be used for training, the rest for testing.
 Each config should be a zoom around the defect, a 11x11 square
 centered on the defect.
 =#
-N = 2000 # the number of config for each defect
-window = 9 # 9 x 9 square around the defect
+N = 1000 # the number of config for each defect
+window = 7 # 7 x 7 square around the defect
 # possible_defects = [(1/2,"source"),(1/2,"sink")]
-# possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise")]
+possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise")]
 # possible_defects = [(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
-possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise"),(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
+# possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise"),(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
 params["init"] = "single"
 params["symmetry"] = "nematic"
 params["L"] = 32
@@ -36,14 +36,16 @@ z = @elapsed for k in 1:length(possible_defects)
     for n in 1:N
         model.T = 0.3*rand()
         model.t = 0
-        thetas = init_thetas(lattice,params=params)
-        update!(thetas,model,lattice,2)
-        i,j = spot_defects(thetas,model,lattice,find_types=false)[ind][1][1:2]
-        i = round(Int,i) ; j = round(Int,j)
-        X[:,:,(k-1)*N + n] = thetas[i-window:i+window,j-window:j+window]
-        # X[:,:,(k-1)*N + n] = zoom(thetas,lattice,i,j,window)
+        thetas = randomly_rotate(init_thetas(lattice,params=params))
+        update!(thetas,model,lattice,4)
+        i,j = spot_defects(thetas,model,lattice,find_type=false)[ind][1][1:2]
+        no_problem,thetas_zoom = zoom(thetas,lattice,i,j,window)
+        if no_problem  X[:,:,(k-1)*N + n] = thetas_zoom
+        else X[:,:,(k-1)*N + n] = randomly_rotate(init_thetas(lattice,params=params))
+        end
     end
 end
+prinz(z)
 ind = rand(1:size(X,3))
     p = plot_thetas(X[:,:,ind],model,lattice,defects=false)
     display_quiver!(p,X[:,:,ind],window)
@@ -106,10 +108,10 @@ Ntest  = length(Y) - Ntrain
 model = XY(params)
 lattice = TriangularLattice(L,periodic=false)
 ind = rand(1:Ntest)
-# ind = findfirst(x->x==false,resultats)
+ind = rand(findall(x->x==false,resultats))
     prediction = (onecold(NN((Xtest[:,ind]))) == onecold(Ytest[:,ind]))
     thetass = reshape(Xtest[:,ind],2window + 1,2window + 1)
-    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytest[:,ind])]*" , "*string(prediction))
+    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytest[:,ind])]*" vs "*possible_defects[onecold(NN((Xtest[:,ind])))][2+])
     display_quiver!(p,thetass,window)
 
 ## Save NN

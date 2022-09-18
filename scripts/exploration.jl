@@ -11,19 +11,25 @@ include(srcdir("../parameters.jl"));
     lattice = TriangularLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
 
-# plot_thetas(thetas,model,lattice,defects=true)
+p=plot_thetas(randomly_rotate(thetas),model,lattice,defects=false)
+    display_quiver!(p,randomly_rotate(thetas),5)
 dft = DefectTracker(thetas,model,lattice)
 dft.defectsP[1].type[1]
+dft.defectsN[1].type[1]
 update_and_track!(thetas,model,lattice,dft,100,5)
 dft.defectsP[1].type
 
 
-zoom_quiver(thetas,model,lattice,last_loc(dft.defectsP[1])...,7)
-zoom_quiver(thetas,model,lattice,75,50,10)
+zoom_quiver(thetas,model,lattice,last_loc(dft.defectsP[1])...,9)
+zoom_quiver(thetas,model,lattice,last_loc(dft.defectsN[1])...,9)
+zoomN = zoom(thetas,lattice,last_loc(dft.defectsN[1])...,9)[2]
+ind_type = onecold(NN(vec(zoomN)))
+possible_defects[ind_type]
+
+
 
 
 tmax,every = 100,10
-
 z = @elapsed update_and_track_plot!(thetas,model,lattice,dft,tmax,every)
 prinz(z)
 dft

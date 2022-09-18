@@ -215,3 +215,16 @@ function zoom(thetas::Matrix{<:Number},lattice::AbstractLattice,i,j,window)
     end
     return no_problem_go_ahead,thetas_zoom
 end
+
+## Rotations
+rotate_clockwise90(thetas::Matrix{<:Number}) = rotr90(thetas .- pi/2)
+rotate_counterclockwise90(thetas::Matrix{<:Number}) = rotl90(thetas .+ pi/2)
+rotate_180(thetas::Matrix{<:Number}) = rot180(thetas .+ pi)
+function randomly_rotate(thetas::Matrix{T})::Matrix{T} where T<:Number
+    u = rand()
+    if     u < 0.25  return thetas
+    elseif u < 0.50  return rotate_clockwise90(thetas)
+    elseif u < 0.75  return rotate_counterclockwise90(thetas)
+    else             return rotate_180(thetas)
+    end
+end

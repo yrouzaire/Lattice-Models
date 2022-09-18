@@ -51,7 +51,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
     return charge
 end
 
-function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_types=true) where T<:AbstractFloat
+function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_type=true, window=9) where T<:AbstractFloat
     L = lattice.L
     vortices_plus  = Tuple{Int,Int,T,String}[]
     vortices_minus = Tuple{Int,Int,T,String}[]
@@ -74,12 +74,12 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     vortices_plus_no_duplicates  = merge_duplicates(vortices_plus,lattice)
     vortices_minus_no_duplicates = merge_duplicates(vortices_minus,lattice)
 
-    if find_types return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,relax!(copy(thetas),model,0.3),lattice)
+    if find_type return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,relax!(copy(thetas),model,0.3),lattice,window=window)
     else return vortices_plus_no_duplicates,vortices_minus_no_duplicates
     end
 end
 
-function find_types(list_p,list_n,thetas,lattice)
+function find_types(list_p,list_n,thetas,lattice; window=9)
     # Positive defects
     pos_p    = [list_p[i][1:2] for i in each(list_p)]
     charge_p = [list_p[i][3]   for i in each(list_p)]
@@ -92,7 +92,6 @@ function find_types(list_p,list_n,thetas,lattice)
     pos_all = vcat(pos_n,pos_p)
     type_all = vcat(type_n,type_p)
 
-    window = 5
     total_number_defects = length(pos_n) + length(pos_p)
     density_defects = total_number_defects / lattice.L^2
     if density_defects < 1/(2window+1)^2
@@ -109,8 +108,8 @@ function find_types(list_p,list_n,thetas,lattice)
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value
                     unchanged, i.e "unknown" =#
-                    ind_type = onecold(NN(vec(thetas_zoom)))
-                    type_p[n] = possible_defects[ind_type]
+                    ind_type = onecold(NN_positive(vec(thetas_zoom)))
+                    type_p[n] = possible_positive_defects[ind_type]
                 end
             end
         end
@@ -122,8 +121,8 @@ function find_types(list_p,list_n,thetas,lattice)
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value
                     unchanged, i.e "unknown" =#
-                    ind_type = onecold(NN(vec(thetas_zoom)))
-                    type_n[n] = possible_defects[ind_type]
+                    ind_type = onecold(NN_negative(vec(thetas_zoom)))
+                    type_n[n] = possible_negative_defects[ind_type]
                 end
             end
         end
