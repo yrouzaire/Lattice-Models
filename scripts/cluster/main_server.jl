@@ -11,7 +11,7 @@ lattice = TriangularLattice(L,periodic=true,single=true)
 thetas = init_thetas(lattice,params=params)
 dft = DefectTracker(thetas,model,lattice)
 
-tmax,every = Int(1E4),10
+tmax,every = Int(500),10
 z = @elapsed update_and_track!(thetas,model,lattice,dft,tmax,every)
 prinz(z)
 
