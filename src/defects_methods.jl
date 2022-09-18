@@ -51,7 +51,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
     return charge
 end
 
-function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_type=true, window=9) where T<:AbstractFloat
+function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_type=true, window=7) where T<:AbstractFloat
     L = lattice.L
     vortices_plus  = Tuple{Int,Int,T,String}[]
     vortices_minus = Tuple{Int,Int,T,String}[]
@@ -79,7 +79,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     end
 end
 
-function find_types(list_p,list_n,thetas,lattice; window=9)
+function find_types(list_p,list_n,thetas,lattice; window=7)
     # Positive defects
     pos_p    = [list_p[i][1:2] for i in each(list_p)]
     charge_p = [list_p[i][3]   for i in each(list_p)]
@@ -233,11 +233,11 @@ mutable struct Defect
 end
 Defect(;id,charge,loc,t,type="unknown") = Defect(id,charge,[type],[loc],nothing,t,nothing)
 
-last_loc(d::Defect) = d.pos[end]
-creation_loc(d::Defect) = d.pos[1]
+first_loc(d::Defect) = d.pos[1]
+last_loc(d::Defect)  = d.pos[end]
 
-last_type(d::Defect) = d.type[end]
-creation_type(d::Defect) = d.type[1]
+first_type(d::Defect) = d.type[1]
+last_type(d::Defect)  = d.type[end]
 
 function update_position_and_type!(d::Defect,new_loc,new_type)
     push!(d.pos,new_loc)
@@ -269,9 +269,21 @@ end
 number_defectsP(dt::DefectTracker) = length(dt.defectsP)
 number_defectsN(dt::DefectTracker) = length(dt.defectsN)
 number_defects(dt::DefectTracker)  = length(dt.defectsN)  + length(dt.defectsN)
+function number_defects_type(dt::DefectTracker,type)
+    if     type in ["join","split","threefold1","threefold2"]
+        return count(isequal(type),[last_type(dt.defectsN[i]) for i in each(dt.defectsN)])
+    elseif type in ["source","sink","clockwise","counterclockwise"]
+        return count(isequal(type),[last_type(dt.defectsP[i]) for i in each(dt.defectsP)])
+    end
+end
+number_defects_types(dt::DefectTracker) = [number_defects_type(dt,type) for type in ["source","sink","clockwise","counterclockwise","join","split","threefold1","threefold2"]]
 number_active_defectsP(dt::DefectTracker) = count(isnothing,[d.annihilation_time for d in dt.defectsP])
 number_active_defectsN(dt::DefectTracker) = count(isnothing,[d.annihilation_time for d in dt.defectsN])
 number_active_defects(dt::DefectTracker)  = number_active_defectsN(dt) + number_active_defectsP(dt)
+
+first_types(dt::DefectTracker) = first_type.(vcat(dt.defectsP,dt.defectsN))
+last_types(dt::DefectTracker) = last_type.(vcat(dt.defectsP,dt.defectsN))
+
 
 function t_bounds(dft::DefectTracker)
     alldefects = vcat(dft.defectsP,dft.defectsN)
@@ -372,8 +384,8 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
         # dt.defectsN[ID_antivortex].annihilation_time = dt.current_time
 
         estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,L)
-        push_position!(dt.defectsP[i],estimate)
-        push_position!(dt.defectsN[ID_antivortex],estimate)
+        update_position_and_type!(dt.defectsP[i],estimate,last_type(dt.defectsP[i]))
+        update_position_and_type!(dt.defectsN[ID_antivortex],estimate,last_type(dt.defectsN[i]))
     end
     return dt
 end

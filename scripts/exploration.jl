@@ -7,22 +7,29 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 ## Tracking defects over time (first single, then pair, then hightemp)
 include(srcdir("../parameters.jl"));
-    model = XY(params)
+    model = MovingXY(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
+update!(thetas,model,lattice,2000)
 
-p=plot_thetas(randomly_rotate(thetas),model,lattice,defects=false)
-    display_quiver!(p,randomly_rotate(thetas),5)
+p=plot_thetas((thetas),model,lattice,defects=false)
+    # display_quiver!(p,(thetas),13)
+
 dft = DefectTracker(thetas,model,lattice)
-dft.defectsP[1].type[1]
-dft.defectsN[1].type[1]
-update_and_track!(thetas,model,lattice,dft,100,5)
-dft.defectsP[1].type
+number_defects_types(dft)
+# dft.defectsP[1].type[1]
+# dft.defectsN[1].type[1]
+
+update_and_track!(thetas,model,lattice,dft,4000,50)
+dft.defectsP[7].type
+dft.defectsN[1].type
+number_defects_types(dft)
+[last_loc(dt.defectsP[i])]
 
 
-zoom_quiver(thetas,model,lattice,last_loc(dft.defectsP[1])...,9)
-zoom_quiver(thetas,model,lattice,last_loc(dft.defectsN[1])...,9)
-zoomN = zoom(thetas,lattice,last_loc(dft.defectsN[1])...,9)[2]
+zoom_quiver(thetas,model,lattice,last_loc(dft.defectsP[1])...,7)
+zoom_quiver(thetas,model,lattice,last_loc(dft.defectsN[1])...,7)
+zoomN = zoom(thetas,lattice,last_loc(dft.defectsN[1])...,7)[2]
 ind_type = onecold(NN(vec(zoomN)))
 possible_defects[ind_type]
 

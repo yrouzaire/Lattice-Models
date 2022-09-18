@@ -110,7 +110,7 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
-        defects_p,defects_m = spot_defects(thetas,model,lattice)
+        defects_p,defects_m = spot_defects(thetas,model,lattice,find_type=false)
         locP = [defects_p[i][1:2] for i in each(defects_p)]
         locN = [defects_m[i][1:2] for i in each(defects_m)]
         highlight_defects!(p,lattice.L,locP,locN)

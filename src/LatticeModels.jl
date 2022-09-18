@@ -10,8 +10,8 @@ include("measurements.jl")
 
 using BenchmarkTools
 
-# using Flux:onecold, Chain, Dense, softmax
-# global const NN_positive = load("NN_positive_12_defects.jld2","NN")
-# global const possible_positive_defects = load("NN_positive_12_defects.jld2","possible_defects")
-# global const NN_negative = load("NN_negative_12_defects.jld2","NN")
-# global const possible_negative_defects = load("NN_negative_12_defects.jld2","possible_defects")
+using Flux:onecold, Chain, Dense, softmax
+global const NN_positive = load("NN_positive_12_defects_N1000_W7.jld2","NN")
+global const possible_positive_defects = load("NN_positive_12_defects_N1000_W7.jld2","possible_defects")
+global const NN_negative = load("NN_negative_12_defects_N1000_W7.jld2","NN")
+global const possible_negative_defects = load("NN_negative_12_defects_N1000_W7.jld2","possible_defects")
