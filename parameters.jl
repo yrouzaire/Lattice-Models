@@ -6,7 +6,7 @@ propulsion = "polar"
 Var = 0.1
 A = 2
 vision = 5π/3
-rho = .97
+rho = 1
 algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters

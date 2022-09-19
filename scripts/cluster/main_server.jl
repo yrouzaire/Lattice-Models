@@ -4,15 +4,20 @@ include("LatticeModels.jl") ;
 using Plots,JLD2 # for plotting methods such as @animate etc
 include("IDrealisation.jl") ;
 
-## Goal : compare motion of a defect pair
+## Goal : scan
 include("parameters.jl");
-model = XY(params)
+model   = XY(params)
 lattice = TriangularLattice(L,periodic=true,single=true)
-thetas = init_thetas(lattice,params=params)
-dft = DefectTracker(thetas,model,lattice)
+thetas  = init_thetas(lattice,params=params)
+dft     = DefectTracker(thetas,model,lattice)
 
 tmax,every = Int(500),10
-z = @elapsed update_and_track!(thetas,model,lattice,dft,tmax,every)
+z = @elapsed while model.t < tmax
+    update!(thetas,model,lattice,model.t + every)
+    update_DefectTracker!(dft,thetas,model,lattice)
+    push!(OPs,OP(thetas))
+    push!(,)
+end
 prinz(z)
 
 comments = ""
