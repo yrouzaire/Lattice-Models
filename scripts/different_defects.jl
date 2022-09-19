@@ -151,18 +151,23 @@ update!(thetas,model,lattice,202)
 
 # Conclusion : le champ theta est très brouillon (even at T small for rho = 1) mais ca a l'air de fonctionner
 
-## Different -1 defects
-include(srcdir("../parameters.jl"));
-lattice = TriangularLattice(L,periodic=false)
-model = XY(params)
-thetas = init_thetas(lattice,params=params)
-zoom_quiver(thetas,model,lattice,17,17,10) ; title!("split")
-
-include(srcdir("../parameters.jl"));
-lattice = TriangularLattice(L,periodic=false)
-model = XY(params)
-thetas = init_thetas(lattice,params=params)
-zoom_quiver(rotate_clockwise90(thetas),model,lattice,17,17,10) ; title!("split")
+## Different -1 defects (with L = 32, single)
+# Result, already known: split<->join and threefold1<->threefold2 are related via a 90° rotation. So the NN cannot really learn the difference as there is no.
+# include(srcdir("../parameters.jl"));
+# lattice = TriangularLattice(L,periodic=false)
+# model = XY(params)
+#
+# params["type1defect"] = "split"
+# thetas = init_thetas(lattice,params=params)
+# zoom_quiver(thetas,model,lattice,17,17,10) ; title!("split")
+#
+# params["type1defect"] = "join"
+# thetas = init_thetas(lattice,params=params)
+# zoom_quiver(rotate_clockwise90(thetas),model,lattice,17,17,10) ; title!("rotated join = split")
+#
+# params["type1defect"] = "threefold1"
+# thetas = init_thetas(lattice,params=params)
+# zoom_quiver(rotate_180(thetas),model,lattice,17,17,10) ; title!("rotated ccw = split")
 
 ## Plot the different defects and defect pairs
 include(srcdir("../parameters.jl"));
