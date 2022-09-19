@@ -1,12 +1,12 @@
 # Physical Parameters
-L = 200
+L = 32
 T = 0.1
-symmetry = "nematic"
+symmetry = "polar"
 propulsion = "polar"
 Var = 0.1
 A = 2
 vision = 5π/3
-rho = 0.95
+rho = 1
 algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
@@ -17,10 +17,10 @@ tmax = 1E4
 transients = Inf
 
 # Initialisation
-init = "hightemp"
-q = 1/2
+init = "single"
+q = -1
 r0 = Int(L/2)
-type1defect = "clockwise"
+type1defect = "join"
 type2defect = "pair1"
 
 # Containers
