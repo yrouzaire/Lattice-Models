@@ -58,17 +58,26 @@ function corr(thetas::Matrix{T},model::AbstractModel,lattice::AbstractLattice,i:
     end
 end
 
-# way too slow, so let's go bacj to a flawed but tractable solution
+# Method with correct_sites way too slow, so let's go back to a flawed but tractable solution : use the same algo for TriangularLattice and SquareLattice
 # function corr(thetas::Matrix{T},model::AbstractModel,lattice::TriangularLattice,i::Int,j::Int,n::Int) where T<:AbstractFloat
-#     correct_sites = []
-#     for a in -n:+n , b in -n:+n # scann the square with chebychev distance ≤ n
-#         first_selection = abs(a) + abs(b) ≥ n # to exclude already some inner part of the square
-#         correct_distance = (dist(lattice,true_position(lattice,a,b),true_position(lattice,i,j)) == n)
-#         if first_selection && correct_distance
-#             push!(correct_sites,(a,b))
-#         end
-#     end
-#     angle_neighbours_at_distance_n = [thetas[mod1(a,lattice.L),mod1(b,lattice.L)] for (a,b) in correct_sites]
+#     # correct_sites = []
+#     # for a in -n:+n , b in -n:+n # scann the square with chebychev distance ≤ n
+#     #     first_selection = abs(a) + abs(b) ≥ n # to exclude already some inner part of the square
+#     #     correct_distance = (dist(lattice,true_position(lattice,a,b),true_position(lattice,i,j)) == n)
+#     #     if first_selection && correct_distance
+#     #         push!(correct_sites,(a,b))
+#     #     end
+#     # end
+#     angle_neighbours_at_distance_n = [thetas[mod1(i+n,L),j],
+#                                       thetas[mod1(i-n,L),j],
+#                                       thetas[i,mod1(j+n,L)],
+#                                       thetas[i,mod1(j-n,L)],
+#                                       thetas[mod1(i-n,L),mod1(j-n,L)],
+#                                       thetas[mod1(i+n,L),mod1(j+n,L)],
+#                                       thetas[mod1(i-n,L),mod1(j+n,L)],
+#                                       thetas[mod1(i+n,L),mod1(j-n,L)] ]
+#     posij = true_position(lattice,i,j)
+#     filter!(x->(dist(lattice,true_position(lattice,x...),posij) == n),angle_neighbours_at_distance_n)
 #     filter!(!isnan,angle_neighbours_at_distance_n)
 #     model.symmetry == "polar" ? symm = 1 : symm = 2
 #     if length(angle_neighbours_at_distance_n) > 0
@@ -77,7 +86,6 @@ end
 #         return NaN
 #     end
 # end
-
 
 function corr_length(C::Vector{T},rs=1:length(C);seuil=exp(-1))::T where T<:AbstractFloat # from a time series, returns the correlation length ()
     i_after = findfirst(x->x<seuil,C)
