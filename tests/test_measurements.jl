@@ -15,6 +15,7 @@ include(srcdir("../parameters.jl"));
 update!(thetas,model,lattice,10)
 ctri = corr(thetas,model,lattice)
 plot(ctri)
+corr_length(ctri)
 
 ## With SquareLattice
 include(srcdir("../parameters.jl"));

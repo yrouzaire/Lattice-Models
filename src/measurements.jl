@@ -79,7 +79,7 @@ end
 # end
 
 
-function corr_length(rs,C::Vector{T},seuil=exp(-1))::T where T<:AbstractFloat # from a time series, returns the correlation length ()
+function corr_length(C::Vector{T},rs=1:length(C);seuil=exp(-1))::T where T<:AbstractFloat # from a time series, returns the correlation length ()
     i_after = findfirst(x->x<seuil,C)
     if i_after ≠ nothing && i_after > 1
         # Linear interpolation
