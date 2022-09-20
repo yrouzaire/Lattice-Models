@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 32
+L = 250
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -17,7 +17,7 @@ tmax = 1E4
 transients = Inf
 
 # Initialisation
-init = "single"
+init = "hightemp"
 q = -1
 r0 = Int(L/2)
 type1defect = "join"

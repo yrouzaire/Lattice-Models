@@ -93,6 +93,18 @@ function find_types(list_p,list_n,thetas,lattice)
     pos_all = vcat(pos_n,pos_p)
     type_all = vcat(type_n,type_p)
 
+    if charge_p[1] == 1
+        NN_positive = NN_positive1
+        NN_negative = NN_negative1
+        possible_positive_defects = possible_positive1_defects
+        possible_negative_defects = possible_negative1_defects
+    elseif charge_p[1] == 0.5
+        NN_positive = NN_positive12
+        NN_negative = NN_negative12
+        possible_positive_defects = possible_positive12_defects
+        possible_negative_defects = possible_negative12_defects
+    end
+
     total_number_defects = length(pos_n) + length(pos_p)
     density_defects = total_number_defects / lattice.L^2
     if density_defects < 1/(2WINDOW+1)^2

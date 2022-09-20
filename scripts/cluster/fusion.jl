@@ -8,14 +8,14 @@ println("There are $(length(indices))/$R files.")
 
 @load base_filename*"_r$(indices[1]).jld2" times_log Ts params comments
 
-ns  = Array{Any,3}(missing,length(Ts),length(times_log),R)
-Cs  = Array{Any,4}(missing,length(Ts),Int(params["L"]/2),length(times_log),R)
-xis = Array{Any,3}(missing,length(Ts),length(times_log),R)
-polar_orders = Array{Any,3}(missing,length(Ts),length(times_log),R)
-nematic_orders = Array{Any,3}(missing,length(Ts),length(times_log),R)
-runtimes = Vector{Any}(missing,R)
+ns  = NaN*zeros(length(Ts),length(times_log),R)
+Cs  = NaN*zeros(length(Ts),Int(params["L"]/2),length(times_log),R)
+xis = NaN*zeros(length(Ts),length(times_log),R)
+polar_orders = NaN*zeros(length(Ts),length(times_log),R)
+nematic_orders = NaN*zeros(length(Ts),length(times_log),R)
+runtimes = NaN*zeros(R)
 for r in indices
-    @load base_filename*"_r$r.jld2" C n xi polar_order nematic_order runtime
+    @load base_filename*"_r$r.jld2" times_log Ts C n xi polar_order nematic_order runtime
     ns[:,:,r] = n
     xis[:,:,r] = xi
     Cs[:,:,:,r] = C
@@ -23,7 +23,7 @@ for r in indices
     nematic_orders[:,:,r] = nematic_order
     runtimes[r] = runtime
 end
-@save base_filename*".jld2" params comments polar_orders nematic_orders xis Cs ns runtimes R
+@save base_filename*".jld2" times_log Ts params comments polar_orders nematic_orders xis Cs ns runtimes R
 println("Fusionned data saved in $(base_filename*".jld2") .")
 
 
