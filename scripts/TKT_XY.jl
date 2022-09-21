@@ -11,10 +11,9 @@ nematic_orders_avg = nanmean(nematic_orders,3)[:,:,1]
 ns_avg = nanmean(ns,3)[:,:,1]
 xis_avg = nanmean(xis,3)[:,:,1]
 Cs_avg = nanmean(Cs,4)[:,:,:,1]
-
+L = params["L"]
 histogram(runtimes/3600,bins=R)
 
-mean([24,42,0,3,6,14,30,30,18,28])
 # Order parameters (t)
 p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))
     for i in each(Ts)
@@ -42,9 +41,9 @@ p=plot(xlabel="t",ylabel="n/L²",legend=:bottomleft,axis=:log,size=(450,400))
 
 # Correlation function over time
 temp = 1
-p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:bottomleft,yaxis=:log,size=(450,400))
+p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:bottomleft,axis=:log,size=(450,400))
     for i in 20:2:30
-        plot!(1:length(Cs_avg[temp,:,i]),Cs_avg[temp,:,i],line=:solid,label="t = $(times_log[i])",rib=0)
+        plot!(1:length(Cs_avg[temp,:,i]),remove_negative(Cs_avg[temp,:,i]),line=:solid,label="t = $(times_log[i])",rib=0)
     end
     p
 
@@ -52,7 +51,7 @@ p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:bottomleft,yaxis=:lo
 p=plot(xlabel="r",ylabel="C(r,∞)",legend=:bottomleft,axis=:log,size=(450,400))
     for i in each(Ts)
         rr = 1:length(Cs_avg[i,:,end])
-        plot!(rr,Cs_avg[i,:,end],c=i,line=:solid,label="T = $(Ts[i])",rib=0)
+        plot!(rr,remove_negative(Cs_avg[i,:,end]),c=i,line=:solid,label="T = $(Ts[i])",rib=0)
         plot!(rr[20:end],rr[20:end] .^(-Ts[i]/2pi),c=i,line=:dash)
     end
     p
