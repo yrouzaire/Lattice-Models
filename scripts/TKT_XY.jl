@@ -14,6 +14,7 @@ Cs_avg = nanmean(Cs,4)[:,:,:,1]
 
 histogram(runtimes/3600,bins=R)
 
+mean([24,42,0,3,6,14,30,30,18,28])
 # Order parameters (t)
 p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))
     for i in each(Ts)
@@ -31,10 +32,38 @@ p=plot(xlabel="t",ylabel="ξ/L",legend=:topleft,axis=:log,size=(450,400))
     plot!(times_log[2:end],2E-2sqrt.(times_log[2:end]./log.(10times_log[2:end])),c=:black)
     p
 
-# Correlation function (r,t)
-p=plot(xlabel="t",ylabel="ξ/L",legend=:topleft,axis=:log,size=(450,400))
+# Number of defects (t)
+p=plot(xlabel="t",ylabel="n/L²",legend=:bottomleft,axis=:log,size=(450,400))
     for i in each(Ts)
-        plot!(times_log,xis_avg[i,:],c=i,line=:solid,label="T = $(Ts[i])",rib=0)
+        plot!(times_log,ns_avg[i,:]/L^2,c=i,line=:solid,label="T = $(Ts[i])",rib=0)
     end
-    plot!(times_log[2:end],2E-2sqrt.(times_log[2:end]./log.(10times_log[2:end])),c=:black)
+    plot!(times_log[2:end],1E-2 ./ (times_log[2:end]./log.(10times_log[2:end])),c=:black)
     p
+
+# Correlation function over time
+temp = 1
+p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:bottomleft,yaxis=:log,size=(450,400))
+    for i in 20:2:30
+        plot!(1:length(Cs_avg[temp,:,i]),Cs_avg[temp,:,i],line=:solid,label="t = $(times_log[i])",rib=0)
+    end
+    p
+
+# Correlation function at final time for different T
+p=plot(xlabel="r",ylabel="C(r,∞)",legend=:bottomleft,axis=:log,size=(450,400))
+    for i in each(Ts)
+        rr = 1:length(Cs_avg[i,:,end])
+        plot!(rr,Cs_avg[i,:,end],c=i,line=:solid,label="T = $(Ts[i])",rib=0)
+        plot!(rr[20:end],rr[20:end] .^(-Ts[i]/2pi),c=i,line=:dash)
+    end
+    p
+
+## Problem : T > Tkt, still kind of ordered (Answer : TKT = 2 for TriangularLattice )
+include(srcdir("../parameters.jl"));
+model = XY(params)
+lattice = TriangularLattice(L)
+thetas = init_thetas(lattice,params=params)
+plot()
+update!(thetas,model,lattice,model.t + 150)
+# plot_thetas(thetas,model,lattice,defects=false)
+    cc = corr(thetas,model,lattice)
+    plot!(remove_negative(cc),axis=:log)

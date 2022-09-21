@@ -15,7 +15,7 @@ polar_orders = NaN*zeros(length(Ts),length(times_log),R)
 nematic_orders = NaN*zeros(length(Ts),length(times_log),R)
 runtimes = NaN*zeros(R)
 for r in indices
-    @load base_filename*"_r$r.jld2" times_log Ts C n xi polar_order nematic_order runtime
+    @load base_filename*"_r$r.jld2" C n xi polar_order nematic_order runtime
     ns[:,:,r] = n
     xis[:,:,r] = xi
     Cs[:,:,:,r] = C
