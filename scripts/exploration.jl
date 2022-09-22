@@ -5,13 +5,50 @@ using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
 
+model = XY(params)
+lattice = 
+## Verifions que les défauts soient bien les bons
+global const WINDOW = 7
+using Flux:onecold, Chain, Dense, softmax
+global const NN_positive = load("NN_positive_12_defects_N1000_W7.jld2","NN")
+global const possible_positive_defects = load("NN_positive_12_defects_N1000_W7.jld2","possible_defects")
+global const NN_negative = load("NN_negative_12_defects_N1000_W7.jld2","NN")
+global const possible_negative_defects = load("NN_negative_12_defects_N1000_W7.jld2","possible_defects")
+
+include(srcdir("../parameters.jl"));
+    model = MovingXY(params)
+    lattice = TriangularLattice(L,periodic=true,single=true)
+    thetas = init_thetas(lattice,params=params)
+
+plot_thetas(thetas,model,lattice)
+update!(thetas,model,lattice,Int(2E3))
+    plot_thetas(thetas,model,lattice)
+plot_thetas(thetas,model,lattice,defects=true)
+
+dft = DefectTracker(thetas,model,lattice,find_type=true)
+number_defects_types(dft)
+
+n = 1
+n += 1
+    d = dft.defectsP[n]
+    zoom_quiver(thetas,model,lattice,last_loc(d)...,11)
+    thetas_zoom = zoom(thetas,lattice,last_loc(d)...,WINDOW)[2]
+    preconditionning!(thetas_zoom,model,lattice)
+    pred = NN_positive(vec(thetas_zoom))
+    confiance = maximum(pred)/sum(pred)
+    title!(possible_positive_defects[onecold(pred)]*" confiance: $(round(confiance,digits=2))")
+
+# function get_types(dft::DefectTracker)
+#
+# end
+
+
 ## Tracking defects over time (first single, then pair, then hightemp)
 include(srcdir("../parameters.jl"));
     model = XY(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
 update!(thetas,model,lattice,20)
-
 p=plot_thetas((thetas),model,lattice,defects=false)
     # display_quiver!(p,(thetas),13)
 

@@ -90,6 +90,22 @@ function at_least_at_distance_X_from_border(i::Int,j::Int,L::Int;X=2)::Bool
     end
 end
 
+true_position(lattice::SquareLattice,i,j) = (i,j)
+function true_position(lattice::TriangularLattice,i,j)
+    if iseven(i) return (i,j+0.5)
+    else return (i,j)
+    end
+end
+
+function distance_to_border(thetas::Matrix{<:AbstractFloat},i,j)
+    L = size(thetas,1)
+    distance_to_left   = i-1
+    distance_to_right  = L-i
+    distance_to_bottom = j-1
+    distance_to_top    = L-j
+    return minimum([distance_to_top,distance_to_left,distance_to_right,distance_to_bottom])
+end
+
 function add_2_positions(pos1::Tuple{T,T},pos2::Tuple{T,T},L::T,should_take_mod::Bool)::Tuple{T,T} where T<:Int
     if should_take_mod return mod1.(pos1 .+ pos2 ,L)
     else return pos1 .+ pos2

@@ -5,8 +5,9 @@ import StatsBase.sample
 import Plots.@animate
 
 ## ------------------------ Initializations  ------------------------
-function init_thetas(space;params)
-    @unpack L,rho,init,q,r0,type1defect,type2defect,float_type = params
+function init_thetas(model::AbstractModel,lattice::Abstract2DLattice{float_type};params)
+    L = lattice.L
+    @unpack rho,init,q,r0,type1defect,type2defect = params
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
@@ -22,7 +23,7 @@ function init_thetas(space;params)
         thetas = create_2pairs_vortices(L,r0=r0,q=abs(q),type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
-    if rho < 1 make_holes!(thetas,rho) end
+    if model.rho < 1 make_holes!(thetas,model.rho) end
     return float_type.(thetas)
 end
 

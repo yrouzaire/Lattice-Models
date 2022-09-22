@@ -51,6 +51,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
     return charge
 end
 
+number_defects(thetas,model,lattice) = sum(length,spot_defects(thetas,model,lattice))
 function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_type=false) where T<:AbstractFloat
     L = lattice.L
     vortices_plus  = Tuple{Int,Int,T,String}[]
@@ -91,6 +92,18 @@ function find_types(list_p,list_n,thetas,lattice)
     # All defects together
     pos_all = vcat(pos_n,pos_p)
     type_all = vcat(type_n,type_p)
+
+    if charge_p[1] == 1
+        NN_positive = NN_positive1
+        NN_negative = NN_negative1
+        possible_positive_defects = possible_positive1_defects
+        possible_negative_defects = possible_negative1_defects
+    elseif charge_p[1] == 0.5
+        NN_positive = NN_positive12
+        NN_negative = NN_negative12
+        possible_positive_defects = possible_positive12_defects
+        possible_negative_defects = possible_negative12_defects
+    end
 
     total_number_defects = length(pos_n) + length(pos_p)
     density_defects = total_number_defects / lattice.L^2
@@ -182,7 +195,7 @@ function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,
 end
 
 function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
-    L = lattice.L
+    L = size(thetas,1)
     for j in 1:L
         for i in 1:L
             if isempty(get_neighbours(thetas,model,lattice,i,j,is_in_bulk(i,j,L)))
@@ -194,7 +207,7 @@ function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,l
 end
 
 function fill_holes!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
-    L = lattice.L
+    L = size(thetas,1)
     # model.symmetry == "polar" ? symm = 2 : symm = 1
     while count(isnan,thetas) > 0
         for j in shuffle(1:L) , i in shuffle(1:L)
@@ -264,10 +277,15 @@ mutable struct DefectTracker
     defectsN::Vector{Defect} # so there is a (+)defect with id=1 AND and a (-)defect with id=1
     current_time::Float64 # latest update time (by convention, the creation time of the whole data structure = 0)
 
-    function DefectTracker(thetas,model,lattice) # constructor
-        vortices,antivortices = spot_defects(thetas,model,lattice,find_type=false)
-        defectsP = [Defect(id=i,charge=vortices[i][3],thetas_zoom=zoom(thetas,lattice,vortices[i][1:2]...,WINDOW)[2],type="unknown",loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
-        defectsN = [Defect(id=i,charge=antivortices[i][3],thetas_zoom=zoom(thetas,lattice,antivortices[i][1:2]...,WINDOW)[2],type="unknown",loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
+    function DefectTracker(thetas,model,lattice;find_type=false) # constructor
+        vortices,antivortices = spot_defects(thetas,model,lattice;find_type=find_type)
+        if find_type
+            defectsP = [Defect(id=i,charge=vortices[i][3],type=vortices[i][4],thetas_zoom=zoom(thetas,lattice,vortices[i][1:2]...,WINDOW)[2],loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
+            defectsN = [Defect(id=i,charge=antivortices[i][3],type=antivortices[i][4],thetas_zoom=zoom(thetas,lattice,antivortices[i][1:2]...,WINDOW)[2],loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
+        else
+            defectsP = [Defect(id=i,charge=vortices[i][3],thetas_zoom=zoom(thetas,lattice,vortices[i][1:2]...,WINDOW)[2],type="unknown",loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
+            defectsN = [Defect(id=i,charge=antivortices[i][3],thetas_zoom=zoom(thetas,lattice,antivortices[i][1:2]...,WINDOW)[2],type="unknown",loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
+        end
         new(defectsP,defectsN,model.t)
     end
 end

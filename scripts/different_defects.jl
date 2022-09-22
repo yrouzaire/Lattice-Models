@@ -16,12 +16,14 @@ centered on the defect.
 =#
 N = 1000 # the number of config for each defect
 window = 7 # 7 x 7 square around the defect
-# possible_defects = [(1/2,"source"),(1/2,"sink")]
 # possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise")]
-possible_defects = [(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
-# possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise"),(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
+# possible_defects = [(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
+# possible_defects = [(1,"source"),(1,"sink")]
+# possible_defects = [(1,"source"),(1,"sink"),(1,"clockwise"),(1,"counterclockwise")]
+possible_defects = [(-1,"join"),(-1,"split"),(-1,"threefold1"),(-1,"threefold2")]
+# possible_defects = [(1,"source"),(1,"sink")]
 params["init"] = "single"
-params["symmetry"] = "nematic"
+params["symmetry"] = "polar"
 params["L"] = 32
 X = zeros(Float32,2window+1,2window+1,N*length(possible_defects))
 Y = vcat([fill(possible_defects[i][2],N) for i in 1:length(possible_defects)]...)
@@ -52,7 +54,8 @@ ind = rand(1:size(X,3))
     xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 using JLD2
-jldsave(datadir("for_ML/dataset_T0.3Random_negative12defects_N$(N)_W$(window).jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 4, dt = 1E-2, Float32.")
+# jldsave(datadir("for_ML/dataset_T0.3Random_negative12defects_N$(N)_W$(window).jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 4, dt = 1E-2, Float32.")
+# jldsave(datadir("for_ML/dataset_T0.3Random_negative1defects_N$(N)_W$(window).jld2");X,Y,N,window,possible_defects,params,comments="Evolution time = 4, dt = 1E-2, Float32.")
 
 ## See whether I can learn the features from a Dense Neural Network
 using JLD2,Parameters, Flux, Random
@@ -64,7 +67,7 @@ using Flux:params, onehotbatch, crossentropy, onecold, throttle
 # Y_shuffled = Y[permutation]
 # possible_labels = unique(Y)
 Nepochs = 500
-
+NN = 0
 Ntrain = round(Int,0.8*length(Y))
     L = 2window + 1
     Xtrain = zeros(L*L,Ntrain) ; for i in 1:Ntrain  Xtrain[:,i] = vec(X_shuffled[:,:,i]) end
@@ -115,9 +118,9 @@ ind = rand(findall(x->x==false,resultats))
     display_quiver!(p,thetass,window)
 
 ## Save NN
-cd("D:/Documents/Research/projects/LatticeModels")
-comments="Evolution time = 4, dt = 1E-2, Float32, T<0.3 random, $(N) config per defect, originally from 32x32 lattices, $(Nepochs) epochs to train NN "
-jldsave("NN_negative_12_defects_N$(N)_W$(window).jld2";NN,possible_defects=possible_labels,comments=comments)
+# cd("D:/Documents/Research/projects/LatticeModels")
+# comments="Evolution time = 4, dt = 1E-2, Float32, T<0.3 random, $(N) config per defect, originally from 32x32 lattices, $(Nepochs) epochs to train NN "
+# jldsave("NN_negative_1_defects_N$(N)_W$(window).jld2";NN,possible_defects=possible_labels,comments=comments)
 
 ## Test it on completely new images
 using Flux
@@ -147,6 +150,24 @@ model.T = 0.4
 update!(thetas,model,lattice,202)
 
 # Conclusion : le champ theta est très brouillon (even at T small for rho = 1) mais ca a l'air de fonctionner
+
+## Different -1 defects (with L = 32, single)
+# Result, already known: split<->join and threefold1<->threefold2 are related via a 90° rotation. So the NN cannot really learn the difference as there is no.
+# include(srcdir("../parameters.jl"));
+# lattice = TriangularLattice(L,periodic=false)
+# model = XY(params)
+#
+# params["type1defect"] = "split"
+# thetas = init_thetas(lattice,params=params)
+# zoom_quiver(thetas,model,lattice,17,17,10) ; title!("split")
+#
+# params["type1defect"] = "join"
+# thetas = init_thetas(lattice,params=params)
+# zoom_quiver(rotate_clockwise90(thetas),model,lattice,17,17,10) ; title!("rotated join = split")
+#
+# params["type1defect"] = "threefold1"
+# thetas = init_thetas(lattice,params=params)
+# zoom_quiver(rotate_180(thetas),model,lattice,17,17,10) ; title!("rotated ccw = split")
 
 ## Plot the different defects and defect pairs
 include(srcdir("../parameters.jl"));
