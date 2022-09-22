@@ -1,7 +1,13 @@
 ## ------------------------ Lattices ------------------------
-abstract type AbstractLattice{AbstractFloat} end
-abstract type Abstract1DLattice{AbstractFloat} <: AbstractLattice{AbstractFloat} end
-abstract type Abstract2DLattice{AbstractFloat} <: AbstractLattice{AbstractFloat} end
+abstract type AbstractLattice end
+abstract type Abstract1DLattice <: AbstractLattice end
+abstract type Abstract2DLattice <: AbstractLattice end
+
+mutable struct Chain1D <: Abstract1DLattice
+    L::Int
+    periodic::Bool
+end
+Chain1D(L::Int;periodic::Bool=true) = Chain1D(L,periodic)
 
 mutable struct TriangularLattice <: Abstract2DLattice
     L::Int
