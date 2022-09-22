@@ -1,7 +1,9 @@
 ## ------------------------ Lattices ------------------------
-abstract type AbstractLattice end
+abstract type AbstractLattice{AbstractFloat} end
+abstract type Abstract1DLattice{AbstractFloat} <: AbstractLattice{AbstractFloat} end
+abstract type Abstract2DLattice{AbstractFloat} <: AbstractLattice{AbstractFloat} end
 
-mutable struct TriangularLattice <: AbstractLattice
+mutable struct TriangularLattice <: Abstract2DLattice
     L::Int
     periodic::Bool
     single::Bool
@@ -9,7 +11,7 @@ mutable struct TriangularLattice <: AbstractLattice
 end
 TriangularLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = TriangularLattice(L,periodic,single,metric)
 
-mutable struct SquareLattice <: AbstractLattice
+mutable struct SquareLattice <: Abstract2DLattice
     L::Int
     periodic::Bool
     single::Bool
@@ -18,7 +20,7 @@ end
 SquareLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = SquareLattice(L,periodic,single,metric)
 
 ## ------------------------ Functions ------------------------
-function dist(lattice::AbstractLattice,pos1,pos2)
+function dist(lattice::Abstract2DLattice,pos1,pos2)
     a,b = pos1 ; x,y = pos2
     dx = abs(x-a)
     dy = abs(y-b)
@@ -143,7 +145,7 @@ function mean_N_positions(vec_pos,L,should_take_mod::Bool=true)
 end
 
 # coordinate-free methods based on scalar products (does not force SquareLattice)
-function get_div_rot(thetas::Matrix{T},lattice::AbstractLattice) where T<:AbstractFloat # coordinate-free
+function get_div_rot(thetas::Matrix{T},lattice::Abstract2DLattice) where T<:AbstractFloat # coordinate-free
     L = size(thetas,1)
     divergence = NaN*zeros(L,L)
     rotational = NaN*zeros(L,L)
@@ -153,7 +155,7 @@ function get_div_rot(thetas::Matrix{T},lattice::AbstractLattice) where T<:Abstra
     return divergence , rotational
 end
 
-function get_div_rot(thetas::Matrix{T},i,j,lattice::AbstractLattice) where T<:AbstractFloat # coordinate-free
+function get_div_rot(thetas::Matrix{T},i,j,lattice::Abstract2DLattice) where T<:AbstractFloat # coordinate-free
     L = size(thetas,1)
 
     dummy_rho = one(T) # so that the NaN do not get filtered out, I need them here
@@ -206,7 +208,7 @@ end
 #     return div,rot
 # end
 
-function zoom(thetas::Matrix{<:Number},lattice::AbstractLattice,i,j,window)
+function zoom(thetas::Matrix{<:Number},lattice::Abstract2DLattice,i,j,window)
     #= Returns a 2window+1 portion of thetas (centered on i,j),
     together with a bool to say whether the operation has worked =#
     L = lattice.L

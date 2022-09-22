@@ -23,7 +23,7 @@ function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     return signe*shortest_unsigned_arclength
 end
 
-function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,i::Int,j::Int)::T where T<:AbstractFloat
+function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,i::Int,j::Int)::T where T<:AbstractFloat
     #= Note : thetasmod = mod.(thetas,symm*pi)
         By convention, for a SquareLattice, the neighbours have the following ordering
            2
@@ -52,7 +52,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
 end
 
 number_defects(thetas,model,lattice) = sum(length,spot_defects(thetas,model,lattice))
-function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_type=false) where T<:AbstractFloat
+function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice;find_type=false) where T<:AbstractFloat
     L = lattice.L
     vortices_plus  = Tuple{Int,Int,T,String}[]
     vortices_minus = Tuple{Int,Int,T,String}[]
@@ -187,14 +187,14 @@ function merge_duplicates(list,lattice;radius=4)
     return merged_duplicates
 end
 
-function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
+function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
     remove_isolates!(thetas,model,lattice)
     fill_holes!(thetas,model,lattice)
     trelax = 0.5
     relax!(thetas,model,trelax)
 end
 
-function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
+function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
     L = size(thetas,1)
     for j in 1:L
         for i in 1:L
@@ -206,7 +206,7 @@ function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,l
     return thetas
 end
 
-function fill_holes!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
+function fill_holes!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice) where T<:AbstractFloat
     L = size(thetas,1)
     # model.symmetry == "polar" ? symm = 2 : symm = 1
     while count(isnan,thetas) > 0
@@ -339,7 +339,7 @@ function add_defect!(dt::DefectTracker;charge,loc,type="unknown")
     end
 end
 
-function pair_up_hungarian(dt::DefectTracker,new,old,lattice::AbstractLattice,charge::String)
+function pair_up_hungarian(dt::DefectTracker,new,old,lattice::Abstract2DLattice,charge::String)
     # charge can be either "+" or "-"
     distance_matrixx = distance_matrix(new,old,lattice) # m_new lignes, m_old colonnes
     proposal         = hungarian(distance_matrixx)[1] # length = length(new)
@@ -414,7 +414,7 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
 end
 
 
-function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,dft::DefectTracker,tmax::Number,every::Number) where T<:AbstractFloat
+function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
@@ -428,7 +428,7 @@ function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Ab
     return dft
 end
 
-function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,dft::DefectTracker,tmax::Number,every::Number;defects=false) where T<:AbstractFloat
+function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number;defects=false) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
@@ -443,7 +443,7 @@ function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattic
     return dft
 end
 
-function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
+function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
 
     NB = lattice.periodic
     vortices_new,antivortices_new = spot_defects(thetas,model,lattice)
@@ -583,7 +583,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
     return dt
 end
 
-function MSD(dft::DefectTracker,model::AbstractModel,lattice::AbstractLattice)
+function MSD(dft::DefectTracker,model::AbstractModel,lattice::Abstract2DLattice)
     nP = number_defectsP(dft)
     nN = number_defectsN(dft)
     tmin,tmax = t_bounds(dft) # (tmin,tmax) = timestamps of (first defect creation , last defect annihilation)
@@ -617,7 +617,7 @@ function MSD(dft::DefectTracker,model::AbstractModel,lattice::AbstractLattice)
     return MSD, MSD_P, MSD_N
 end
 
-function square_displacement(d::Defect,lattice::AbstractLattice)
+function square_displacement(d::Defect,lattice::Abstract2DLattice)
     loc_t0 = creation_loc(d)
     return [dist(lattice,loc,loc_t0) for loc in d.hist] .^ 2
 end
@@ -632,7 +632,7 @@ function interdefect_distance(dft,defect1,defect2,lattice)
     return R
 end
 ## Small helpful methods for scripts
-function number_defects(model::AbstractModel,lattice::AbstractLattice)
+function number_defects(model::AbstractModel,lattice::Abstract2DLattice)
     a,b = spot_defects(thetas,T,BC)
     return length(a) + length(b)
 end

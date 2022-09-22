@@ -95,7 +95,7 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
     end
 end
 
-function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::AbstractLattice)::T where T<:AbstractFloat
+function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::Abstract2DLattice)::T where T<:AbstractFloat
     weights  = zeros(T,length(angles_neighbours))
     theta0   = mod(theta,sym(model)*pi)
     if     isa(lattice,TriangularLattice) constant = T(π/3)
@@ -117,12 +117,12 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
 end
 ## ------------------------ Update ------------------------
 # NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
-function update!(thetas::Matrix{<:T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
+function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
     while model.t < tmax update!(thetas,model,lattice) end
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -157,7 +157,7 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     T  = model.T
@@ -198,7 +198,7 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) 
 end
 
 
-function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -232,7 +232,7 @@ function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLatti
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     L = lattice.L
     order_trials = StatsBase.shuffle(1:L^2)
     for n in order_trials
@@ -294,7 +294,7 @@ function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},th
     return thetas
 end
 
-function angle2neighbour(theta::AbstractFloat,i::Int,j::Int,model::AbstractModel,lattice::AbstractLattice)
+function angle2neighbour(theta::AbstractFloat,i::Int,j::Int,model::AbstractModel,lattice::Abstract2DLattice)
     theta,A = Float64.((theta,model.A)) # Float64.((1,1)) 50x faster than Float64.([1,1])
     direction_motion = direction_of_motion(theta,A)
     NN = project_angle_onto_lattice(direction_motion,i,j,lattice)
@@ -315,7 +315,7 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
 end
 
 
-function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::AbstractLattice)
+function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::Abstract2DLattice)
     nearest_neighbours = offsets(lattice,iseven(i)) # can be of length 4, 6 or 8
     nb_nn = length(nearest_neighbours)
     index_nearest_neighbour = round(Int,mod(angle,2π)/(2π/nb_nn),RoundNearest) + 1

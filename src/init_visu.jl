@@ -103,7 +103,9 @@ function make_holes!(thetas,rho)
 end
 
 ## ------------------------ Visualization  ------------------------
-function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
+# TODO : plotthetas abstractarray and dispatch onto plot_thetas matrix and plot_thetas vector
+
+function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
     if     model.symmetry == "nematic" modd = pi
     elseif model.symmetry == "polar"   modd = 2pi
     end
@@ -147,7 +149,7 @@ end
 # xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 
-function zoom_quiver(thetas,model,lattice,i,j,window=5;defects=false)
+function zoom_quiver(thetas,model,lattice::Abstract2DLattice,i,j,window=7;defects=false)
     L = lattice.L
     no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,window)
 
