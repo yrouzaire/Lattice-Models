@@ -76,3 +76,10 @@ thetas_zoom = zoom(thetas,lattice,98,96,window)[2]
 
 window = 12
     zoom_quiver(thetas,model,lattice,98,96,window)
+
+
+## Tests plotting 1D chains
+lattice = Chain1D(L)
+model = PropagationForcedXY(params)
+thetas = init_thetas(model,lattice,params_init=params_init)
+plot_thetas(thetas,model,lattice)

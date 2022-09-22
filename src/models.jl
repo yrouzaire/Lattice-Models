@@ -107,8 +107,8 @@ function PropagationForcedXY(params)
     @unpack L,T,Var,symmetry,dt,float_type,rho  = params
     T,Var,dt,rho = convert.(float_type,(T,Var,dt,rho))
 
-    omegas = AbstractArray{float_type}
-    # instanciated later during the init, when one knows the type of lattice (1D, 2D)
+    omegas = zeros(float_type,L) # dummy
+    # will be instanciated later during the init, when one knows the type of lattice (1D, 2D)
 
     rho1 = one(float_type) # for now, we don't want to investigate holes in this model
     return PropagationForcedXY{float_type}(T,Var,symmetry,omegas,dt,zero(float_type),rho1)

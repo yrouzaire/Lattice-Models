@@ -17,7 +17,7 @@ tmax = 1E4
 transients = Inf
 
 # Initialisation
-init = "hightemp"
+init = "spinwave"
 q = -1
 r0 = Int(L/2)
 type1defect = "join"

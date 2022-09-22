@@ -123,7 +123,14 @@ function make_holes!(thetas,rho)
 end
 
 ## ------------------------ Visualization  ------------------------
-# TODO : plotthetas abstractarray and dispatch onto plot_thetas matrix and plot_thetas vector
+function plot_thetas(thetas::Vector{T},model::AbstractModel,lattice::Abstract1DLattice;cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400,100)) where T<:AbstractFloat
+    if     model.symmetry == "nematic" modd = pi
+    elseif model.symmetry == "polar"   modd = 2pi
+    end
+    # thetas_fattened = hcat(thetas,thetas,thetas)
+    p=heatmap(mod.(thetas',modd),c=cols,clims=(0,modd),size=size,yaxis=nothing)
+    return p
+end
 
 function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
     if     model.symmetry == "nematic" modd = pi
