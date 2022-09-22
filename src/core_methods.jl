@@ -3,7 +3,6 @@ include("models.jl");
 using StatsBase,Distributions
 
 ## ------------------------ Get Neighbours ------------------------
-# NOTE : no need to define get_neighbours(model::AbstractModel,lattice::AbstractLattice ...)
 function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
     L = lattice.L
 
@@ -82,6 +81,18 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Squ
     end
 end
 
+function get_neighbours(thetas::Vector{T},model::AbstractPropagationModel{T},lattice::Chain1D,i::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
+    L = lattice.L
+    if bulk return [thetas[i-1],thetas[i+1]]
+    else
+        if lattice.periodic return [thetas[mod1(i-1,L)],thetas[mod1(i+1,L)]]
+        else
+            if i == 1 return [thetas[2]] end
+            if i == L return [thetas[end-1]] end
+        end
+    end
+end
+
 function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     # default case, nothing to worry about
     if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
@@ -115,8 +126,8 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
     else return sum(sin.(sym(model)(angles_neighbours .- theta)) .* weights)
     end
 end
-## ------------------------ Update ------------------------
-# NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
+
+## ------------------------ Update Original Models ------------------------
 function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
     while model.t < tmax update!(thetas,model,lattice) end
     return thetas
@@ -198,7 +209,7 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::Abstract2DLattice
 end
 
 
-function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{ForcedXY{FT},PropagationForcedXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -256,6 +267,29 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::Abstract2DLat
     model.t += 1 # here = number of MonteCarlo steps
     return thetas
 end
+## ------------------------ Update Propagation Models ------------------------
+function update!(thetas::Vector{FT},model::AbstractPropagationModel{FT},lattice::Abstract1DLattice)::Vector{FT} where FT<:AbstractFloat
+    thetas_old = copy(thetas)
+    L  = lattice.L
+    dt = model.dt
+    T  = model.T
+
+    model.symmetry == "polar" ? symm = 1 : symm = 2
+
+    in_bulk = true
+    for i in 2:L-1
+        θ = thetas_old[i]
+        angle_neighbours = get_neighbours(thetas_old,model,lattice,i,in_bulk)
+        thetas[i] =  θ + dt*(model.omegas[i] + sum(sin,symm*(angle_neighbours .- θ)) ) + sqrt(2T*dt)*randn(FT)
+    end
+    thetas[1] =  thetas_old[1] + dt*(model.omegas[1] + sum(sin,symm*(get_neighbours(thetas_old,model,lattice,1,false) .- thetas_old[1])) ) + sqrt(2T*dt)*randn()
+    thetas[L] =  thetas_old[L] + dt*(model.omegas[L] + sum(sin,symm*(get_neighbours(thetas_old,model,lattice,L,false) .- thetas_old[L])) ) + sqrt(2T*dt)*randn()
+
+    model.t += dt
+    return thetas
+end
+
+## ------------------------ Other Evolution Methods ------------------------
 
 function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
     @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
