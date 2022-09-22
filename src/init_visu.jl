@@ -5,9 +5,29 @@ import StatsBase.sample
 import Plots.@animate
 
 ## ------------------------ Initializations  ------------------------
-function init_thetas(model::AbstractModel,lattice::Abstract2DLattice{float_type};params)
+function init_thetas(model::AbstractPropagationModel{T},lattice::Abstract1DLattice;params_init)::Vector{T} where T<:AbstractFloat
     L = lattice.L
-    @unpack rho,init,q,r0,type1defect,type2defect = params
+    @unpack init = params_init
+    if init == "lowtemp" thetas = zeros(L)
+    elseif init == "spinwave"
+        model.symmetry == "polar" ? symm = 2 : symm = 1
+        thetas = [symm*pi/L*i for i in 1:L]
+    end
+    model.omegas = sqrt(model.Var)*randn(L)
+    return thetas
+end
+
+function init_thetas(model::AbstractPropagationModel{T},lattice::Abstract2DLattice;params_init=nothing)::Matrix{T} where T<:AbstractFloat
+    L = lattice.L
+    # for now, only lowtemp initialisation is supported, no no need to provide params_init
+    model.omegas = sqrt(model.Var)*randn(L,L)
+    thetas = zeros(L,L)
+    return thetas
+end
+
+function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice;params_init)
+    L = lattice.L
+    @unpack init,q,r0,type1defect,type2defect = params_init
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
