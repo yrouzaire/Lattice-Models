@@ -1,23 +1,23 @@
 # Physical Parameters
-L = 100
-T = 0.
-symmetry = "nematic"
+L = 20
+T = 0.0
+symmetry = "polar"
 propulsion = "polar"
-Var = 0.1
+Var = 0
 A = 2
 vision = 5π/3
 rho = 1
 algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
-dt = 1E-2
+dt = 1E-1
 float_type = Float32
 width_proposal = 2sqrt(T)
 tmax = 1E4
 transients = Inf
 
 # Initialisation
-init = "spinwave"
+init = "lowtemp"
 q = -1
 r0 = Int(L/2)
 type1defect = "join"

@@ -87,8 +87,10 @@ function get_neighbours(thetas::Vector{T},model::AbstractPropagationModel{T},lat
     else
         if lattice.periodic return [thetas[mod1(i-1,L)],thetas[mod1(i+1,L)]]
         else
-            if i == 1 return [thetas[2]] end
-            if i == L return [thetas[end-1]] end
+            if i == 1 return [thetas[2]]
+            elseif i == L return [thetas[L-1]]
+            else return [thetas[i-1],thetas[i+1]]
+            end
         end
     end
 end

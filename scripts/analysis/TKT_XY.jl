@@ -8,7 +8,7 @@ using Parameters
 
 #= Answer :
 For polar symmetry, TKT on triangular lattice is 1.47.
-So for nematic, it should be TKT = 0.74 =# 
+So for nematic, it should be TKT = 0.74 =#
 
 @unpack runtimes, polar_orders, nematic_orders, Cs, xis, ns, params, comments, R, times_log, Ts  = load(datadir("TKT_polarXY.jld2"))
 polar_orders_avg = nanmean(polar_orders,3)[:,:,1]
@@ -45,8 +45,8 @@ p=plot(xlabel="t",ylabel="n/L²",legend=:bottomleft,axis=:log,size=(450,400))
     p
 
 # Correlation function over time
-temp = 4
-p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:bottomleft,axis=:log,size=(450,400))
+temp = 3
+    p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:bottomleft,axis=:log,size=(450,400))
     for i in 20:2:30
         plot!(1:length(Cs_avg[temp,:,i]),remove_negative(Cs_avg[temp,:,i]),line=:solid,label="t = $(times_log[i])",rib=0)
     end
@@ -54,7 +54,7 @@ p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:bottomleft,axis=:log
 
 # Correlation function at final time for different T
 p=plot(xlabel="r",ylabel="C(r,∞)",legend=:bottomleft,axis=:log,size=(450,400))
-    for i in 1:length(Ts)-2
+    for i in 1:length(Ts)-1
         rr = 1:length(Cs_avg[i,:,end])
         plot!(rr,remove_negative(Cs_avg[i,:,end]),c=i,line=:solid,label="T = $(Ts[i])",rib=0)
         plot!(rr[10:end],0.9rr[10:end] .^(-Ts[i]/2pi),c=i,line=:dash)

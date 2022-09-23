@@ -25,7 +25,7 @@ function init_thetas(model::AbstractPropagationModel{T},lattice::Abstract2DLatti
     return thetas
 end
 
-function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice;params_init)
+function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice;params_init) where float_type<:AbstractFloat
     L = lattice.L
     @unpack init,q,r0,type1defect,type2defect = params_init
     if init in ["hightemp" , "disorder"]
