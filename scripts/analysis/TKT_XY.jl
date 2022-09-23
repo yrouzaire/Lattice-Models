@@ -61,13 +61,18 @@ p=plot(xlabel="r",ylabel="C(r,∞)",legend=:bottomleft,axis=:log,size=(450,400))
     end
     p
 
-## Problem : T > Tkt, still kind of ordered (Answer : TKT = 2 for TriangularLattice )
+## Problem : T > Tkt, still kind of ordered (Answer : TKT = 1.47 for TriangularLattice )
 include(srcdir("../parameters.jl"));
-model = XY(params)
+model = MCXY(params)
 lattice = TriangularLattice(L)
-thetas = init_thetas(lattice,params=params)
+thetas = init_thetas(model,lattice,params_init=params_init)
 plot()
-update!(thetas,model,lattice,model.t + 150)
+update!(thetas,model,lattice,500)
 # plot_thetas(thetas,model,lattice,defects=false)
     cc = corr(thetas,model,lattice)
-    plot!(remove_negative(cc),axis=:log)
+    plot(remove_negative(cc),axis=:log)
+
+plot_thetas(thetas,model,lattice,defects=true)
+number_defects(thetas,model,lattice)
+@btime update!(thetas,model,lattice)
+model.t
