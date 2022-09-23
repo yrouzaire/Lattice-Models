@@ -1,7 +1,7 @@
 # Physical Parameters
-L = 100
+L = 300
 T = 0.1
-symmetry = "nematic"
+symmetry = "polar"
 propulsion = "polar"
 Var = 0
 A = 0
@@ -13,7 +13,7 @@ algo = "A" # rule for collision!() for model = MovingXY
 dt = 1E-2
 float_type = Float32
 width_proposal = 2sqrt(T)
-tmax = 1E4
+tmax = 1E6
 transients = 1E3
 every = 1E2
 

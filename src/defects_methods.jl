@@ -395,7 +395,7 @@ function find_closest_before_annihilation(dt,lattice,old_loc_defect)
 end
 
 # estimation_location_annihilation() has been replaced by mean_2_positions()
-function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
+function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,lattice)
     for i in ids_annihilated_defects
         old_loc_vortex = last_loc(dt.defectsP[i])
         ID_antivortex,old_loc_antivortex = find_closest_before_annihilation(dt,lattice,old_loc_vortex)
@@ -406,9 +406,9 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
         # dt.defectsP[i].annihilation_time = dt.current_time
         # dt.defectsN[ID_antivortex].annihilation_time = dt.current_time
 
-        estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,L)
-        update_position_and_type!(dt.defectsP[i],estimate,last_type(dt.defectsP[i]),NaN*zeros(7,7)) # dummy thetas_zoom full of NaN
-        update_position_and_type!(dt.defectsN[ID_antivortex],estimate,last_type(dt.defectsN[i]),NaN*zeros(7,7)) # dummy thetas_zoom full of NaN
+        estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,lattice.L)
+        update_position_and_type!(dt.defectsP[i],estimate,last_type(dt.defectsP[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
+        update_position_and_type!(dt.defectsN[ID_antivortex],estimate,last_type(dt.defectsN[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
     end
     return dt
 end
@@ -487,7 +487,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
         for i in id_just_annihilated_defectP dt.defectsP[i].annihilation_time = dt.current_time end
         for i in id_just_annihilated_defectM dt.defectsN[i].annihilation_time = dt.current_time end
         # annihilation_time is already taken care of in the annihilate_defects function
-        dt = annihilate_defects(dt::DefectTracker,id_just_annihilated_defectP,L)
+        dt = annihilate_defects(dt::DefectTracker,id_just_annihilated_defectP,lattice)
 
     elseif Np_new > 0 && Np_old > 0 && Nn_old > 0 && Nn_new == 0  # (+)(+)(-) >> (+) par exemple
         assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,lattice,"+")
@@ -504,7 +504,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
 
         for i in ID_annihilated_vortices     dt.defectsP[i].annihilation_time = dt.current_time end
         for i in ID_annihilated_antivortices dt.defectsN[i].annihilation_time = dt.current_time end
-        dt = annihilate_defects(dt,ID_annihilated_vortices,L)
+        dt = annihilate_defects(dt,ID_annihilated_vortices,lattice)
 
     elseif Nn_new > 0 && Nn_old > 0 && Np_old > 0 && Np_new == 0  # (+)(-)(-) >> (-) par exemple
         assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,lattice,"-")
@@ -522,7 +522,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
         for i in ID_annihilated_vortices     dt.defectsP[i].annihilation_time = dt.current_time end
         for i in ID_annihilated_antivortices dt.defectsN[i].annihilation_time = dt.current_time end
 
-        dt = annihilate_defects(dt,ID_annihilated_vortices,L)
+        dt = annihilate_defects(dt,ID_annihilated_vortices,lattice)
     else # end of special cases
 
     # GENERAL TREATMENT
@@ -577,7 +577,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
                     push!(ID_annihilated_antivortices,i)
                 end
             end
-            dt = annihilate_defects(dt,ID_annihilated_vortices,L)
+            dt = annihilate_defects(dt,ID_annihilated_vortices,lattice)
         end # end of general treatment
     end # end of special cases & general treatment
     return dt

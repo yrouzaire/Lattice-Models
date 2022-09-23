@@ -176,6 +176,7 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::Abstract2DLattice
     L  = lattice.L
     T  = model.T
     proposals = mod.( 2sqrt(T)*randn(L,L) + thetas ,2pi) # standard deviation two times the standard deviation of the
+    # proposals = 2pi*rand(L,L) 
     model.symmetry == "polar" ? coeff_symmetry = 1.0 : coeff_symmetry = 2.0
     coeff_symmetry2 = coeff_symmetry / 2.0
 
@@ -263,7 +264,7 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::Abstract2DLat
                 thetas[ic,jc] = θ
                 thetas[i,j] = NaN
             else # destination occupied
-                collision!(thetas,model,(i,j),θ,(ic,jc),θc,in_bulk)
+                collision!(thetas,model,lattice,(i,j),θ,(ic,jc),θc,in_bulk)
             end
         end
     end
@@ -294,7 +295,7 @@ end
 
 ## ------------------------ Other Evolution Methods ------------------------
 
-function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
+function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
     @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
     proposal = model.width_proposal*randn(FT)+theta1
     i,j = pos1

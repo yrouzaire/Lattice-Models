@@ -12,18 +12,18 @@ lattice = TriangularLattice(L)
 
 # Results for polar symmetry and rho = 1
 params["symmetry"] = "polar" ; params["rho"] = 1
-model = XY(params)
-thetas = init_thetas(lattice,params=params)
-@time update!(thetas,model,lattice,100)
+model = MCXY(params)
+thetas = init_thetas(model,lattice,params_init=params_init)
+update!(thetas,model,lattice,2000)
+number_defects(thetas,model,lattice)
 plot_thetas(thetas,model,lattice,defects=false)
 dft = DefectTracker(thetas,model,lattice,find_type=true)
-
 number_defects_types(dft)*2/sum(number_defects_types(dft))
 
 # Results for nematic symmetry and rho = 1
 params["symmetry"] = "nematic" ; params["rho"] = 1
 model = XY(params)
-thetas = init_thetas(lattice,params=params)
+thetas = init_thetas(model,lattice,params_init=params_init)
 @time update!(thetas,model,lattice,100)
 plot_thetas(thetas,model,lattice,defects=false)
 dft = DefectTracker(thetas,model,lattice,find_type=true)
@@ -33,7 +33,7 @@ number_defects_types(dft)*2/sum(number_defects_types(dft))
 # Results for nematic symmetry and rho = 1 and A = 0
 params["symmetry"] = "nematic" ; params["rho"] = 0.9 ; params["A"] = 0
 model = MovingXY(params)
-thetas = init_thetas(lattice,params=params)
+thetas = init_thetas(model,lattice,params_init=params_init)
 @time update!(thetas,model,lattice,1000)
 plot_thetas(thetas,model,lattice,defects=false)
 dft = DefectTracker(thetas,model,lattice,find_type=true)

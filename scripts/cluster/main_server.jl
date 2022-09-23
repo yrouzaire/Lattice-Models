@@ -17,11 +17,11 @@ xi  = zeros(length(Ts),length(times_log))
 n   = zeros(length(Ts),length(times_log))
 thetas_save = zeros(Float16,length(Ts),length(times_log),L,L)
 
-dfts = Vector{DefectTracker}(undef,length(Ts))
+dfts = Vector{Union{Missing,DefectTracker}}(missing,length(Ts))
 
 z = @elapsed for i in each(Ts)
     params["T"] = Ts[i]
-    model   = XY(params)
+    model   = MovingXY(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
     thetas  = init_thetas(model,lattice,params_init=params_init)
 
@@ -39,7 +39,7 @@ z = @elapsed for i in each(Ts)
             token_log = min(token_log+1,length(times_log))
         end
         if model.t ≥ times_lin[token_lin]
-            if !isdefined(dfts,i) dfts[i] = DefectTracker(thetas,model,lattice,find_type=false)
+            if ismissing(dfts[i]) dfts[i] = DefectTracker(thetas,model,lattice,find_type=false)
             else update_DefectTracker!(dfts[i],thetas,model,lattice)
             end
             token_lin = min(token_lin+1,length(times_lin))
@@ -48,5 +48,5 @@ z = @elapsed for i in each(Ts)
 end
 prinz(z)
 
-comments = "Goal: Recover TKT to check whether everything goes well. Model XY, on Triangular Lattice"
-@save "data/TKT_$(symmetry)XY_r$(real).jld2" dfts thetas_save polar_order nematic_order C xi n times_log times_lin Ts params runtime=z comments
+comments = "First simulations with DefectTracker, see what's going on at equilibrium and without holes. Model MovingXY, on Triangular Lattice"
+@save "data/MovXY_rho1_A0_r$(real).jld2" dfts thetas_save polar_order nematic_order C xi n times_log times_lin Ts params runtime=z comments

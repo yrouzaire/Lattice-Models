@@ -3,11 +3,11 @@ include("defects_methods.jl")
 
 R = 40
 Nb_thetas_save = 10
-base_filename = "data/TKT_polarXY"
+base_filename = "data/MovXY_rho1_A0"
 indices = [] ; for r in 1:R  if isfile(base_filename*"_r$r.jld2") push!(indices,r) end end
 println("There are $(length(indices))/$R files.")
 
-@load base_filename*"_r$(indices[1]).jld2" times_log Ts params comments
+@load base_filename*"_r$(indices[1]).jld2" times_log times_lin Ts params comments
 
 ns  = NaN*zeros(length(Ts),length(times_log),R)
 Cs  = NaN*zeros(length(Ts),Int(params["L"]/2),length(times_log),R)
@@ -15,18 +15,21 @@ xis = NaN*zeros(length(Ts),length(times_log),R)
 polar_orders = NaN*zeros(length(Ts),length(times_log),R)
 nematic_orders = NaN*zeros(length(Ts),length(times_log),R)
 
+dftss = Array{DefectTracker,2}(undef,length(Ts),R)
 
 thetas_saves = NaN*zeros(Float16,length(Ts),length(times_log),params["L"],params["L"],Nb_thetas_save)
 global token = 1
 runtimes = NaN*zeros(R)
 
 for r in indices
-    @load base_filename*"_r$r.jld2" C n xi polar_order nematic_order runtime
+    @load base_filename*"_r$r.jld2" C n xi polar_order nematic_order dfts runtime
     ns[:,:,r] = n
     xis[:,:,r] = xi
     Cs[:,:,:,r] = C
     polar_orders[:,:,r] = polar_order
     nematic_orders[:,:,r] = nematic_order
+
+    dftss[:,r] = dfts
 
     if token ≤ Nb_thetas_save
         @load base_filename*"_r$r.jld2" thetas_save
@@ -35,7 +38,7 @@ for r in indices
     end
     runtimes[r] = runtime
 end
-@save base_filename*".jld2" times_log Ts params comments polar_orders nematic_orders xis Cs ns thetas_saves runtimes R
+@save base_filename*".jld2" times_log times_lin dftss Ts params comments polar_orders nematic_orders xis Cs ns thetas_saves runtimes R
 println("Fusionned data saved in $(base_filename*".jld2") .")
 
 

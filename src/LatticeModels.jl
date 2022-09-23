@@ -10,7 +10,7 @@ include("measurements.jl")
 
 using BenchmarkTools
 
-# global const WINDOW = 7
+global const WINDOW = 7
 # using Flux:onecold, Chain, Dense, softmax
 # global const NN_positive12 = load("NN_positive_12_defects_N1000_W7.jld2","NN")
 # global const possible_positive12_defects = load("NN_positive_12_defects_N1000_W7.jld2","possible_defects")
