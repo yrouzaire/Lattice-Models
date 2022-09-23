@@ -41,12 +41,10 @@ spinsA = CartesianIndex.(collect(40:60))
 model = PropagationForcedXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
 
-update!(thetas,model,lattice,tmax=15)
-model.t
 
 while model.t < 2500
     perturbe!(thetas,Perturb,spinsA)
-    update!(thetas,model,lattice,model.t+50)
+    update!(thetas,model,lattice,50)
     display(plot_thetas(thetas,model,lattice))
     end
 

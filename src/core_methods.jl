@@ -130,11 +130,11 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
 end
 
 ## ------------------------ Update Original Models ------------------------
-function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice;tmax::Number) where T<:AbstractFloat
+function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice;tmax) where T<:AbstractFloat
     while model.t < tmax update!(thetas,model,lattice) end
     return thetas
 end
-update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,Δt::Number) where T<:AbstractFloat = update!(thetas,model,lattice,tmax=model.t+Δt)
+update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,Δt) where T<:AbstractFloat = update!(thetas,model,lattice,tmax=model.t+Δt)
 
 function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
