@@ -176,7 +176,7 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::Abstract2DLattice
     L  = lattice.L
     T  = model.T
     proposals = mod.( 2sqrt(T)*randn(L,L) + thetas ,2pi) # standard deviation two times the standard deviation of the
-    # proposals = 2pi*rand(L,L) 
+    # proposals = 2pi*rand(L,L)
     model.symmetry == "polar" ? coeff_symmetry = 1.0 : coeff_symmetry = 2.0
     coeff_symmetry2 = coeff_symmetry / 2.0
 
@@ -296,21 +296,27 @@ end
 ## ------------------------ Other Evolution Methods ------------------------
 
 function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
-    @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
+    # @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
     proposal = model.width_proposal*randn(FT)+theta1
     i,j = pos1
     if model.algo == "A" # Model A. Align nematically with all NN
         neighbours = 2get_neighbours(thetas,model,lattice,i,j,bulk)
-        dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
+        # dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
         # dE = sin(proposal - theta1) * sum(sin,proposal + theta1 .- neighbours ) # should be computationally faster
+        model.symmetry == "polar" ? coeff_symmetry = 1.0 : coeff_symmetry = 2.0
+        coeff_symmetry2 = coeff_symmetry / 2.0
+        @fastmath dE = 1.0/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta1)) * sum(sin,coeff_symmetry2*(proposal + theta1 .- neighbours))
+
     elseif model.algo == "B" # align nematically wrt collided spin
         dE = -1/2 * ( cos(2(theta2 - proposal)) - cos(2(theta2 - theta1)))
+
     elseif model.algo == "C" # align F/AF wrt collided spin
         ccos = cos(theta1 - theta2)
         if ccos > 0  J = +1.0 # ferro
         else J = -1.0 # antiferro
         end
         dE = -J*(cos(theta1 - proposal) - ccos)
+
     elseif model.algo == "CA"
         ccos = cos(theta1 - theta2)
         if ccos > 0  J = +1.0 # ferro

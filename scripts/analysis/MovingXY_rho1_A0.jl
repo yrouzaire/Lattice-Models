@@ -14,7 +14,6 @@ xis_avg = nanmean(xis,3)[:,:,1]
 Cs_avg = nanmean(Cs,4)[:,:,:,1]
 L = params["L"]
 histogram(runtimes/3600,bins=R)
-dftss[1,4]
 
 # Order parameters (t)
 p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))

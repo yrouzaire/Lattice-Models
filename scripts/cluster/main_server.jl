@@ -6,7 +6,7 @@ include("IDrealisation.jl") ;
 
 ## Goal : Test
 include("parameters.jl");
-Ts = [0.1]
+Ts = [0.1,0.2,0.3]
 times_log = logspace(1,tmax,32)
 times_lin = collect(transients:every:tmax)
 
@@ -49,4 +49,4 @@ end
 prinz(z)
 
 comments = "First simulations with DefectTracker, see what's going on at equilibrium and without holes. Model MovingXY, on Triangular Lattice"
-@save "data/MovXY_rho1_A0_r$(real).jld2" dfts thetas_save polar_order nematic_order C xi n times_log times_lin Ts params runtime=z comments
+@save "data/$(symmetry)MovXY_rho1_A0_r$(real).jld2" dfts thetas_save polar_order nematic_order C xi n times_log times_lin Ts params runtime=z comments
