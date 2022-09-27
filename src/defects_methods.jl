@@ -650,6 +650,16 @@ function interdefect_distance(dft::DefectTracker,defect1::Defect,defect2::Defect
     return R
 end
 
+function mean_distance_to_annihilator(dfts::Vector{Union{Missing,DefectTracker}},lattice::Abstract2DLattice)
+    indices = [] # indices of dft defined (is simulation not finished, dfts[i] == missing)
+    for i in 1:length(dfts)
+        if !ismissing(dfts[i]) push!(indices,i) end
+    end
+    Rs = [mean_distance_to_annihilator(dfts[indices[n]],lattice) for n in 1:length(indices)]
+    Rs_matrix = vector_of_vector2matrix(Rs)
+    return nanmean(Rs_matrix,2)[:,1]
+end
+
 function mean_distance_to_annihilator(dft::DefectTracker,lattice::Abstract2DLattice)
     nP = number_defectsP(dft)
     Rs = [distance_to_annihilator(dft,n,lattice) for n in 1:nP]

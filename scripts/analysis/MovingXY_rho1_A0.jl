@@ -4,18 +4,22 @@ include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
-
 #= Important Comments : =#
+
 filename = datadir("polarMovXY_rho1_A0.jld2")
+@unpack runtimes, params, comments, R, times_log, times_lin, Ts  = load(filename)
+comments
+lattice = TriangularLattice(params["L"])
+
 ## Coarsening dynamics
-@unpack runtimes, polar_orders, nematic_orders, Cs, xis, ns, params, comments, R, times_log, times_log, Ts  = load(filename)
+@unpack polar_orders, nematic_orders, Cs, xis, ns = load(filename)
 polar_orders_avg = nanmean(polar_orders,3)[:,:,1]
 nematic_orders_avg = nanmean(nematic_orders,3)[:,:,1]
 ns_avg = nanmean(ns,3)[:,:,1]
 xis_avg = nanmean(xis,3)[:,:,1]
 Cs_avg = nanmean(Cs,4)[:,:,:,1]
 L = params["L"]
-histogram(runtimes/3600,bins=R)
+histogram(runtimes/3600/24,bins=40)
 
 # Order parameters (t)
 p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))
@@ -59,40 +63,20 @@ p=plot(xlabel="r",ylabel="C(r,∞)",legend=:bottomleft,axis=:log,size=(450,400))
     end
     p
 
-## Thetas
+## DefectTracker
+@unpack dftss = load(filename)
+
+msd = MSD(dftss[3,:],lattice)[1]
+    plot!(msd[3:end],axis=:log)
+    # plot!(x->x)
+
+R = mean_distance_to_annihilator(dftss[3,:],lattice)
+    plot!(R[2:end],axis=:log)
+    # plot!(x->sqrt(x))
+
+## Thetas saved
 @unpack thetas_saves = load(filename)
 model = XY(params)
 lattice = TriangularLattice(L)
 plot_thetas((thetas_saves[1,25,:,:,1]),model,lattice,defects=false)
 zoom_quiver((thetas_saves[1,25,:,:,1]),model,lattice,125,45,10)
-
-## DefectTracker
-@unpack dftss, times_lin = load(filename)
-lattice = TriangularLattice(L)
-dftss[1]
-
-MSD_all, MSD_P, MSD_N = MSD(dftss[1,:],lattice)
-plot(filter(!isnan,MSD_P[2:end]),axis=:log)
-plot!(filter(!isnan,MSD_N[2:end]),axis=:log)
-plot(filter(!isnan,MSD_all[2:end]),axis=:log)
-
-indices = [] # indices of dft defined (is simulation not finished, dfts[i] == missing)
-for i in 1:length(dftss[1,:])
-    if !ismissing(dftss[1,:][i]) push!(indices,i) end
-end
-maxlength = maximum([maximum([length(d.pos) for d in vcat(dft.defectsP,dft.defectsN)]) for dft in dftss[1,indices]])
-
-dft = dftss[1,2]
-    maximum([length(d.pos) for d in vcat(dft.defectsP,dft.defectsN)])
-
-argmax([length(d.pos) for d in vcat(dft.defectsP,dft.defectsN)])
-
-plot(remove_negative(square_displacement(dftss[1,2].defectsP[28],lattice)),axis=:log)
-scatter(dftss[1,2].defectsP[28].pos)
-scatter!(dftss[1,2].defectsP[28].pos[1],c=:red)
-scatter!(dftss[1,2].defectsP[28].pos[end],c=:green)
-dftss[1,2].defectsP[28].pos
-
-plot(every:every:every*length(MSD_P)-1,MSD_P[2:end],axis=:log)
-plot(every:every:every*length(MSD_N)-1,MSD_N[2:end],axis=:log)
-plot(every:every:every*length(MSD_all)-1,MSD_all[2:end],axis=:log)
