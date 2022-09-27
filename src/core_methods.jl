@@ -3,7 +3,6 @@ include("models.jl");
 using StatsBase,Distributions
 
 ## ------------------------ Get Neighbours ------------------------
-# NOTE : no need to define get_neighbours(model::AbstractModel,lattice::AbstractLattice ...)
 function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::TriangularLattice,i::Int,j::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
     L = lattice.L
 
@@ -82,6 +81,20 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Squ
     end
 end
 
+function get_neighbours(thetas::Vector{T},model::AbstractPropagationModel{T},lattice::Chain1D,i::Int,bulk::Bool=false)::Vector{T} where T<:AbstractFloat
+    L = lattice.L
+    if bulk return [thetas[i-1],thetas[i+1]]
+    else
+        if lattice.periodic return [thetas[mod1(i-1,L)],thetas[mod1(i+1,L)]]
+        else
+            if i == 1 return [thetas[2]]
+            elseif i == L return [thetas[L-1]]
+            else return [thetas[i-1],thetas[i+1]]
+            end
+        end
+    end
+end
+
 function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     # default case, nothing to worry about
     if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
@@ -95,7 +108,7 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
     end
 end
 
-function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::AbstractLattice)::T where T<:AbstractFloat
+function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::Abstract2DLattice)::T where T<:AbstractFloat
     weights  = zeros(T,length(angles_neighbours))
     theta0   = mod(theta,sym(model)*pi)
     if     isa(lattice,TriangularLattice) constant = T(π/3)
@@ -115,14 +128,15 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
     else return sum(sin.(sym(model)(angles_neighbours .- theta)) .* weights)
     end
 end
-## ------------------------ Update ------------------------
-# NOTE : no need to define update!(model::AbstractModel,lattice::AbstractLattice)
-function update!(thetas::Matrix{<:T},model::AbstractModel,lattice::AbstractLattice,tmax::Number) where T<:AbstractFloat
+
+## ------------------------ Update Original Models ------------------------
+function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice;tmax) where T<:AbstractFloat
     while model.t < tmax update!(thetas,model,lattice) end
     return thetas
 end
+update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,Δt) where T<:AbstractFloat = update!(thetas,model,lattice,tmax=model.t+Δt)
 
-function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -157,11 +171,12 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     T  = model.T
     proposals = mod.( 2sqrt(T)*randn(L,L) + thetas ,2pi) # standard deviation two times the standard deviation of the
+    # proposals = 2pi*rand(L,L)
     model.symmetry == "polar" ? coeff_symmetry = 1.0 : coeff_symmetry = 2.0
     coeff_symmetry2 = coeff_symmetry / 2.0
 
@@ -198,7 +213,7 @@ function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::AbstractLattice) 
 end
 
 
-function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{ForcedXY{FT},PropagationForcedXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -232,7 +247,7 @@ function update!(thetas::Matrix{<:FT},model::ForcedXY{FT},lattice::AbstractLatti
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     L = lattice.L
     order_trials = StatsBase.shuffle(1:L^2)
     for n in order_trials
@@ -249,30 +264,59 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLatti
                 thetas[ic,jc] = θ
                 thetas[i,j] = NaN
             else # destination occupied
-                collision!(thetas,model,(i,j),θ,(ic,jc),θc,in_bulk)
+                collision!(thetas,model,lattice,(i,j),θ,(ic,jc),θc,in_bulk)
             end
         end
     end
     model.t += 1 # here = number of MonteCarlo steps
     return thetas
 end
+## ------------------------ Update Propagation Models ------------------------
+function update!(thetas::Vector{FT},model::AbstractPropagationModel{FT},lattice::Abstract1DLattice)::Vector{FT} where FT<:AbstractFloat
+    thetas_old = copy(thetas)
+    L  = lattice.L
+    dt = model.dt
+    T  = model.T
 
-function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
-    @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
+    model.symmetry == "polar" ? symm = 1 : symm = 2
+
+    in_bulk = true
+    for i in 2:L-1
+        θ = thetas_old[i]
+        angle_neighbours = get_neighbours(thetas_old,model,lattice,i,in_bulk)
+        thetas[i] =  θ + dt*(model.omegas[i] + sum(sin,symm*(angle_neighbours .- θ)) ) + sqrt(2T*dt)*randn(FT)
+    end
+    thetas[1] =  thetas_old[1] + dt*(model.omegas[1] + sum(sin,symm*(get_neighbours(thetas_old,model,lattice,1,false) .- thetas_old[1])) ) + sqrt(2T*dt)*randn()
+    thetas[L] =  thetas_old[L] + dt*(model.omegas[L] + sum(sin,symm*(get_neighbours(thetas_old,model,lattice,L,false) .- thetas_old[L])) ) + sqrt(2T*dt)*randn()
+
+    model.t += dt
+    return thetas
+end
+
+## ------------------------ Other Evolution Methods ------------------------
+
+function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
+    # @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
     proposal = model.width_proposal*randn(FT)+theta1
     i,j = pos1
     if model.algo == "A" # Model A. Align nematically with all NN
         neighbours = 2get_neighbours(thetas,model,lattice,i,j,bulk)
-        dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
+        # dE = -1/2 * ( sum(cos, neighbours .- 2proposal ) - sum(cos, neighbours .- 2theta1 ))
         # dE = sin(proposal - theta1) * sum(sin,proposal + theta1 .- neighbours ) # should be computationally faster
+        model.symmetry == "polar" ? coeff_symmetry = 1.0 : coeff_symmetry = 2.0
+        coeff_symmetry2 = coeff_symmetry / 2.0
+        @fastmath dE = 1.0/coeff_symmetry2 * sin(coeff_symmetry2*(proposal - theta1)) * sum(sin,coeff_symmetry2*(proposal + theta1 .- neighbours))
+
     elseif model.algo == "B" # align nematically wrt collided spin
         dE = -1/2 * ( cos(2(theta2 - proposal)) - cos(2(theta2 - theta1)))
+
     elseif model.algo == "C" # align F/AF wrt collided spin
         ccos = cos(theta1 - theta2)
         if ccos > 0  J = +1.0 # ferro
         else J = -1.0 # antiferro
         end
         dE = -J*(cos(theta1 - proposal) - ccos)
+
     elseif model.algo == "CA"
         ccos = cos(theta1 - theta2)
         if ccos > 0  J = +1.0 # ferro
@@ -294,7 +338,7 @@ function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},pos1::Tuple{T,T},th
     return thetas
 end
 
-function angle2neighbour(theta::AbstractFloat,i::Int,j::Int,model::AbstractModel,lattice::AbstractLattice)
+function angle2neighbour(theta::AbstractFloat,i::Int,j::Int,model::AbstractModel,lattice::Abstract2DLattice)
     theta,A = Float64.((theta,model.A)) # Float64.((1,1)) 50x faster than Float64.([1,1])
     direction_motion = direction_of_motion(theta,A)
     NN = project_angle_onto_lattice(direction_motion,i,j,lattice)
@@ -309,13 +353,20 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
     else
         # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
         # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
-        angle = mod(rand(Cauchy(theta-pi,one(T)/A)),2pi) # Wrapped Cauchy
+        angle = mod(rand(Cauchy(theta,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
+        # angle = mod(rand(Cauchy(theta-pi/2,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
+        #= Important Note. If instead of centering tha variable 'angle' on the variable 'theta',
+        one centers it on thetas + pi or thetas +pi/2, there is no qualitative difference in the movies.
+        +1/2 comet-shaped defects are superdiffusive/ballistic, the rest of the behaviour is also left
+        unchanged. It basicaly is just a shift in the colours. This means that the details of the coupling
+        orientation/polar_propulsion don't matter. =#
     end
     return angle
 end
+# histogram(mod.(rand(Cauchy(.5,0.25),Int(1E5)),2pi),normalize=true,bins=100)
 
 
-function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::AbstractLattice)
+function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::Abstract2DLattice)
     nearest_neighbours = offsets(lattice,iseven(i)) # can be of length 4, 6 or 8
     nb_nn = length(nearest_neighbours)
     index_nearest_neighbour = round(Int,mod(angle,2π)/(2π/nb_nn),RoundNearest) + 1

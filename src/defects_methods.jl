@@ -23,7 +23,7 @@ function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     return signe*shortest_unsigned_arclength
 end
 
-function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,i::Int,j::Int)::T where T<:AbstractFloat
+function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,i::Int,j::Int)::T where T<:AbstractFloat
     #= Note : thetasmod = mod.(thetas,symm*pi)
         By convention, for a SquareLattice, the neighbours have the following ordering
            2
@@ -52,7 +52,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
 end
 
 number_defects(thetas,model,lattice) = sum(length,spot_defects(thetas,model,lattice))
-function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice;find_type=false) where T<:AbstractFloat
+function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice;find_type=false) where T<:AbstractFloat
     L = lattice.L
     vortices_plus  = Tuple{Int,Int,T,String}[]
     vortices_minus = Tuple{Int,Int,T,String}[]
@@ -187,14 +187,14 @@ function merge_duplicates(list,lattice;radius=4)
     return merged_duplicates
 end
 
-function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
+function preconditionning!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
     remove_isolates!(thetas,model,lattice)
     fill_holes!(thetas,model,lattice)
     trelax = 0.5
     relax!(thetas,model,trelax)
 end
 
-function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
+function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
     L = size(thetas,1)
     for j in 1:L
         for i in 1:L
@@ -206,7 +206,7 @@ function remove_isolates!(thetas::Matrix{<:AbstractFloat},model::AbstractModel,l
     return thetas
 end
 
-function fill_holes!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice) where T<:AbstractFloat
+function fill_holes!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice) where T<:AbstractFloat
     L = size(thetas,1)
     # model.symmetry == "polar" ? symm = 2 : symm = 1
     while count(isnan,thetas) > 0
@@ -333,13 +333,13 @@ function ID_active_defects(dt::DefectTracker)
     return activeP,activeN
 end
 
-function add_defect!(dt::DefectTracker;charge,loc,type="unknown")
-    if charge > 0 push!(dt.defectsP,Defect(id=1+number_defectsP(dt),charge=charge,thetas_zoom=zoom(thetas,lattice,loc...,WINDOW)[2],type=type,loc=loc,t=dt.current_time))
-    else          push!(dt.defectsN,Defect(id=1+number_defectsN(dt),charge=charge,thetas_zoom=zoom(thetas,lattice,loc...,WINDOW)[2],type=type,loc=loc,t=dt.current_time))
+function add_defect!(dt::DefectTracker;charge,loc,type="unknown",thetas_zoom)
+    if charge > 0 push!(dt.defectsP,Defect(id=1+number_defectsP(dt),charge=charge,thetas_zoom=thetas_zoom,type=type,loc=loc,t=dt.current_time))
+    else          push!(dt.defectsN,Defect(id=1+number_defectsN(dt),charge=charge,thetas_zoom=thetas_zoom,type=type,loc=loc,t=dt.current_time))
     end
 end
 
-function pair_up_hungarian(dt::DefectTracker,new,old,lattice::AbstractLattice,charge::String)
+function pair_up_hungarian(dt::DefectTracker,new,old,lattice::Abstract2DLattice,charge::String)
     # charge can be either "+" or "-"
     distance_matrixx = distance_matrix(new,old,lattice) # m_new lignes, m_old colonnes
     proposal         = hungarian(distance_matrixx)[1] # length = length(new)
@@ -395,7 +395,7 @@ function find_closest_before_annihilation(dt,lattice,old_loc_defect)
 end
 
 # estimation_location_annihilation() has been replaced by mean_2_positions()
-function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
+function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,lattice)
     for i in ids_annihilated_defects
         old_loc_vortex = last_loc(dt.defectsP[i])
         ID_antivortex,old_loc_antivortex = find_closest_before_annihilation(dt,lattice,old_loc_vortex)
@@ -406,45 +406,43 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,L)
         # dt.defectsP[i].annihilation_time = dt.current_time
         # dt.defectsN[ID_antivortex].annihilation_time = dt.current_time
 
-        estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,L)
-        update_position_and_type!(dt.defectsP[i],estimate,last_type(dt.defectsP[i]),NaN*zeros(7,7)) # dummy thetas_zoom full of NaN
-        update_position_and_type!(dt.defectsN[ID_antivortex],estimate,last_type(dt.defectsN[i]),NaN*zeros(7,7)) # dummy thetas_zoom full of NaN
+        estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,lattice.L)
+        update_position_and_type!(dt.defectsP[i],estimate,last_type(dt.defectsP[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
+        update_position_and_type!(dt.defectsN[ID_antivortex],estimate,last_type(dt.defectsN[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
     end
     return dt
 end
 
 
-function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,dft::DefectTracker,tmax::Number,every::Number) where T<:AbstractFloat
+function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
             println("t = ",model.t)
             next_tracking_time += every
-            dft.current_time = model.t
             update_DefectTracker!(dft,thetas,model,lattice)
         end
     end
     return dft
 end
 
-function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattice::AbstractLattice,dft::DefectTracker,tmax::Number,every::Number;defects=false) where T<:AbstractFloat
+function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number;defects=false) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
             println("t = ",model.t)
             next_tracking_time += every
-            dft.current_time = model.t
             update_DefectTracker!(dft,thetas,model,lattice)
-            display(plot_thetas(thetas,model,lattice,defects=true))
+            display(plot_thetas(thetas,model,lattice,defects=defects))
         end
     end
     return dft
 end
 
-function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice)
-
+function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
+    dt.current_time = model.t
     NB = lattice.periodic
     vortices_new,antivortices_new = spot_defects(thetas,model,lattice)
 
@@ -487,7 +485,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
         for i in id_just_annihilated_defectP dt.defectsP[i].annihilation_time = dt.current_time end
         for i in id_just_annihilated_defectM dt.defectsN[i].annihilation_time = dt.current_time end
         # annihilation_time is already taken care of in the annihilate_defects function
-        dt = annihilate_defects(dt::DefectTracker,id_just_annihilated_defectP,L)
+        dt = annihilate_defects(dt::DefectTracker,id_just_annihilated_defectP,lattice)
 
     elseif Np_new > 0 && Np_old > 0 && Nn_old > 0 && Nn_new == 0  # (+)(+)(-) >> (+) par exemple
         assignment_vortices = pair_up_hungarian(dt,locP_new,locP_old,lattice,"+")
@@ -504,7 +502,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
 
         for i in ID_annihilated_vortices     dt.defectsP[i].annihilation_time = dt.current_time end
         for i in ID_annihilated_antivortices dt.defectsN[i].annihilation_time = dt.current_time end
-        dt = annihilate_defects(dt,ID_annihilated_vortices,L)
+        dt = annihilate_defects(dt,ID_annihilated_vortices,lattice)
 
     elseif Nn_new > 0 && Nn_old > 0 && Np_old > 0 && Np_new == 0  # (+)(-)(-) >> (-) par exemple
         assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,lattice,"-")
@@ -522,7 +520,7 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
         for i in ID_annihilated_vortices     dt.defectsP[i].annihilation_time = dt.current_time end
         for i in ID_annihilated_antivortices dt.defectsN[i].annihilation_time = dt.current_time end
 
-        dt = annihilate_defects(dt,ID_annihilated_vortices,L)
+        dt = annihilate_defects(dt,ID_annihilated_vortices,lattice)
     else # end of special cases
 
     # GENERAL TREATMENT
@@ -539,11 +537,11 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
             # Take care of the newly created defects
             ind_created_vortex = findall(iszero,assignment_vortices) # newly created vortex -> the assignment vector contains a 0
             loc_created_vortex = vortices_new[ind_created_vortex]
-            for j in each(loc_created_vortex) add_defect!(dt,charge=chargeP_new[j],type=typeP_new[i],loc=loc_created_vortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_vortex[j][1:2]...,WINDOW)[2]) end
+            for j in each(loc_created_vortex) add_defect!(dt,charge=chargeP_new[j],type=typeP_new[j],loc=loc_created_vortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_vortex[j][1:2]...,WINDOW)[2]) end
 
             ind_created_antivortex = findall(iszero,assignment_antivortices)
             loc_created_antivortex = antivortices_new[ind_created_antivortex]
-            for j in each(loc_created_antivortex) add_defect!(dt,charge=chargeN_new[j],type=typeN_new[i],loc=loc_created_antivortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_antivortex[j][1:2]...,WINDOW)[2]) end
+            for j in each(loc_created_antivortex) add_defect!(dt,charge=chargeN_new[j],type=typeN_new[j],loc=loc_created_antivortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_antivortex[j][1:2]...,WINDOW)[2]) end
 
             # Update the ancient defects' positions
             for i in eachindex(assignment_vortices)
@@ -577,62 +575,96 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
                     push!(ID_annihilated_antivortices,i)
                 end
             end
-            dt = annihilate_defects(dt,ID_annihilated_vortices,L)
+            dt = annihilate_defects(dt,ID_annihilated_vortices,lattice)
         end # end of general treatment
     end # end of special cases & general treatment
     return dt
 end
 
-function MSD(dft::DefectTracker,model::AbstractModel,lattice::AbstractLattice)
+function MSD(dfts::Vector{Union{Missing,DefectTracker}},lattice::Abstract2DLattice)
+    indices = [] # indices of dft defined (is simulation not finished, dfts[i] == missing)
+    for i in 1:length(dfts)
+        if !ismissing(dfts[i]) push!(indices,i) end
+    end
+    maxlength = maximum([maximum([length(d.pos) for d in vcat(dft.defectsP,dft.defectsN)]) for dft in dfts[indices]])
+    MSD_P   = NaN*zeros(length(indices),maxlength)
+    MSD_N   = NaN*zeros(length(indices),maxlength)
+    MSD_all = NaN*zeros(length(indices),maxlength)
+    for i in 1:length(indices)
+        msd_all, msd_p, msd_n = MSD(dfts[indices[i]],lattice)
+        MSD_P[i,1:length(msd_p)] = msd_p
+        MSD_N[i,1:length(msd_n)] = msd_n
+        MSD_all[i,1:length(msd_all)] = msd_all
+    end
+
+    MSD_P_avg = nanmean(MSD_P,1)[1,:]
+    MSD_N_avg = nanmean(MSD_N,1)[1,:]
+    MSD_all_avg = nanmean(MSD_all,1)[1,:]
+
+    return MSD_all_avg,MSD_P_avg,MSD_N_avg
+end
+
+function MSD(dft::DefectTracker,lattice::Abstract2DLattice,maxlength=nothing)
     nP = number_defectsP(dft)
     nN = number_defectsN(dft)
-    tmin,tmax = t_bounds(dft) # (tmin,tmax) = timestamps of (first defect creation , last defect annihilation)
+    # tmin,tmax = t_bounds(dft) # (tmin,tmax) = timestamps of (first defect creation , last defect annihilation)
 
-    hasfield(typeof(model),:dt) ? dummy_dt = model.dt : dummy_dt = 1
-
+    # hasfield(typeof(model),:dt) ? dummy_dt = model.dt : dummy_dt = 1
+    if isnothing(maxlength)
+        maxlength = maximum([length(d.pos) for d in vcat(dft.defectsP,dft.defectsN)])
+    end
     # Compute the SD
-    SD_P = NaN*zeros(nP,round(Int,tmax))
-    SD_N = NaN*zeros(nN,round(Int,tmax))
+    SD_P = NaN*zeros(nP,maxlength)
+    SD_N = NaN*zeros(nN,maxlength)
     for n in 1:nP
         defect = dft.defectsP[n]
-        index_creation = round(Int,defect.creation_time/dummy_dt) + 1
-        if isnothing(defect.annihilation_time) index_annihilation = round(Int,dft.current_time/dummy_dt)
-        else index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
-        end
-        # TODO
-        SD_P[n,index_creation:index_annihilation] = square_displacement(defect,lattice)
+        tmp = square_displacement(defect,lattice)
+        SD_P[n,1:length(tmp)] = tmp
     end
     for n in 1:nN
         defect = dft.defectsN[n]
-        index_creation = round(Int,defect.creation_time/dummy_dt)
-        index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
-        SD_N[n,index_creation:index_annihilation] = square_displacement(defect,lattice)
+        tmp = square_displacement(defect,lattice)
+        SD_N[n,1:length(tmp)] = tmp
     end
 
     # Now average to compute the MSD
     MSD_P = nanmean(SD_P,1)[1,:]
     MSD_N = nanmean(SD_N,1)[1,:]
-    MSD_N = nanmean(hcat(SD_M,SD_N),1)[1,:]
+    MSD_all = nanmean(hcat(MSD_P,MSD_N),2)[:]
 
-    return MSD, MSD_P, MSD_N
+    return MSD_all, MSD_P, MSD_N
 end
 
-function square_displacement(d::Defect,lattice::AbstractLattice)
-    loc_t0 = creation_loc(d)
-    return [dist(lattice,loc,loc_t0) for loc in d.hist] .^ 2
+function square_displacement(d::Defect,lattice::Abstract2DLattice)
+    loc_t0 = first_loc(d)
+    return [dist(lattice,loc,loc_t0) for loc in d.pos] .^ 2
 end
 
-function interdefect_distance(dft,defect1,defect2,lattice)
+function interdefect_distance(dft::DefectTracker,defect1::Defect,defect2::Defect,lattice::Abstract2DLattice)
     # TODO take care of case with creation and/or annihilation time different.
     # So far, this care is left to the user...
-    @assert defect1.creation_time == defect2.creation_time
-    @assert defect1.annihilation_time == defect2.annihilation_time
-
-    R = [dist(lattice,defect1.hist[t],defect2.hist[t]) for t in each(defect1.hist)]
+    # @assert defect1.creation_time == defect2.creation_time
+    # @assert defect1.annihilation_time == defect2.annihilation_time
+    tmax = min(length(defect1.pos),length(defect2.pos))
+    R = [dist(lattice,defect1.pos[t],defect2.pos[t]) for t in 1:tmax]
     return R
 end
+
+function mean_distance_to_annihilator(dft::DefectTracker,lattice::Abstract2DLattice)
+    nP = number_defectsP(dft)
+    Rs = [distance_to_annihilator(dft,n,lattice) for n in 1:nP]
+    Rs_matrix = vector_of_vector2matrix(Rs)
+    return nanmean(Rs_matrix,2)[:,1]
+end
+
+function distance_to_annihilator(dft::DefectTracker,id1::Int,lattice::Abstract2DLattice;reversed=true)
+    R = interdefect_distance(dft,dft.defectsP[id1],dft.defectsN[dft.defectsP[id1].id_annihilator],lattice)
+    if reversed reverse!(R) end
+    return R
+end
+
 ## Small helpful methods for scripts
-function number_defects(model::AbstractModel,lattice::AbstractLattice)
+function number_defects(model::AbstractModel,lattice::Abstract2DLattice)
     a,b = spot_defects(thetas,T,BC)
     return length(a) + length(b)
 end

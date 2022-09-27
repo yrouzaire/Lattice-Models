@@ -19,12 +19,12 @@ window = 7 # 7 x 7 square around the defect
 # possible_defects = [(1/2,"source"),(1/2,"sink"),(1/2,"clockwise"),(1/2,"counterclockwise")]
 # possible_defects = [(-1/2,"join"),(-1/2,"split"),(-1/2,"threefold1"),(-1/2,"threefold2")]
 # possible_defects = [(1,"source"),(1,"sink")]
-# possible_defects = [(1,"source"),(1,"sink"),(1,"clockwise"),(1,"counterclockwise")]
-possible_defects = [(-1,"join"),(-1,"split"),(-1,"threefold1"),(-1,"threefold2")]
+possible_defects = [(1,"source"),(1,"sink"),(1,"clockwise"),(1,"counterclockwise")]
+# possible_defects = [(-1,"join"),(-1,"split"),(-1,"threefold1"),(-1,"threefold2")]
 # possible_defects = [(1,"source"),(1,"sink")]
 params["init"] = "single"
 params["symmetry"] = "polar"
-params["L"] = 32
+params["L"] = 80
 X = zeros(Float32,2window+1,2window+1,N*length(possible_defects))
 Y = vcat([fill(possible_defects[i][2],N) for i in 1:length(possible_defects)]...)
 
@@ -39,7 +39,7 @@ z = @elapsed for k in 1:length(possible_defects)
         model.T = 0.3*rand()
         model.t = 0
         thetas = randomly_rotate(init_thetas(lattice,params=params))
-        update!(thetas,model,lattice,4)
+        update!(thetas,model,lattice,50)
         i,j = spot_defects(thetas,model,lattice,find_type=false)[ind][1][1:2]
         no_problem,thetas_zoom = zoom(thetas,lattice,i,j,window)
         if no_problem  X[:,:,(k-1)*N + n] = thetas_zoom
@@ -62,10 +62,11 @@ using JLD2,Parameters, Flux, Random
 using Flux:params, onehotbatch, crossentropy, onecold, throttle
 
 # @unpack X,Y,window,possible_defects,comments,N = load(datadir("for_ML/dataset_T0.3Random_all12defects_N2000_W9.jld2"))
-# permutation = randperm(size(X,3))
-# X_shuffled = X[:,:,permutation]
-# Y_shuffled = Y[permutation]
-# possible_labels = unique(Y)
+@unpack X,Y,window,possible_defects,comments,N = load(datadir("for_ML/dataset_T0.3Random_positive1defects_N1000_W7.jld2"))
+permutation = randperm(size(X,3))
+X_shuffled = X[:,:,permutation]
+Y_shuffled = Y[permutation]
+possible_labels = unique(Y)
 Nepochs = 500
 NN = 0
 Ntrain = round(Int,0.8*length(Y))
@@ -93,9 +94,11 @@ resultats = [onecold(NN(Xtrain[:,i])) == onecold(Ytrain[:,i]) for i in 1:Ntrain]
 
 # Visualize it
 ind = rand(1:Ntrain)
-    prediction = (onecold(NN(Xtrain[:,ind])) == onecold(Ytrain[:,ind]))
+# ind = rand(findall(x->x==false,resultats))
+    prediction = (onecold(NN((Xtrain[:,ind]))) == onecold(Ytrain[:,ind]))
     thetass = reshape(Xtrain[:,ind],2window + 1,2window + 1)
-    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytrain[:,ind])]*" , "*string(prediction))
+    p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytrain[:,ind])])
+    # p = plot_thetas(thetass,model,lattice,title=possible_labels[onecold(Ytrain[:,ind])]*" vs "*possible_defects[onecold(NN((Xtrain[:,ind])))][2])
     display_quiver!(p,thetass,window)
 
 ## TestSet
@@ -168,6 +171,9 @@ update!(thetas,model,lattice,202)
 # params["type1defect"] = "threefold1"
 # thetas = init_thetas(lattice,params=params)
 # zoom_quiver(rotate_180(thetas),model,lattice,17,17,10) ; title!("rotated ccw = split")
+
+## Check the training set, maybe the errors in classification comes from badly labelled data in the beggining
+
 
 ## Plot the different defects and defect pairs
 include(srcdir("../parameters.jl"));

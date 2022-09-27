@@ -5,9 +5,29 @@ import StatsBase.sample
 import Plots.@animate
 
 ## ------------------------ Initializations  ------------------------
-function init_thetas(model::AbstractModel,lattice::Abstract2DLattice{float_type};params)
+function init_thetas(model::AbstractPropagationModel{T},lattice::Abstract1DLattice;params_init)::Vector{T} where T<:AbstractFloat
     L = lattice.L
-    @unpack rho,init,q,r0,type1defect,type2defect = params
+    @unpack init = params_init
+    if init == "lowtemp" thetas = zeros(L)
+    elseif init == "spinwave"
+        model.symmetry == "polar" ? symm = 2 : symm = 1
+        thetas = [symm*pi/L*i for i in 1:L]
+    end
+    model.omegas = sqrt(model.Var)*randn(L)
+    return thetas
+end
+
+function init_thetas(model::AbstractPropagationModel{T},lattice::Abstract2DLattice;params_init=nothing)::Matrix{T} where T<:AbstractFloat
+    L = lattice.L
+    # for now, only lowtemp initialisation is supported, no no need to provide params_init
+    model.omegas = sqrt(model.Var)*randn(L,L)
+    thetas = zeros(L,L)
+    return thetas
+end
+
+function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice;params_init) where float_type<:AbstractFloat
+    L = lattice.L
+    @unpack init,q,r0,type1defect,type2defect = params_init
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
@@ -16,7 +36,7 @@ function init_thetas(model::AbstractModel,lattice::Abstract2DLattice{float_type}
         thetas = rand(Bool,L,L)*π
     elseif init in ["isolated" , "single"]
         thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,type=type1defect) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
-        space.periodic = false
+        lattice.periodic = false
     elseif init == "pair"
         thetas = create_pair_vortices(L,r0=r0,q=abs(q),type=type2defect)
     elseif init in ["2pairs" , "2pair"]
@@ -103,7 +123,16 @@ function make_holes!(thetas,rho)
 end
 
 ## ------------------------ Visualization  ------------------------
-function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::AbstractLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
+function plot_thetas(thetas::Vector{T},model::AbstractModel,lattice::Abstract1DLattice;cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400,100)) where T<:AbstractFloat
+    if     model.symmetry == "nematic" modd = pi
+    elseif model.symmetry == "polar"   modd = 2pi
+    end
+    # thetas_fattened = hcat(thetas,thetas,thetas)
+    p=heatmap(mod.(thetas',modd),c=cols,clims=(0,modd),size=size,yaxis=nothing)
+    return p
+end
+
+function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
     if     model.symmetry == "nematic" modd = pi
     elseif model.symmetry == "polar"   modd = 2pi
     end
@@ -147,7 +176,7 @@ end
 # xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 
-function zoom_quiver(thetas,model,lattice,i,j,window=5;defects=false)
+function zoom_quiver(thetas,model,lattice::Abstract2DLattice,i,j,window=7;defects=false)
     L = lattice.L
     no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,window)
 
@@ -165,7 +194,7 @@ end
 function movies(thetas,model,lattice;defects=false,saving_times,transients)
     anim = @animate for t in saving_times
         println("$(round(t/saving_times[end]*100,digits=2)) %")
-        update!(thetas,model,lattice,t)  # updates until time = t
+        update!(thetas,model,lattice,tmax=t)  # updates until time = t
         if t<transients p = plot_thetas(thetas,model,lattice,defects=false,size=(512,512))
         else            p = plot_thetas(thetas,model,lattice,defects=defects,size=(512,512))
         end

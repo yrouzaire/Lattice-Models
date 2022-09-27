@@ -27,7 +27,7 @@ function local_mag(thetas::Matrix{T},L::Int,l::Int)::Matrix{T} where T<:Abstract
     return δ
 end
 
-function corr(thetas::Matrix{T},model::AbstractModel,lattice::AbstractLattice) where T<:AbstractFloat
+function corr(thetas::Matrix{T},model::AbstractModel,lattice::Abstract2DLattice) where T<:AbstractFloat
     L = lattice.L ; Lover2 = round(Int,L/2,RoundDown)
     matrix_corr = Matrix{T}(undef,Lover2,L^2)
 
@@ -44,7 +44,7 @@ function corr(thetas::Matrix{T},model::AbstractModel,lattice::AbstractLattice) w
     return nanmean(matrix_corr,2)[:,1]
 end
 
-function corr(thetas::Matrix{T},model::AbstractModel,lattice::AbstractLattice,i::Int,j::Int,n::Int) where T<:AbstractFloat
+function corr(thetas::Matrix{T},model::AbstractModel,lattice::Abstract2DLattice,i::Int,j::Int,n::Int) where T<:AbstractFloat
     angle_neighbours_at_distance_n = [thetas[mod1(i+n,L),j],
                                       thetas[mod1(i-n,L),j],
                                       thetas[i,mod1(j+n,L)],

@@ -7,6 +7,20 @@ nanmean(x,y) = mapslices(nanmean,x,dims=y)
 nanstd(x) = std(filter(!isnan,x))
 nanstd(x,y) = mapslices(nanstd,x,dims=y)
 replace_nan_with_zeros(v) = map(x -> isnan(x) ? zero(x) : x, v)
+function complete_with_nan(x,n)
+    @assert n ≥ length(x)
+    x_extended = NaN*similar(x,n)
+    x_extended[1:length(x)] = x
+    return x_extended
+end
+function vector_of_vector2matrix(x::Vector{Vector{T}}) where T<:AbstractFloat
+    maxlength = maximum([length(x[i]) for i in eachindex(x)])
+    matrice = NaN*zeros(T,maxlength,length(x))
+    for i in eachindex(x)
+        matrice[1:length(x[i]),i] = x[i]
+    end
+    return matrice
+end
 
 all_false(x::AbstractArray{Bool}) = iszero(sum(x))
 all_true(x::AbstractArray{Bool}) = isone(prod(x))
@@ -18,6 +32,7 @@ import Base: +,-
 +(y::Tuple{T,T},x::Vector{Tuple{T,T}}) where T<:Number = [x[i] .+ y for i in 1:length(x)]
 -(x::Vector{Tuple{T,T}},y::Tuple{T,T}) where T<:Number = [x[i] .- y for i in 1:length(x)]
 -(y::Tuple{T,T},x::Vector{Tuple{T,T}}) where T<:Number = [x[i] .- y for i in 1:length(x)]
+
 
 function index_element_repeated(x)
     indices = []
