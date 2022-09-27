@@ -16,7 +16,6 @@ C   = zeros(length(Ts),Int(L/2),length(times_log))
 xi  = zeros(length(Ts),length(times_log))
 n   = zeros(length(Ts),length(times_log))
 thetas_save = zeros(Float16,length(Ts),length(times_log),L,L)
-
 dfts = Vector{Union{Missing,DefectTracker}}(missing,length(Ts))
 
 z = @elapsed for i in each(Ts)

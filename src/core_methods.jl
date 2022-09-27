@@ -353,7 +353,7 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
     else
         # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
         # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
-        angle = mod(rand(Cauchy(theta-pi,one(T)/A)),2pi) # Wrapped Cauchy
+        angle = mod(rand(Cauchy(theta-pi,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
     end
     return angle
 end

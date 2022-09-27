@@ -36,7 +36,7 @@ function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice
         thetas = rand(Bool,L,L)*π
     elseif init in ["isolated" , "single"]
         thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,type=type1defect) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
-        space.periodic = false
+        lattice.periodic = false
     elseif init == "pair"
         thetas = create_pair_vortices(L,r0=r0,q=abs(q),type=type2defect)
     elseif init in ["2pairs" , "2pair"]
@@ -194,7 +194,7 @@ end
 function movies(thetas,model,lattice;defects=false,saving_times,transients)
     anim = @animate for t in saving_times
         println("$(round(t/saving_times[end]*100,digits=2)) %")
-        update!(thetas,model,lattice,t)  # updates until time = t
+        update!(thetas,model,lattice,tmax=t)  # updates until time = t
         if t<transients p = plot_thetas(thetas,model,lattice,defects=false,size=(512,512))
         else            p = plot_thetas(thetas,model,lattice,defects=defects,size=(512,512))
         end

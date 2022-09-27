@@ -3,7 +3,7 @@ include("defects_methods.jl")
 
 R = 40
 Nb_thetas_save = 10
-base_filename = "data/MovXY_rho1_A0"
+base_filename = "data/polarMovXY_rho1_A0"
 indices = [] ; for r in 1:R  if isfile(base_filename*"_r$r.jld2") push!(indices,r) end end
 println("There are $(length(indices))/$R files.")
 
@@ -29,6 +29,10 @@ for r in indices
     polar_orders[:,:,r] = polar_order
     nematic_orders[:,:,r] = nematic_order
 
+    for i in 1:length(Ts)
+        for n in 1:length(dfts[i].defectsP) dfts[i].defectsP[n].thetas_zoom = [zeros(Float32,2,2)] end
+        for n in 1:length(dfts[i].defectsN) dfts[i].defectsN[n].thetas_zoom = [zeros(Float32,2,2)] end
+    end
     dftss[:,r] = dfts
 
     if token ≤ Nb_thetas_save

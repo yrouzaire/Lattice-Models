@@ -6,7 +6,9 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 
 #= Important Comments : =#
-@unpack runtimes, polar_orders, nematic_orders, Cs, xis, ns, params, comments, R, times_log, times_log , dftss, Ts  = load(datadir("MovXY_rho1_A0.jld2"))
+
+## Coarsening dynamics
+@unpack runtimes, polar_orders, nematic_orders, Cs, xis, ns, params, comments, R, times_log, times_log, Ts  = load(datadir("polarMovXY_rho1_A0.jld2"))
 polar_orders_avg = nanmean(polar_orders,3)[:,:,1]
 nematic_orders_avg = nanmean(nematic_orders,3)[:,:,1]
 ns_avg = nanmean(ns,3)[:,:,1]
@@ -50,14 +52,20 @@ temp = 3
 
 # Correlation function at final time for different T
 p=plot(xlabel="r",ylabel="C(r,∞)",legend=:bottomleft,axis=:log,size=(450,400))
-    for i in 1:length(Ts)-1
+    for i in 1:length(Ts)
         rr = 1:length(Cs_avg[i,:,end])
         plot!(rr,remove_negative(Cs_avg[i,:,end]),c=i,line=:solid,label="T = $(Ts[i])",rib=0)
-        plot!(rr[10:end],0.9rr[10:end] .^(-Ts[i]/2pi),c=i,line=:dash)
+        plot!(rr[10:end],0.95rr[10:end] .^(-Ts[i]/4pi),c=i,line=:dash)
     end
     p
 
 ## Thetas
-@unpack thetas_saves = load(datadir("MovXY_rho1_A0.jld2"))
+@unpack thetas_saves = load(datadir("polarMovXY_rho1_A0.jld2"))
 model = XY(params)
-plot_thetas((thetas_saves[1,27,:,:,1]),model,lattice,defects=false)
+plot_thetas((thetas_saves[1,25,:,:,1]),model,lattice,defects=false)
+zoom_quiver((thetas_saves[1,25,:,:,1]),model,lattice,125,45,10)
+
+## DefectTracker
+@unpack dftss, times_lin = load(datadir("polarMovXY_rho1_A0.jld2"))
+dft = dftss[1,40]
+[d.id_annihilator for d in dft.defectsP]

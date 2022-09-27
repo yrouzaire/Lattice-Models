@@ -5,17 +5,17 @@ using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
 ## Tests Movies
-gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
+# gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
 model = MovingXY(params)
 lattice = TriangularLattice(L)
-thetas = init_thetas(model,lattice,init=init,q=1,r0=60,type=["source","divergent"])
-    plot_theta(thetas,model,lattice)
-saving_times = 0:100:20000 ; transients = Inf
-# update!(thetas,model,lattice,100)
+thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)
+saving_times = 0:100:20000 ; transients = saving_times[end]/2
+# update!(thetas,model,lattice)
 # plot_theta(thetas,model,lattice,defects=true)
-z = @elapsed anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
+z = @elapsed anim_extensile = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
 prinz(z)
-mp4(anim,"D:/Documents/Research/projects/lattice_models/Lattice Models/films/test3.mp4")
+mp4(anim_extensile,datadir("../films/active_extensile_A2.mp4"))
 
 ## Basic Tests
 thetas = init_thetas(model,lattice,init="isolated",q=1,type="source")

@@ -6,7 +6,23 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 #=Idea : for nematic/polar systems with densities 1 and below, find proportion of each defect type.
 At hightemp, each defect should be equaprobable. If we find something very different after some relaxation time,
 it means that the dynamics select some over the others.
-Do the whole thing with L = 500 and trelax = 100 ? =#
+Do the whole thing with L = 500 and trelax = 100 ?
+Note 1 : with L = 300, polar symmetry and T=0.1,
+    Langevin dynamics take t = 200 to arrive to 74 defects
+    MCXY dynamics with proposal 2\sqrt T take t = 1500 to arrive to 76 defects
+    MCXY dynamics with proposal 0-2pi take t = 6000 to arrive to also 76 defects
+At first impression, the dynamics does not seem to change the nature of the defects
+=#
+
+## Code to zoom on the defects of a DefectTracker
+n=0
+n += 1
+    d = dft.defectsP[n]
+    loc = last_loc(d)
+    zoom_quiver(thetas,model,lattice,loc...,10)
+    title!(last_type(d))
+
+## Generate configurations
 include(srcdir("../parameters.jl"));
 lattice = TriangularLattice(L)
 
@@ -14,32 +30,27 @@ lattice = TriangularLattice(L)
 params["symmetry"] = "polar" ; params["rho"] = 1
 model = MCXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
-update!(thetas,model,lattice,2000)
+update!(thetas,model,lattice,tmax=1000)
 number_defects(thetas,model,lattice)
 plot_thetas(thetas,model,lattice,defects=false)
 dft = DefectTracker(thetas,model,lattice,find_type=true)
 number_defects_types(dft)*2/sum(number_defects_types(dft))
 
+
 # Results for nematic symmetry and rho = 1
 params["symmetry"] = "nematic" ; params["rho"] = 1
-model = XY(params)
+model = MCXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
-@time update!(thetas,model,lattice,100)
+update!(thetas,model,lattice,tmax=1000)
 plot_thetas(thetas,model,lattice,defects=false)
 dft = DefectTracker(thetas,model,lattice,find_type=true)
 number_defects_types(dft)*2/sum(number_defects_types(dft))
 
-## Moving XY
-# Results for nematic symmetry and rho = 1 and A = 0
-params["symmetry"] = "nematic" ; params["rho"] = 0.9 ; params["A"] = 0
+## Moving XY, for rho < 1
+params["symmetry"] = "nematic" ; params["rho"] = 0.95 ; params["A"] = 2
 model = MovingXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
-@time update!(thetas,model,lattice,1000)
+@time update!(thetas,model,lattice,tmax=4000)
 plot_thetas(thetas,model,lattice,defects=false)
 dft = DefectTracker(thetas,model,lattice,find_type=true)
 number_defects_types(dft)*2/sum(number_defects_types(dft))
-
-zoom_quiver(thetas,model,lattice,41,65,9)
-
-
-# Results for nematic symmetry and rho < 1

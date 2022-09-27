@@ -79,21 +79,23 @@ dft
 
 ## Simple simulation and plots from hightemp
 include(srcdir("../parameters.jl"));
-model = XY(params)
-lattice = TriangularLattice(L,periodic=true,single=true)
-thetas = init_thetas(lattice,params=params)
-times = [200,300,500,800,1000]
-times = [5,10,20,30,50,80,100]
-# @elapsed z = update!(thetas,model,lattice,100)
-token = 1
-while model.t < times[end]
-    update!(thetas,model,lattice,100)
-    if model.t ≥ times[token]
-        token = min(token+1,length(times))
-        display(plot_thetas(thetas,model,lattice,defects=true))
+    model = XY(params)
+    lattice = TriangularLattice(L,periodic=true,single=true)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    times = [5,10,20,30,50,80,100,150,200,250,300,350,400,450,500]
+    # times = [5,10,20,30]
+    # @elapsed z = update!(thetas,model,lattice,100)
+    token = 1
+    while model.t < times[end]
+        update!(thetas,model,lattice)
+        if model.t ≥ times[token]
+            token = min(token+1,length(times))
+            # display(plot_thetas(thetas,model,lattice,defects=true))
+            display(zoom_quiver(thetas,model,lattice,spot_defects(thetas,model,lattice)[1][2][1:2]...,9))
+        end
     end
-end
-@elapsed z = update!(thetas,model,lattice,410)
+
+@elapsed z = update!(thetas,model,lattice,10)
 plot_thetas(thetas,model,lattice)
 spot_defects(thetas,model,lattice)
 plot_thetas(thetas,model,lattice,defects=true)
