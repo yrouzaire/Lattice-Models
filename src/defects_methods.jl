@@ -333,9 +333,9 @@ function ID_active_defects(dt::DefectTracker)
     return activeP,activeN
 end
 
-function add_defect!(dt::DefectTracker;charge,loc,type="unknown")
-    if charge > 0 push!(dt.defectsP,Defect(id=1+number_defectsP(dt),charge=charge,thetas_zoom=zoom(thetas,lattice,loc...,WINDOW)[2],type=type,loc=loc,t=dt.current_time))
-    else          push!(dt.defectsN,Defect(id=1+number_defectsN(dt),charge=charge,thetas_zoom=zoom(thetas,lattice,loc...,WINDOW)[2],type=type,loc=loc,t=dt.current_time))
+function add_defect!(dt::DefectTracker;charge,loc,type="unknown",thetas_zoom)
+    if charge > 0 push!(dt.defectsP,Defect(id=1+number_defectsP(dt),charge=charge,thetas_zoom=thetas_zoom,type=type,loc=loc,t=dt.current_time))
+    else          push!(dt.defectsN,Defect(id=1+number_defectsN(dt),charge=charge,thetas_zoom=thetas_zoom,type=type,loc=loc,t=dt.current_time))
     end
 end
 
@@ -435,7 +435,7 @@ function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattic
             println("t = ",model.t)
             next_tracking_time += every
             update_DefectTracker!(dft,thetas,model,lattice)
-            display(plot_thetas(thetas,model,lattice,defects=true))
+            display(plot_thetas(thetas,model,lattice,defects=defects))
         end
     end
     return dft
@@ -537,11 +537,11 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
             # Take care of the newly created defects
             ind_created_vortex = findall(iszero,assignment_vortices) # newly created vortex -> the assignment vector contains a 0
             loc_created_vortex = vortices_new[ind_created_vortex]
-            for j in each(loc_created_vortex) add_defect!(dt,charge=chargeP_new[j],type=typeP_new[i],loc=loc_created_vortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_vortex[j][1:2]...,WINDOW)[2]) end
+            for j in each(loc_created_vortex) add_defect!(dt,charge=chargeP_new[j],type=typeP_new[j],loc=loc_created_vortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_vortex[j][1:2]...,WINDOW)[2]) end
 
             ind_created_antivortex = findall(iszero,assignment_antivortices)
             loc_created_antivortex = antivortices_new[ind_created_antivortex]
-            for j in each(loc_created_antivortex) add_defect!(dt,charge=chargeN_new[j],type=typeN_new[i],loc=loc_created_antivortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_antivortex[j][1:2]...,WINDOW)[2]) end
+            for j in each(loc_created_antivortex) add_defect!(dt,charge=chargeN_new[j],type=typeN_new[j],loc=loc_created_antivortex[j][1:2],thetas_zoom=zoom(thetas,lattice,loc_created_antivortex[j][1:2]...,WINDOW)[2]) end
 
             # Update the ancient defects' positions
             for i in eachindex(assignment_vortices)
@@ -591,7 +591,7 @@ function MSD(dfts::Vector{Union{Missing,DefectTracker}},lattice::Abstract2DLatti
     MSD_N   = NaN*zeros(length(indices),maxlength)
     MSD_all = NaN*zeros(length(indices),maxlength)
     for i in 1:length(indices)
-        msd_all, msd_p, msd_n = MSD(dft,lattice,maxlength)
+        msd_all, msd_p, msd_n = MSD(dfts[indices[i]],lattice)
         MSD_P[i,1:length(msd_p)] = msd_p
         MSD_N[i,1:length(msd_n)] = msd_n
         MSD_all[i,1:length(msd_all)] = msd_all
