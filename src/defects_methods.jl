@@ -421,7 +421,6 @@ function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Ab
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
             println("t = ",model.t)
             next_tracking_time += every
-            dft.current_time = model.t
             update_DefectTracker!(dft,thetas,model,lattice)
         end
     end
@@ -435,7 +434,6 @@ function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattic
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
             println("t = ",model.t)
             next_tracking_time += every
-            dft.current_time = model.t
             update_DefectTracker!(dft,thetas,model,lattice)
             display(plot_thetas(thetas,model,lattice,defects=true))
         end
@@ -444,7 +442,7 @@ function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattic
 end
 
 function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
-
+    dt.current_time = model.t
     NB = lattice.periodic
     vortices_new,antivortices_new = spot_defects(thetas,model,lattice)
 
@@ -583,54 +581,88 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
     return dt
 end
 
-function MSD(dft::DefectTracker,model::AbstractModel,lattice::Abstract2DLattice)
+function MSD(dfts::Vector{Union{Missing,DefectTracker}},lattice::Abstract2DLattice)
+    indices = [] # indices of dft defined (is simulation not finished, dfts[i] == missing)
+    for i in 1:length(dfts)
+        if !ismissing(dfts[i]) push!(indices,i) end
+    end
+    maxlength = maximum([maximum([length(d.pos) for d in vcat(dft.defectsP,dft.defectsN)]) for dft in dfts[indices]])
+    MSD_P   = NaN*zeros(length(indices),maxlength)
+    MSD_N   = NaN*zeros(length(indices),maxlength)
+    MSD_all = NaN*zeros(length(indices),maxlength)
+    for i in 1:length(indices)
+        msd_all, msd_p, msd_n = MSD(dft,lattice,maxlength)
+        MSD_P[i,1:length(msd_p)] = msd_p
+        MSD_N[i,1:length(msd_n)] = msd_n
+        MSD_all[i,1:length(msd_all)] = msd_all
+    end
+
+    MSD_P_avg = nanmean(MSD_P,1)[1,:]
+    MSD_N_avg = nanmean(MSD_N,1)[1,:]
+    MSD_all_avg = nanmean(MSD_all,1)[1,:]
+
+    return MSD_all_avg,MSD_P_avg,MSD_N_avg
+end
+
+function MSD(dft::DefectTracker,lattice::Abstract2DLattice,maxlength=nothing)
     nP = number_defectsP(dft)
     nN = number_defectsN(dft)
-    tmin,tmax = t_bounds(dft) # (tmin,tmax) = timestamps of (first defect creation , last defect annihilation)
+    # tmin,tmax = t_bounds(dft) # (tmin,tmax) = timestamps of (first defect creation , last defect annihilation)
 
-    hasfield(typeof(model),:dt) ? dummy_dt = model.dt : dummy_dt = 1
-
+    # hasfield(typeof(model),:dt) ? dummy_dt = model.dt : dummy_dt = 1
+    if isnothing(maxlength)
+        maxlength = maximum([length(d.pos) for d in vcat(dft.defectsP,dft.defectsN)])
+    end
     # Compute the SD
-    SD_P = NaN*zeros(nP,round(Int,tmax))
-    SD_N = NaN*zeros(nN,round(Int,tmax))
+    SD_P = NaN*zeros(nP,maxlength)
+    SD_N = NaN*zeros(nN,maxlength)
     for n in 1:nP
         defect = dft.defectsP[n]
-        index_creation = round(Int,defect.creation_time/dummy_dt) + 1
-        if isnothing(defect.annihilation_time) index_annihilation = round(Int,dft.current_time/dummy_dt)
-        else index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
-        end
-        # TODO
-        SD_P[n,index_creation:index_annihilation] = square_displacement(defect,lattice)
+        tmp = square_displacement(defect,lattice)
+        SD_P[n,1:length(tmp)] = tmp
     end
     for n in 1:nN
         defect = dft.defectsN[n]
-        index_creation = round(Int,defect.creation_time/dummy_dt)
-        index_annihilation = round(Int,defect.annihilation_time/dummy_dt)
-        SD_N[n,index_creation:index_annihilation] = square_displacement(defect,lattice)
+        tmp = square_displacement(defect,lattice)
+        SD_N[n,1:length(tmp)] = tmp
     end
 
     # Now average to compute the MSD
     MSD_P = nanmean(SD_P,1)[1,:]
     MSD_N = nanmean(SD_N,1)[1,:]
-    MSD_N = nanmean(hcat(SD_M,SD_N),1)[1,:]
+    MSD_all = nanmean(hcat(MSD_P,MSD_N),2)[:]
 
-    return MSD, MSD_P, MSD_N
+    return MSD_all, MSD_P, MSD_N
 end
 
 function square_displacement(d::Defect,lattice::Abstract2DLattice)
-    loc_t0 = creation_loc(d)
-    return [dist(lattice,loc,loc_t0) for loc in d.hist] .^ 2
+    loc_t0 = first_loc(d)
+    return [dist(lattice,loc,loc_t0) for loc in d.pos] .^ 2
 end
 
-function interdefect_distance(dft,defect1,defect2,lattice)
+function interdefect_distance(dft::DefectTracker,defect1::Defect,defect2::Defect,lattice::Abstract2DLattice)
     # TODO take care of case with creation and/or annihilation time different.
     # So far, this care is left to the user...
-    @assert defect1.creation_time == defect2.creation_time
-    @assert defect1.annihilation_time == defect2.annihilation_time
-
-    R = [dist(lattice,defect1.hist[t],defect2.hist[t]) for t in each(defect1.hist)]
+    # @assert defect1.creation_time == defect2.creation_time
+    # @assert defect1.annihilation_time == defect2.annihilation_time
+    tmax = min(length(defect1.pos),length(defect2.pos))
+    R = [dist(lattice,defect1.pos[t],defect2.pos[t]) for t in 1:tmax]
     return R
 end
+
+function mean_distance_to_annihilator(dft::DefectTracker,lattice::Abstract2DLattice)
+    nP = number_defectsP(dft)
+    Rs = [distance_to_annihilator(dft,n,lattice) for n in 1:nP]
+    Rs_matrix = vector_of_vector2matrix(Rs)
+    return nanmean(Rs_matrix,2)[:,1]
+end
+
+function distance_to_annihilator(dft::DefectTracker,id1::Int,lattice::Abstract2DLattice;reversed=true)
+    R = interdefect_distance(dft,dft.defectsP[id1],dft.defectsN[dft.defectsP[id1].id_annihilator],lattice)
+    if reversed reverse!(R) end
+    return R
+end
+
 ## Small helpful methods for scripts
 function number_defects(model::AbstractModel,lattice::Abstract2DLattice)
     a,b = spot_defects(thetas,T,BC)

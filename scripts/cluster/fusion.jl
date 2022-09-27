@@ -15,7 +15,7 @@ xis = NaN*zeros(length(Ts),length(times_log),R)
 polar_orders = NaN*zeros(length(Ts),length(times_log),R)
 nematic_orders = NaN*zeros(length(Ts),length(times_log),R)
 
-dftss = Array{DefectTracker,2}(undef,length(Ts),R)
+dftss = Array{Union{Missing,DefectTracker},2}(missing,length(Ts),R)
 
 thetas_saves = NaN*zeros(Float16,length(Ts),length(times_log),params["L"],params["L"],Nb_thetas_save)
 global token = 1
