@@ -79,10 +79,11 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
 
     if isa(type,String)
         # type in ["shortname","what you actually see (after interferences)"] , type_pos,type_neg ="what you have to put in (before interferences)"
-        if     type in ["pair1","sink_join"] type_pos,type_neg = "source","threefold1"
-        elseif type in ["pair2","source_split"]    type_pos,type_neg = "source","threefold2"
-        elseif type in ["pair3","cw_32"]        type_pos,type_neg = "source","join"
-        elseif type in ["pair4","ccw_31"]       type_pos,type_neg = "source","split"
+        if     type in ["random"]                type_pos,type_neg = "random","random"
+        elseif type in ["pair1","source_split"]  type_pos,type_neg = "source","join"
+        elseif type in ["pair2","sink_join"]     type_pos,type_neg = "source","split"
+        elseif type in ["pair3","clock_31"]      type_pos,type_neg = "source","threefold2"
+        elseif type in ["pair4","cclock_32"]     type_pos,type_neg = "source","threefold1"
         else error("Type Unknown!")
         end
     elseif isa(type,Vector{String})

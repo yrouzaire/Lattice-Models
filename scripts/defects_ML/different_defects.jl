@@ -32,15 +32,17 @@ include(srcdir("../parameters.jl"));
 
 model = XY(params)
 lattice = SquareLattice(L)
-params_init["type1defect"] = "random"
+params_init["type1defect"] = "32"
+params_init["type2defect"] = ["source","random"]
 
-thetas = init_thetas(model,lattice,params_init=params_init)
+    thetas = init_thetas(model,lattice,params_init=params_init)
     p=plot_thetas(thetas,model,lattice,defects=false)
     display_quiver!(p,thetas,9)
 
+## Some variety of +1 defects
 
 
-
+&
 
 
 

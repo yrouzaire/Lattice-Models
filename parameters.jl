@@ -1,12 +1,12 @@
 # Physical Parameters
 L = 20
 T = 0.1
-symmetry = "polar"
+symmetry = "nematic"
 propulsion = "polar"
 Var = 0.
 A = 3
 vision = 5π/3
-rho = 0.95
+rho = 1
 algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
@@ -18,10 +18,10 @@ every = 1E2
 
 # Initialisation
 init = "single"
-q = 1
+q = 1/2
 r0 = Int(L/2)
 type1defect = "counterclockwise"
-type2defect = "pair2"
+type2defect = "pair1"
 
 # Containers
 params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"algo"=>algo)
