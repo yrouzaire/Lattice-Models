@@ -354,13 +354,21 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
     else
         # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
         # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
-        # angle = mod(rand(Cauchy(theta,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
-        angle = mod(rand(Cauchy(theta-pi/2,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
-        #= Important Note. If instead of centering tha variable 'angle' on the variable 'theta',
-        one centers it on thetas + pi or thetas +pi/2, there is no qualitative difference in the movies.
+        angle = mod(rand(Cauchy(theta-π/2,one(T)/A)),2π) # Wrapped Cauchy, contractile activity
+
+        #= Important Note. If instead of centering the variable 'angle' on the variable 'theta',
+        one centers it on thetas +π or thetas +π/2, there is no qualitative difference in the movies.
         +1/2 comet-shaped defects are superdiffusive/ballistic, the rest of the behaviour is also left
         unchanged. It basicaly is just a shift in the colours. This means that the details of the coupling
-        orientation/polar_propulsion don't matter. =#
+        orientation/polar_propulsion don't matter.
+        I take advantage of this fact to plot coherently the field thetas.
+        Hence the -π/2 , which is mandatory if one want coherence between the colors
+        and the direction of motion once plotted. Because heatmap(thetas') is equivalent to
+        a 90° counterclockwise rotation, I choose the neighbour with a 90° clockwise biais (the -pi/2).
+        I am aware that this is kind of a weird choice but abandoning the heatmap(thetas') procedure
+        complexifies averything else. With this plotting procedure, the visual and the mathematical
+        field theta = arctan(y/x) + µ are the same. Otherwise, it seems to me that, for instance,
+        µ = 0 is mathematically a source but visually is a counterclockwise vortex etc etc.  =#
     end
     return angle
 end
