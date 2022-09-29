@@ -17,8 +17,8 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "single"
-q = 1/2
+init = "pair"
+q = -1/2
 r0 = Int(L/2)
 type1defect = "counterclockwise"
 type2defect = "pair1"

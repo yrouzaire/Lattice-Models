@@ -48,25 +48,28 @@ function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice
 end
 
 function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="random")
-    condition0 = (type == "random")
+
+    condition0 = (type == "random") || (isa(type,Number))
     condition1 = (q > 0 && type in ["source","sink","clockwise","counterclockwise"])
     condition2 = (q < 0 && type in ["split","join","convergent","divergent","threefold1","threefold2","31","32"])
     @assert condition0 || condition1 || condition2
 
     thetas = zeros(L,L)
     for y in 1:L , x in 1:L thetas[x,y] = q * atan(y-y0,x-x0) end
-
-    if     type == "random"                 offset = 2π*rand() - π
-        # q > 0
-    elseif type == "source"                 offset = 0
-    elseif type == "sink"                   offset = π
-    elseif type == "counterclockwise"       offset = π/2
-    elseif type == "clockwise"              offset = -π/2
-        # q = -1/2 (when q = -1, I think they are all equivalent)
-    elseif type in ["convergent","join"]    offset = 0
-    elseif type in ["divergent" ,"split"]   offset = π
-    elseif type in ["threefold1","31"]      offset = π/2
-    elseif type in ["threefold2","32"]      offset = -π/2
+    if     isa(type,Number) offset = type
+    elseif isa(type,String)
+        if     type == "random"                 offset = 2π*rand() - π
+            # q > 0
+        elseif type == "source"                 offset = 0
+        elseif type == "sink"                   offset = π
+        elseif type == "counterclockwise"       offset = π/2
+        elseif type == "clockwise"              offset = -π/2
+            # q = -1/2 (when q = -1, I think they are all equivalent)
+        elseif type in ["convergent","join"]    offset = 0
+        elseif type in ["divergent" ,"split"]   offset = π
+        elseif type in ["threefold1","31"]      offset = π/2
+        elseif type in ["threefold2","32"]      offset = -π/2
+        end
     end
     return thetas .+ offset
 end
@@ -76,7 +79,9 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
     otherwise the defaults will annihilate with relaxation =#
     @assert r0 ≤ 0.5L  "Error : r0 > L/2. "
     @assert iseven(r0) "Error : r0 has to be even. "
-
+    # println()
+    # println(type)
+    # println(typeof(type))
     if isa(type,String)
         # type in ["shortname","what you actually see (after interferences)"] , type_pos,type_neg ="what you have to put in (before interferences)"
         if     type in ["random"]                type_pos,type_neg = "random","random"
@@ -86,7 +91,7 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
         elseif type in ["pair4","cclock_32"]     type_pos,type_neg = "source","threefold1"
         else error("Type Unknown!")
         end
-    elseif isa(type,Vector{String})
+    elseif isa(type,Vector{String}) || isa(type,Tuple{Number,Number}) || isa(type,Vector{<:Number})
         type_pos , type_neg = type
     else error("Type Unknown!")
     end
