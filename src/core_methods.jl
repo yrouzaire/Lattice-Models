@@ -356,7 +356,8 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
         # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
         angle = mod(rand(Cauchy(theta-π/2,one(T)/A)),2π) # Wrapped Cauchy, contractile activity
 
-        #= Important Note. If instead of centering the variable 'angle' on the variable 'theta',
+        #= Important Note : 
+        If instead of centering the variable 'angle' on the variable 'theta',
         one centers it on thetas +π or thetas +π/2, there is no qualitative difference in the movies.
         +1/2 comet-shaped defects are superdiffusive/ballistic, the rest of the behaviour is also left
         unchanged. It basicaly is just a shift in the colours. This means that the details of the coupling

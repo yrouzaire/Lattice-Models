@@ -4,7 +4,7 @@ T = 0.1
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.
-A = 10
+A = 3
 vision = 5π/3
 rho = 0.95
 algo = "A" # rule for collision!() for model = MovingXY

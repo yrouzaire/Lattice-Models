@@ -5,6 +5,52 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 include(srcdir("../parameters.jl"));
 
+#= New Idea
+In fact, there is a continuum of defects type.
+θ = q*arctan(Δy/Δx) + µ, with 0 ≤ µ ≤ 2π.
+
+Special cases of q>0 defects:
+µ = 0 source
+µ = π/2 counterclockwise
+µ = π sink
+µ = 3π/2 clockwise
+
+Special cases of q<0 defects:
+µ = 0 source
+µ = π/2 counterclockwise
+µ = π sink
+µ = 3π/2 clockwise
+
+This resolves the problem of having a defect
+that looks like a counterclockwise AND a source
+at the same time. It just means that 0 < µ < π/2.
+
+=#
+
+## Generate single defects and pairs of defects to verify coherence
+include(srcdir("../parameters.jl"));
+
+model = XY(params)
+lattice = SquareLattice(L)
+params_init["type1defect"] = "random"
+
+thetas = init_thetas(model,lattice,params_init=params_init)
+    p=plot_thetas(thetas,model,lattice,defects=false)
+    display_quiver!(p,thetas,9)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Create a dataset for later defects ML indentification
 #= The goal here is, for each defect type (8 or 16, depending
 on whether we take the +/- 1 defects), to create N noisy

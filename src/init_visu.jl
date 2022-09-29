@@ -47,27 +47,28 @@ function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice
     return float_type.(thetas)
 end
 
-function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type)
+function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="random")
+    condition0 = (type == "random")
     condition1 = (q > 0 && type in ["source","sink","clockwise","counterclockwise"])
-    condition2 = (q < 0 && type in ["split","join","convergent","divergent","threefold1","threefold2"])
-    @assert condition1 || condition2
+    condition2 = (q < 0 && type in ["split","join","convergent","divergent","threefold1","threefold2","31","32"])
+    @assert condition0 || condition1 || condition2
 
     thetas = zeros(L,L)
-    for y in 1:L , x in 1:L
+    for y in 1:L , x in 1:L thetas[x,y] = q * atan(y-y0,x-x0) end
+
+    if     type == "random"                 offset = 2π*rand() - π
         # q > 0
-        if     type == "counterclockwise"     thetas[x,y] = q * atan(y-y0,x-x0)
-        elseif type == "clockwise"            thetas[x,y] = q * atan(y-y0,x-x0) + pi
-        elseif type == "sink"                 thetas[x,y] = q * atan(y-y0,x-x0) + pi/2
-        elseif type == "source"               thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
-        # elseif type == "source"               thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
+    elseif type == "source"                 offset = 0
+    elseif type == "sink"                   offset = π
+    elseif type == "counterclockwise"       offset = π/2
+    elseif type == "clockwise"              offset = -π/2
         # q = -1/2 (when q = -1, I think they are all equivalent)
-        elseif type in ["threefold2"]          thetas[x,y] = q * atan(y-y0,x-x0)
-        elseif type in ["threefold1"]          thetas[x,y] = q * atan(y-y0,x-x0) + pi
-        elseif type in ["divergent" ,"split"]     thetas[x,y] = q * atan(y-y0,x-x0) + pi/2
-        elseif type in ["convergent","join"]      thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
-        end
+    elseif type in ["convergent","join"]    offset = 0
+    elseif type in ["divergent" ,"split"]   offset = π
+    elseif type in ["threefold1","31"]      offset = π/2
+    elseif type in ["threefold2","32"]      offset = -π/2
     end
-    return thetas
+    return thetas .+ offset
 end
 
 function create_pair_vortices(L;r0=Int(L/2),q,type)

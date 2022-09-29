@@ -12,10 +12,10 @@ lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice)
 saving_times = 0:100:20000 ; transients = saving_times[end]/2
-z = @elapsed anim_extensile = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
+z = @elapsed anim_extensile = movies(thetas,model,lattice,defects=false,saving_times=saving_times,transients=transients)
 prinz(z)
+mp4(anim_extensile,datadir("../films/test.mp4"))
 mp4(anim_extensile,datadir("../films/active_extensile_A2.mp4"))
-
 
 ## Verifions que les défauts soient bien les bons
 global const WINDOW = 7
