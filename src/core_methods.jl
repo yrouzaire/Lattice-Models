@@ -354,8 +354,8 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
     else
         # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
         # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
-        angle = mod(rand(Cauchy(theta,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
-        # angle = mod(rand(Cauchy(theta-pi/2,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
+        # angle = mod(rand(Cauchy(theta,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
+        angle = mod(rand(Cauchy(theta-pi/2,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
         #= Important Note. If instead of centering tha variable 'angle' on the variable 'theta',
         one centers it on thetas + pi or thetas +pi/2, there is no qualitative difference in the movies.
         +1/2 comet-shaped defects are superdiffusive/ballistic, the rest of the behaviour is also left

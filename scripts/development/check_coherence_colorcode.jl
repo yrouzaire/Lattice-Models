@@ -6,12 +6,17 @@
 4bis. Check that the holes are correctly localized.
 =#
 
+## Step 0 : Comprendre heatmap
+test = reshape(1:16,4,4)
+test'
+heatmap(test)
+heatmap(test')
 
 ## Step 1 OK
 L = 10
-    model = MovingXY(0.0,100.0,"polar","polar",0.0,1.0,"A",0.01) # T,A,symmetry,propulsion,t,rho,algo,width_proposal
-    lattice = TriangularLattice(L)
-i,j = 6,5 ; theta = 4pi/3
+    model = MovingXY(params) # T,A,symmetry,propulsion,t,rho,algo,width_proposal
+    lattice = SquareLattice(L)
+i,j = 6,5 ; theta = pi
     thetas = NaN*zeros(L,L)
     thetas[i,j] = theta
     display(plot_thetas(thetas,model,lattice))
@@ -48,7 +53,7 @@ include(srcdir("../parameters.jl"));
 ## Step 3 OK
 include(srcdir("../parameters.jl"));
     params["init"] = "single"
-    params["q"] = 1/2
+    params["q"] = q = 1/2
     params["symmetry"] = "nematic"
     model = XY(params)
     lattice = TriangularLattice(L,periodic=true,single=true)

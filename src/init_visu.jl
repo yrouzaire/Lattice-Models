@@ -138,7 +138,6 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
     elseif model.symmetry == "polar"   modd = 2pi
     end
     p = heatmap(mod.(thetas',modd),c=cols,clims=(0,modd),size=size,
-    # p = heatmap(mod.(rotate_clockwise90(thetas),modd),c=cols,clims=(0,modd),size=size,
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
@@ -168,8 +167,7 @@ function display_quiver!(p,thetas_zoom,window)
     p
     for j in 1:2window+1
         quiver!(j*ones(2window+1),collect(1:2window+1),
-        # quiver=(sin.(thetas_zoom[j,:]),-cos.(thetas_zoom[j,:])), # original
-        quiver=(-sin.(thetas_zoom[j,:]),cos.(thetas_zoom[j,:])),
+        quiver=(cos.(thetas_zoom[j,:]),sin.(thetas_zoom[j,:])),
         c=:white,lw=0.8)
     end
     return p

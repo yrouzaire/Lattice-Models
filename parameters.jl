@@ -1,12 +1,12 @@
 # Physical Parameters
-L = 36
+L = 20
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.
-A = 3
+A = 10
 vision = 5π/3
-rho = 0.975
+rho = 0.95
 algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
@@ -17,10 +17,10 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "pair"
+init = "single"
 q = 1
 r0 = Int(L/2)
-type1defect = "clockwise"
+type1defect = "counterclockwise"
 type2defect = "pair2"
 
 # Containers
