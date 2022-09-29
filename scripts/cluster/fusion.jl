@@ -8,17 +8,17 @@ indices = [] ; for r in 1:R  if isfile(base_filename*"_r$r.jld2") push!(indices,
 println("There are $(length(indices))/$R files.")
 
 @load base_filename*"_r$(indices[1]).jld2" times_log times_lin params comments
-Ts = params["Ts"] ; As = params["As"] ; rhos = params["rhos"]
+Ts = params["Ts"] ; As = params["As"] ; rhos = params["rhos"] ; L = params["L"]
 
 ns  = NaN*zeros(length(Ts),length(As),length(rhos),length(times_log),R)
-Cs  = NaN*zeros(length(Ts),length(As),length(rhos),Int(params["L"]/2),length(times_log),R)
+Cs  = NaN*zeros(length(Ts),length(As),length(rhos),Int(L/2),length(times_log),R)
 xis = NaN*zeros(length(Ts),length(As),length(rhos),length(times_log),R)
 polar_orders = NaN*zeros(length(Ts),length(As),length(rhos),length(times_log),R)
 nematic_orders = NaN*zeros(length(Ts),length(As),length(rhos),length(times_log),R)
 
 dftss = Array{Union{Missing,DefectTracker},4}(missing,length(Ts),length(As),length(rhos),R)
 
-thetas_saves = NaN*zeros(Float16,length(Ts),length(As),length(rhos),length(times_log),params["L"],params["L"],Nb_thetas_save)
+thetas_saves = NaN*zeros(Float16,length(Ts),length(As),length(rhos),length(times_log),L,L,Nb_thetas_save)
 global token = 1
 runtimes = NaN*zeros(R)
 

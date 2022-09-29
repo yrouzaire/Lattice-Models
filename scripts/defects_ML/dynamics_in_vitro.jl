@@ -20,15 +20,20 @@ possible_defects = ["source","sink","clockwise","counterclockwise"]
 ## Single defects
 include(srcdir("../parameters.jl"));
 
-params["symmetry"] = "nematic"
+params["symmetry"] = "polar"
 model = MovingXY(params)
 lattice = TriangularLattice(L)
 params_init["init"] = "single"
 params_init["q"] = 1
-params_init["type1defect"] = possible_defects[4]
+params_init["type1defect"] = possible_defects[3]
 
 thetas = init_thetas(model,lattice,params_init=params_init)
 plot_thetas(thetas,model,lattice,defects=false)
+
+zoom_quiver(thetas,model,lattice,18,18,15)
+
+
+
 update!(thetas,model,lattice,50)
     plot_thetas(thetas,model,lattice,defects=false)
 zoom_quiver(thetas,model,lattice,110,110,15)
@@ -42,12 +47,15 @@ model = MovingXY(params)
 lattice = TriangularLattice(L)
 params_init["init"] = "pair"
 params_init["q"] = 1/2
-params_init["type2defect"] = "pair2"
+params_init["type2defect"] = "pair1"
 
 thetas = init_thetas(model,lattice,params_init=params_init)
 plot_thetas(thetas,model,lattice,defects=false)
+zoom_quiver(thetas,model,lattice,18,18,15)
+
+zoom_quiver(thetas,model,lattice,75,150,15)
+zoom_quiver(thetas,model,lattice,225,150,15)
+
 update!(thetas,model,lattice,100)
     plot_thetas(thetas,model,lattice,defects=false)
-thetas .-= pi/2 
-zoom_quiver(thetas,model,lattice,225,150,15)
-zoom_quiver(thetas,model,lattice,75,150,15)
+thetas .-= pi/2
