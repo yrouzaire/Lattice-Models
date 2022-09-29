@@ -59,6 +59,7 @@ function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type)
         elseif type == "clockwise"            thetas[x,y] = q * atan(y-y0,x-x0) + pi
         elseif type == "sink"                 thetas[x,y] = q * atan(y-y0,x-x0) + pi/2
         elseif type == "source"               thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
+        # elseif type == "source"               thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
         # q = -1/2 (when q = -1, I think they are all equivalent)
         elseif type in ["threefold2"]          thetas[x,y] = q * atan(y-y0,x-x0)
         elseif type in ["threefold1"]          thetas[x,y] = q * atan(y-y0,x-x0) + pi
@@ -137,6 +138,7 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
     elseif model.symmetry == "polar"   modd = 2pi
     end
     p = heatmap(mod.(thetas',modd),c=cols,clims=(0,modd),size=size,
+    # p = heatmap(mod.(rotate_clockwise90(thetas),modd),c=cols,clims=(0,modd),size=size,
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects

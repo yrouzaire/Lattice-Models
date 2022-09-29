@@ -65,13 +65,12 @@ mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     t::AbstractFloat
     rho::AbstractFloat
     algo::String
-    width_proposal::AbstractFloat # to be hidden from user once benchmarked
 end
 function MovingXY(params)
-    @unpack T,A,rho,symmetry,algo,propulsion,float_type,width_proposal = params
-    T,A,rho,width_proposal = convert.(float_type,(T,A,rho,width_proposal))
+    @unpack T,A,rho,symmetry,algo,propulsion,float_type = params
+    T,A,rho = convert.(float_type,(T,A,rho))
 
-    return MovingXY{float_type}(T,A,symmetry,propulsion,zero(float_type),rho,algo,width_proposal)
+    return MovingXY{float_type}(T,A,symmetry,propulsion,zero(float_type),rho,algo)
 end
 
 

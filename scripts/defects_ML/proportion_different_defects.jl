@@ -22,35 +22,32 @@ n += 1
     zoom_quiver(thetas,model,lattice,loc...,10)
     title!(last_type(d))
 
+
+# update_and_track!(thetas,model,lattice,dft,2100,5)
+# plot_thetas(thetas,model,lattice,defects=false)
+zoom_quiver(thetas,model,lattice,150,180,15)
+
 ## Generate configurations
 include(srcdir("../parameters.jl"));
 lattice = TriangularLattice(L)
 
-# Results for polar symmetry and rho = 1
-params["symmetry"] = "polar" ; params["rho"] = 1
+# Results for MonteCarlo XY
+params["symmetry"] = "nematic" ; params["rho"] = 1
 model = MCXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
-update!(thetas,model,lattice,tmax=1000)
+update!(thetas,model,lattice,tmax=3000)
 number_defects(thetas,model,lattice)
 plot_thetas(thetas,model,lattice,defects=false)
 dft = DefectTracker(thetas,model,lattice,find_type=true)
 number_defects_types(dft)*2/sum(number_defects_types(dft))
 
 
-# Results for nematic symmetry and rho = 1
-params["symmetry"] = "nematic" ; params["rho"] = 1
-model = MCXY(params)
-thetas = init_thetas(model,lattice,params_init=params_init)
-update!(thetas,model,lattice,tmax=1000)
-plot_thetas(thetas,model,lattice,defects=false)
-dft = DefectTracker(thetas,model,lattice,find_type=true)
-number_defects_types(dft)*2/sum(number_defects_types(dft))
-
-## Moving XY, for rho < 1
-params["symmetry"] = "nematic" ; params["rho"] = 0.95 ; params["A"] = 2
+## Moving XY
+params["symmetry"] = "nematic" ; params["rho"] = 0.95 ; params["A"] = 1.5
 model = MovingXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
-@time update!(thetas,model,lattice,tmax=4000)
-plot_thetas(thetas,model,lattice,defects=false)
+update!(thetas,model,lattice,tmax=3000)
+    plot_thetas(thetas,model,lattice,defects=false)
+number_defects(thetas,model,lattice)
 dft = DefectTracker(thetas,model,lattice,find_type=true)
 number_defects_types(dft)*2/sum(number_defects_types(dft))

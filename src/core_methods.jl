@@ -297,7 +297,8 @@ end
 
 function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
     # @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
-    proposal = model.width_proposal*randn(FT)+theta1
+    width_proposal = 2sqrt(model.T)
+    proposal = width_proposal*randn(FT)+theta1
     i,j = pos1
     if model.algo == "A" # Model A. Align nematically with all NN
         neighbours = 2get_neighbours(thetas,model,lattice,i,j,bulk)
@@ -342,9 +343,9 @@ function angle2neighbour(theta::AbstractFloat,i::Int,j::Int,model::AbstractModel
     theta,A = Float64.((theta,model.A)) # Float64.((1,1)) 50x faster than Float64.([1,1])
     direction_motion = direction_of_motion(theta,A)
     NN = project_angle_onto_lattice(direction_motion,i,j,lattice)
-    if model.propulsion == "nematic" && rand(Bool)
-        NN = (-1) .* NN # choose opposite direction with probability 1/2
-    end
+    # if model.propulsion == "nematic" && rand(Bool)
+    #     NN = (-1) .* NN # choose opposite direction with probability 1/2
+    # end
     return add_2_positions((i,j),NN,lattice.L,true) # TODO, check whether false could make it and what runtime gain it would yields
 end
 
