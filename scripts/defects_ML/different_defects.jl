@@ -41,7 +41,63 @@ params_init["type2defect"] = "random"
     display_quiver!(p,thetas,9)
 
 ## Some variety of +1 defects
+include(srcdir("../parameters.jl"));
+model = XY(params)
+lattice = SquareLattice(L)
+
+mus = collect(Float16,0:0.4:2pi)
+plotss = Vector(undef,length(mus))
+for i in each(mus)
+    params_init["type1defect"] = mus[i]
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    p=plot_thetas(thetas,model,lattice,defects=false,colorbar=false,title="µ=$(mus[i])")
+    display_quiver!(p,thetas,7)
+    plotss[i] = p
+end
+plot(plotss...,layout=(4,4),size=(1600,1600))
+# savefig(plotsdir("illustration_defects/defects_1.png"))
+
+## Now one has to retrieve µ from the WINDOW x WINDOW portion of the theta field
+include(srcdir("../parameters.jl"));
+mu = 2pi*rand();
+    model = XY(params)
+    lattice = SquareLattice(L)
+    params_init["type1defect"] = mu;
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    # update!(thetas,model,lattice,1)
+    muss = infer_mu(zoom(thetas,lattice,spot_defects(thetas,model,
+    lattice)[1][1][1:2]...,3)[2],q,window=3)
+
+mu
+
+
+
+function infer_mu(thetas::Matrix{T},q;window=WINDOW)::T where T<:AbstractFloat
+    L = size(thetas,1)
+    @assert L == 2window+1
+    muss = zeros(size(thetas))
+    for j in 1:L, i in 1:L
+        # muss[i,j] = thetas[i,j] - q*atan( (i-window) ,(j-window)) # i<->j doesn't change anything...
+        muss[i,j] = thetas[i,j] - q*atan( (j-window) ,(i-window)) # i<->j doesn't change anything...
+    end
+    moyenne = angle(mean(exp.(im*thetas)))
+    # Correction des biais (aucune idée d'où ils sortent mais sont plutôt constants)
+    if q == -1/2 moyenne += 0.05 end
+    if q == +1/2 moyenne -= 0.05 end
+    return mod(moyenne,2π)
+end
+
+
+
 &
+
+maximum(muss)
+
+
+
+
+
+
 
 
 

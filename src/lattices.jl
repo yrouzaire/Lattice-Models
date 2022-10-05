@@ -214,7 +214,7 @@ end
 #     return div,rot
 # end
 
-function zoom(thetas::Matrix{<:Number},lattice::Abstract2DLattice,i,j,window)
+function zoom(thetas::Matrix{<:Number},lattice::Abstract2DLattice,i,j,window=WINDOW)
     #= Returns a 2window+1 portion of thetas (centered on i,j),
     together with a bool to say whether the operation has worked =#
     L = lattice.L

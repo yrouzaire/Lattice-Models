@@ -443,7 +443,7 @@ end
 
 function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
     dt.current_time = model.t
-    NB = lattice.periodic
+    # NB = lattice.periodic
     vortices_new,antivortices_new = spot_defects(thetas,model,lattice)
 
     # if BC == "periodic" @assert length(vortices_new) == length(antivortices_new) && length(vortices_old) == length(antivortices_old) end
