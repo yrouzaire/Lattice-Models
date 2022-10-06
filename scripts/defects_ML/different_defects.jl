@@ -27,6 +27,16 @@ at the same time. It just means that 0 < µ < π/2.
 
 =#
 
+function reverse_spins(x::Matrix{T},p::Number)::Matrix{T} where T<:AbstractFloat
+    N = length(x)
+    indices = sample(1:N,round(Int,N*p),replace=false)
+    pi32 = T(π)
+    for ind in indices
+        x[ind] += pi32
+    end
+    return mod.(x,2pi32)
+end
+
 ## Now one has to retrieve µ from the WINDOW x WINDOW portion of the theta field
 include(srcdir("../parameters.jl"));
 # mu = 2pi*rand();
@@ -58,7 +68,7 @@ function infer_mu(thetas::Matrix{T},q;window=WINDOW)::T where T<:AbstractFloat
     return mod(moyenne,2π)
 end
 
-## Work on rotations
+## Get hands on on data augmentation (rotations + gaussian noise)
 using Augmentor, Rotations, ImageTransformations
 
 include(srcdir("../parameters.jl"));
@@ -68,16 +78,203 @@ mu = 0;
     params_init["type1defect"] = mu;
     thetas = init_thetas(model,lattice,params_init=params_init)
     # thetas_rotated = imrotate(thetas,90)
-    thetas_rotated = thetas
-p=plot_thetas(thetas_rotated,model,lattice,defects=false)
-    display_quiver!(p,thetas_rotated,9)
-pl = Rotate(20) |> Resize(20, 20)
 
-##
+rotangle = 45
+    pl = Rotate(rotangle) |> Resize(2WINDOW+1, 2WINDOW+1)
+    thetas_rotated =  augment(thetas,pl) .+ Float32(deg2rad(rotangle)) + 0.25*randn(2WINDOW+1,2WINDOW+1)
+    p=plot_thetas(thetas_rotated,model,lattice,defects=false)
+    display_quiver!(p,thetas_rotated,WINDOW)
 
-thetas_aug = augment(thetas,pl)
-p=plot_thetas(thetas_aug,model,lattice,defects=false)
-    display_quiver!(p,thetas_aug,9)
+## Create base data set (without augmentation, just the different µ)
+include(srcdir("../parameters.jl"));
+dµ = 0.1
+mus = Float32.(round.(collect(0:dµ:2pi),digits=2))
+base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
+for i in each(mus)
+    model = XY(params)
+    lattice = SquareLattice(L)
+    params_init["type1defect"] = mus[i];
+    base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
+end
+
+# p=plot_thetas(base_dataset[:,:,rand(1:length(mus))],model,lattice)
+    # display_quiver!(p,base_dataset[:,:,rand(1:length(mus))],WINDOW)
+
+## Augmentation of the base_dataset for Dense NN
+using Augmentor
+rot_angles = 0:90:270
+    nb_noise = 100
+    N = length(rot_angles)*nb_noise*length(mus)
+    X = NaN*zeros(Float32,L*L,N)
+    Y = NaN*zeros(Float32,N)
+    token = 1
+    for i in each(mus)
+        mu = mus[i]
+        for rotation_angle in rot_angles
+            for n in 1:nb_noise
+                ppl = Rotate(rotation_angle) |> Resize(L,L)
+                augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle))
+                # augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle)) + Float32(0.)*rand(Float32)*randn(Float32,L,L)
+                X[:,token] = vec(augmented_thetas)
+                Y[token] = mu
+                token += 1
+            end
+        end
+    end
+X
+Y
+
+
+## Train Dense Neural Network
+using JLD2,Parameters, Flux, Random
+using Flux:params, onehotbatch, crossentropy, onecold, throttle
+
+N = length(Y)
+permutation = randperm(N)
+X_shuffled = X[:,permutation]
+Y_shuffled = Y[permutation]
+Nepochs = 10
+losses = zeros(Nepochs)
+
+Ntrain = round(Int,0.8*N)
+    Xtrain = X_shuffled[:,1:Ntrain]
+    Ytrain = onehotbatch(Y_shuffled[1:Ntrain], mus)
+
+    NN = Chain(
+    Dense(L*L,100, relu),
+    Dense(100, length(mus)),
+    softmax)
+
+    opt = Adam()
+    loss(X, y) = crossentropy(NN(X), y)
+    progress = () -> @show(loss(X, y)) # callback to show loss
+
+    for i in 1:Nepochs
+        println("ep = $i/$Nepochs")
+        Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)#,cb = throttle(progress, 10))
+        losses[i] = loss(Xtrain, Ytrain)
+    end
+
+# Check whether the NN has at least learnt the train set
+resultats = [abs(onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i])) ≤ 3 for i in 1:Ntrain]
+    mean(resultats)
+
+resultats = [arclength(mus[onecold(NN(Xtrain[:,i]))],mus[onecold(Ytrain[:,i])],2pi) for i in 1:Ntrain]
+    mean(resultats)
+
+histogram([onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i]) for i in 1:Ntrain],normalize=true)
+plot(losses,axis=:log)
+    plot!(x->8x^(-0.2))
+    plot!(x->8x^(-0.2))
+
+
+# Visualize it
+ind = rand(1:Ntrain)
+# ind = rand(findall(x->x==false,resultats))
+    prediction = (onecold(NN((Xtrain[:,ind]))) == onecold(Ytrain[:,ind]))
+    thetass = reshape(Xtrain[:,ind],2WINDOW + 1,2WINDOW + 1)
+    titre = string(mus[onecold(Ytrain[:,ind])])*" vs "*string(mus[onecold(NN((Xtrain[:,ind])))])
+    p = plot_thetas(thetass,model,lattice,title=titre)
+    display_quiver!(p,thetass,WINDOW)
+
+
+# Testset
+Xtrain = zeros(L*L,Ntrain)
+Ytrain = onehotbatch(Y_shuffled[1:Ntrain], mus)
+
+## Augmentation of the base_dataset for CNN
+using Augmentor
+rot_angles = 0:90:270
+    nb_noise = 100
+    N = length(rot_angles)*nb_noise*length(mus)
+    X = zeros(Float32,L,L,1,N)
+    Y = zeros(Float32,N)
+    token = 1
+    for i in each(mus)
+        mu = mus[i]
+        for rotation_angle in rot_angles
+            for n in 1:nb_noise
+                ppl = Rotate(rotation_angle) |> Resize(L,L)
+                augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle))
+                # augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle)) + Float32(0.)*rand(Float32)*randn(Float32,L,L)
+                X[:,:,1,token] = augmented_thetas
+                Y[token] = mu
+                token += 1
+            end
+        end
+    end
+X
+Y
+## Train Convolutional Neural Network
+using JLD2,Parameters, Flux, Random
+using Flux:params, onehotbatch, crossentropy, onecold, throttle
+
+N = length(Y)
+permutation = randperm(N)
+X_shuffled = X[:,:,:,permutation]
+Y_shuffled = Y[permutation]
+Nepochs = 30
+losses = zeros(Nepochs)
+
+Ntrain = round(Int,0.8*N)
+    Xtrain = X_shuffled[:,:,:,1:Ntrain]
+    Ytrain = onehotbatch(Y_shuffled[1:Ntrain], mus)
+
+    NN = Chain(
+        Conv((3, 3), 1=>16, pad=(1,1), relu),
+        x -> maxpool(x, (2,2)),
+        Conv((3, 3), 16=>32, pad=(1,1), relu),
+        x -> maxpool(x, (2,2)),
+        # Reshape 3d tensor into a 2d one, at this point it should be (3, 3, 32, N)
+        # hence the 288 (=3x3x32) in the `Dense` layer below:
+        x -> reshape(x, :, size(x, 4)),
+        Dense(288, length(mus)),
+        softmax)
+
+
+    opt = Adam()
+    loss(X, y) = crossentropy(NN(X), y)
+    progress = () -> @show(loss(X, y)) # callback to show loss
+
+    for i in 1:Nepochs
+        println("ep = $i/$Nepochs")
+        Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)#,cb = throttle(progress, 10))
+        losses[i] = loss(Xtrain, Ytrain)
+    end
+
+
+
+# Check whether the NN has at least learnt the train set
+resultats = abs.(onecold(NN(Xtrain[:,:,:,:])) - onecold(Ytrain)) .≤ 3
+    mean(resultats)
+
+resultats = [arclength(mus[onecold(NN(Xtrain[:,:,1,i]))],mus[onecold(Ytrain[i])],2pi) for i in 1:Ntrain]
+mean(resultats)
+
+histogram([onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i]) for i in 1:Ntrain],normalize=true)
+
+plot(losses,axis=:log)
+    plot!(x->8x^(-0.2))
+    plot!(x->8x^(-0.2))
+
+# Visualize it
+ind = rand(1:Ntrain)
+# ind = rand(findall(x->x==false,resultats))
+    prediction = (onecold(NN((Xtrain[:,ind]))) == onecold(Ytrain[:,ind]))
+    thetass = reshape(Xtrain[:,ind],2WINDOW + 1,2WINDOW + 1)
+    titre = string(mus[onecold(Ytrain[:,ind])])*" vs "*string(mus[onecold(NN((Xtrain[:,ind])))])
+    p = plot_thetas(thetass,model,lattice,title=titre)
+    display_quiver!(p,thetass,WINDOW)
+
+
+# Testset
+Xtrain = zeros(L*L,Ntrain)
+Ytrain = onehotbatch(Y_shuffled[1:Ntrain], mus)
+
+
+
+
+
 
 
 ## Test in vivo and compare to
@@ -185,6 +382,22 @@ Ntrain = round(Int,0.8*length(Y))
     Dense(L*L,40, relu),
     Dense(40, length(possible_labels)),
     softmax)
+   #  Chain(
+   # # First convolution, operating upon a 28x28 image
+   # Conv((3, 3), imgsize[3]=>16, pad=(1,1), relu),
+   # MaxPool((2,2)),
+   #
+   # # Second convolution, operating upon a 14x14 image
+   # Conv((3, 3), 16=>32, pad=(1,1), relu),
+   # MaxPool((2,2)),
+   #
+   # # Third convolution, operating upon a 7x7 image
+   # Conv((3, 3), 32=>32, pad=(1,1), relu),
+   # MaxPool((2,2)),
+   #
+   # # Reshape 3d array into a 2d one using `Flux.flatten`, at this point it should be (3, 3, 32, N)
+   # flatten,
+   # Dense(prod(cnn_output_size), 10))
 
     opt = Adam()
     loss(X, y) = crossentropy(NN(X), y)

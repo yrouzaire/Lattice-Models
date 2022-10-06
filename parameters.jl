@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 20
+L = 15
 T = 0.2
 symmetry = "nematic"
 propulsion = "polar"
@@ -19,7 +19,7 @@ every = 1E2
 # Initialisation
 init = "single"
 q = 1/2
-r0 = Int(L/2)
+r0 = round(Int,L/2)
 type1defect = "counterclockwise"
 type2defect = "pair1"
 
