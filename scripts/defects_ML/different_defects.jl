@@ -102,19 +102,19 @@ end
 
 ## Augmentation of the base_dataset for Dense NN
 using Augmentor
-rot_angles = 0:90:270
+rot_angles = 0:45:270
     nb_noise = 100
     N = length(rot_angles)*nb_noise*length(mus)
-    X = NaN*zeros(Float32,L*L,N)
-    Y = NaN*zeros(Float32,N)
+    X = zeros(Float32,L*L,N)
+    Y = zeros(Float32,N)
     token = 1
     for i in each(mus)
         mu = mus[i]
         for rotation_angle in rot_angles
             for n in 1:nb_noise
                 ppl = Rotate(rotation_angle) |> Resize(L,L)
-                augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle))
-                # augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle)) + Float32(0.)*rand(Float32)*randn(Float32,L,L)
+                # augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle))
+                augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle)) + Float32(0.2)*rand(Float32)*randn(Float32,L,L)
                 X[:,token] = vec(augmented_thetas)
                 Y[token] = mu
                 token += 1
@@ -133,7 +133,7 @@ N = length(Y)
 permutation = randperm(N)
 X_shuffled = X[:,permutation]
 Y_shuffled = Y[permutation]
-Nepochs = 10
+Nepochs = 500
 losses = zeros(Nepochs)
 
 Ntrain = round(Int,0.8*N)
@@ -162,21 +162,25 @@ resultats = [abs(onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i])) ≤ 3 for i in
 resultats = [arclength(mus[onecold(NN(Xtrain[:,i]))],mus[onecold(Ytrain[:,i])],2pi) for i in 1:Ntrain]
     mean(resultats)
 
+plot!(losses,axis=:log,m=:circle)
+    # plot!(x->8x^(-0.2))
+    # plot!(x->8x^(-0.2))
+
 histogram([onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i]) for i in 1:Ntrain],normalize=true)
-plot(losses,axis=:log)
-    plot!(x->8x^(-0.2))
-    plot!(x->8x^(-0.2))
 
 
 # Visualize it
+model = XY(params)
+lattice = SquareLattice(L)
 ind = rand(1:Ntrain)
-# ind = rand(findall(x->x==false,resultats))
+ind = rand(findall(x->abs(x)>0.3,resultats))
     prediction = (onecold(NN((Xtrain[:,ind]))) == onecold(Ytrain[:,ind]))
     thetass = reshape(Xtrain[:,ind],2WINDOW + 1,2WINDOW + 1)
-    titre = string(mus[onecold(Ytrain[:,ind])])*" vs "*string(mus[onecold(NN((Xtrain[:,ind])))])
+    titre = string(mus[onecold(Ytrain[:,ind])])*" vs "*string(mus[onecold(NN((Xtrain[:,ind])))])*" truth vs pred"
     p = plot_thetas(thetass,model,lattice,title=titre)
     display_quiver!(p,thetass,WINDOW)
 
+update!(Xtrain[:,ind],model,lattice)
 
 # Testset
 Xtrain = zeros(L*L,Ntrain)
@@ -248,10 +252,10 @@ Ntrain = round(Int,0.8*N)
 resultats = abs.(onecold(NN(Xtrain[:,:,:,:])) - onecold(Ytrain)) .≤ 3
     mean(resultats)
 
-resultats = [arclength(mus[onecold(NN(Xtrain[:,:,1,i]))],mus[onecold(Ytrain[i])],2pi) for i in 1:Ntrain]
+resultats = arclength(mus[onecold(NN(Xtrain[:,:,1,i]))],mus[onecold(Ytrain[i])],2pi) for i in 1:Ntrain]
 mean(resultats)
 
-histogram([onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i]) for i in 1:Ntrain],normalize=true)
+histogram([onecold(NN(Xtrain)) - onecold(Ytrain) for i in 1:Ntrain],normalize=true)
 
 plot(losses,axis=:log)
     plot!(x->8x^(-0.2))
