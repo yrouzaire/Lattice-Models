@@ -87,7 +87,7 @@ rotangle = 45
 
 ## Create base data set (without augmentation, just the different µ)
 include(srcdir("../parameters.jl"));
-dµ = 0.1
+dµ = pi/16
 mus = Float32.(round.(collect(0:dµ:2pi),digits=2))
 base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
 for i in each(mus)
@@ -96,14 +96,16 @@ for i in each(mus)
     params_init["type1defect"] = mus[i];
     base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
 end
-
+# using JLD2
+# jldsave("data/for_ML/base_dataset_µP12.jld2";base_dataset,mus,dµ,WINDOW)
 # p=plot_thetas(base_dataset[:,:,rand(1:length(mus))],model,lattice)
     # display_quiver!(p,base_dataset[:,:,rand(1:length(mus))],WINDOW)
 
 ## Augmentation of the base_dataset for Dense NN
 using Augmentor
-rot_angles = 0:45:270
-    nb_noise = 100
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
+rot_angles = 0:15:285
+    nb_noise = 200
     N = length(rot_angles)*nb_noise*length(mus)
     X = zeros(Float32,L*L,N)
     Y = zeros(Float32,N)
@@ -133,7 +135,7 @@ N = length(Y)
 permutation = randperm(N)
 X_shuffled = X[:,permutation]
 Y_shuffled = Y[permutation]
-Nepochs = 500
+Nepochs = 1000
 losses = zeros(Nepochs)
 
 Ntrain = round(Int,0.8*N)
@@ -142,6 +144,7 @@ Ntrain = round(Int,0.8*N)
 
     NN = Chain(
     Dense(L*L,100, relu),
+    Dense(100, 100),
     Dense(100, length(mus)),
     softmax)
 
@@ -149,25 +152,25 @@ Ntrain = round(Int,0.8*N)
     loss(X, y) = crossentropy(NN(X), y)
     progress = () -> @show(loss(X, y)) # callback to show loss
 
-    for i in 1:Nepochs
+    z = @elapsed for i in 1:Nepochs
         println("ep = $i/$Nepochs")
         Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)#,cb = throttle(progress, 10))
         losses[i] = loss(Xtrain, Ytrain)
     end
 
+prinz(z)
 # Check whether the NN has at least learnt the train set
-resultats = [abs(onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i])) ≤ 3 for i in 1:Ntrain]
+resultats = [abs(onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i])) ≤ 2 for i in 1:Ntrain]
     mean(resultats)
 
 resultats = [arclength(mus[onecold(NN(Xtrain[:,i]))],mus[onecold(Ytrain[:,i])],2pi) for i in 1:Ntrain]
     mean(resultats)
 
-plot!(losses,axis=:log,m=:circle)
-    # plot!(x->8x^(-0.2))
+plot(losses,axis=:log,m=:circle)
+    plot!(x->30x^(-0.5))
     # plot!(x->8x^(-0.2))
 
 histogram([onecold(NN(Xtrain[:,i])) - onecold(Ytrain[:,i]) for i in 1:Ntrain],normalize=true)
-
 
 # Visualize it
 model = XY(params)
@@ -180,16 +183,52 @@ ind = rand(findall(x->abs(x)>0.3,resultats))
     p = plot_thetas(thetass,model,lattice,title=titre)
     display_quiver!(p,thetass,WINDOW)
 
-update!(Xtrain[:,ind],model,lattice)
-
 # Testset
-Xtrain = zeros(L*L,Ntrain)
-Ytrain = onehotbatch(Y_shuffled[1:Ntrain], mus)
+Ntest = N - Ntrain
+Xtest = X_shuffled[:,Ntrain+1:end]
+Ytest = onehotbatch(Y_shuffled[Ntrain+1:end], mus)
+
+resultats = [abs(onecold(NN(Xtest[:,i])) - onecold(Ytest[:,i])) ≤ 2 for i in 1:Ntest]
+    mean(resultats)
+
+resultats = [arclength(mus[onecold(NN(Xtest[:,i]))],mus[onecold(Ytest[:,i])],2pi) for i in 1:Ntest]
+    mean(resultats)
+
+histogram([onecold(NN(Xtest[:,i])) - onecold(Ytest[:,i]) for i in 1:Ntest],normalize=true)
+
+
+## Creation of actual systems for testing the NN efficiency on in vivo defects
+include(srcdir("../parameters.jl"));
+model = MovingXY(params) ; lattice = TriangularLattice(L)
+thetas = init_thetas(model,lattice,params_init=params_init)
+tmax = 3000
+update!(thetas,model,lattice,tmax=tmax)
+    plot_thetas(thetas,model,lattice,defects=false)
+delta = 100
+update!(thetas,model,lattice,delta)
+    plot_thetas(thetas,model,lattice,defects=false)
+number_defects(thetas,model,lattice)
+
+zoom_quiver(thetas,model,lattice,15,55)
+
+# jldsave("data/for_ML/thetas/L$(L)_$(symmetry)Moving_rho$(rho)_A$(A)_tmax$(tmax)_n$(number_defects(thetas,model,lattice)).jld2";thetas)
+def = spot_defects(thetas,model,lattice)
+ind += 1
+    i,j = def[1][ind][1:2]
+    zoom_quiver(thetas,model,lattice,i,j)
+
+
+
+jldsave
+## Test in vivo
+load("data/for_ML/")
+
 
 ## Augmentation of the base_dataset for CNN
 using Augmentor
-rot_angles = 0:90:270
-    nb_noise = 100
+model = XY(params) ; lattice = TriangularLattice(L,periodic=false)
+rot_angles = 0:15:270
+    nb_noise = 200
     N = length(rot_angles)*nb_noise*length(mus)
     X = zeros(Float32,L,L,1,N)
     Y = zeros(Float32,N)
@@ -199,8 +238,8 @@ rot_angles = 0:90:270
         for rotation_angle in rot_angles
             for n in 1:nb_noise
                 ppl = Rotate(rotation_angle) |> Resize(L,L)
-                augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle))
-                # augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle)) + Float32(0.)*rand(Float32)*randn(Float32,L,L)
+                augmented_thetas = augment(base_dataset[:,:,i],ppl) .+ Float32(deg2rad(rotation_angle)) + Float32(0.2)*rand(Float32)*randn(Float32,L,L)
+                # relax!(augmented_thetas,model,0.5)
                 X[:,:,1,token] = augmented_thetas
                 Y[token] = mu
                 token += 1
@@ -208,6 +247,10 @@ rot_angles = 0:90:270
         end
     end
 X
+ind = rand(1:size(X,4))
+    p=plot_thetas(X[:,:,1,ind],model,lattice,defects=false)
+    display_quiver!(p,X[:,:,1,ind],WINDOW)
+
 Y
 ## Train Convolutional Neural Network
 using JLD2,Parameters, Flux, Random
@@ -217,7 +260,7 @@ N = length(Y)
 permutation = randperm(N)
 X_shuffled = X[:,:,:,permutation]
 Y_shuffled = Y[permutation]
-Nepochs = 30
+Nepochs = 10
 losses = zeros(Nepochs)
 
 Ntrain = round(Int,0.8*N)
@@ -240,26 +283,27 @@ Ntrain = round(Int,0.8*N)
     loss(X, y) = crossentropy(NN(X), y)
     progress = () -> @show(loss(X, y)) # callback to show loss
 
-    for i in 1:Nepochs
+    z = @elapsed for i in 1:Nepochs
         println("ep = $i/$Nepochs")
         Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)#,cb = throttle(progress, 10))
         losses[i] = loss(Xtrain, Ytrain)
     end
+    prinz(z)
 
-
-
+prinz(100z)
 # Check whether the NN has at least learnt the train set
-resultats = abs.(onecold(NN(Xtrain[:,:,:,:])) - onecold(Ytrain)) .≤ 3
+resultats = abs.(onecold(NN(Xtrain[:,:,:,:])) - onecold(Ytrain)) .≤ 2
     mean(resultats)
 
-resultats = arclength(mus[onecold(NN(Xtrain[:,:,1,i]))],mus[onecold(Ytrain[i])],2pi) for i in 1:Ntrain]
-mean(resultats)
 
-histogram([onecold(NN(Xtrain)) - onecold(Ytrain) for i in 1:Ntrain],normalize=true)
+resultats = arclength.(mus[onecold(NN(Xtrain))],mus[onecold(Ytrain)],2pi)
+    mean(resultats)
+
+histogram(onecold(NN(Xtrain)) - onecold(Ytrain),normalize=true)
 
 plot(losses,axis=:log)
     plot!(x->8x^(-0.2))
-    plot!(x->8x^(-0.2))
+    plot!(x->30x^(-0.45))
 
 # Visualize it
 ind = rand(1:Ntrain)
@@ -272,13 +316,13 @@ ind = rand(1:Ntrain)
 
 
 # Testset
-Xtrain = zeros(L*L,Ntrain)
-Ytrain = onehotbatch(Y_shuffled[1:Ntrain], mus)
+Xtest = X_shuffled[:,:,:,Ntrain+1:end]
+Ytest = onehotbatch(Y_shuffled[Ntrain+1:end], mus)
 
-
-
-
-
+resultats = abs.(onecold(NN(Xtest)) - onecold(Ytest)) .≤ 3
+    mean(resultats)
+histogram(onecold(NN(Xtest)) - onecold(Ytest),normalize=true)
+mus[onecold(NN(reshape(rand(15,15),(15,15,1,1))))...]
 
 
 ## Test in vivo and compare to
