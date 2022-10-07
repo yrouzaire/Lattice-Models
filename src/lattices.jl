@@ -53,17 +53,22 @@ function distance_matrix(new,old,lattice::AbstractLattice)
     return distance_matrix
 end
 
+#= Pour les offsets, on commence par le voisin du bas, dans le référentiel
+de la matrice. La raison: parce qu'apres un heatmap(thetas'), equivalent à
+une rotation de 90° antihoraire, le premier element du vecteur "offset" sera
+à droite, cohérent avec l'intuition qu'on s'en fait pour \theta = 0
+(qui sera donc projeté sur le premier element de offsets) =#
 function offsets(lattice::TriangularLattice,even::Bool)::Vector{Tuple{Int,Int}}
-    if even return [(0,1) , (-1,1) , (-1,0) , (0,-1)  , (1,0)  , (1,1)]
-    else    return [(0,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1) , (1,0)]
+    if even return [(1,0) , (1,1) , (0,1)  , (-1,0)  , (-1,1) , (0,-1) ]
+    else    return [(1,0) , (0,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1) ]
     end
 end
 
 function offsets(lattice::SquareLattice,even::Bool)::Vector{Tuple{Int,Int}}
     if lattice.metric in ["manhattan","euclidian"]
-        return [(0,1) , (-1,0) , (0,-1) , (1,0)]
+        return [(1,0), (0,1) , (-1,0) , (0,-1) ]
     elseif lattice.metric =="chebychev"
-        return [(0,1) , (-1,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1), (1,0) , (1,1)]
+        return [(1,0) , (1,1) , (0,1) , (-1,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1)]
     else error("Unknown metric !")
     end
 end
