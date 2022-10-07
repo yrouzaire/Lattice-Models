@@ -4,9 +4,9 @@ T = 0.1
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.
-A = 0.5
+A = 10
 vision = 5π/3
-rho = 0.5
+rho = 1
 algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
@@ -17,8 +17,8 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "hightemp"
-q = 1/2
+init = "single"
+q = -1
 r0 = round(Int,L/2)
 type1defect = "counterclockwise"
 type2defect = "pair1"

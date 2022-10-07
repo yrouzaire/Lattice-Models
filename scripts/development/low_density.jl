@@ -10,8 +10,8 @@ thetas = init_thetas(model,lattice,params_init=params_init)
 tmax = 1000
 update!(thetas,model,lattice,tmax=tmax)
     plot_thetas(thetas,model,lattice,defects=false)
-delta = 250
+delta = 50
 update!(thetas,model,lattice,delta)
     plot_thetas(thetas,model,lattice,defects=false)
-
+thetas *= 0
 zoom_quiver(thetas,model,lattice,165,85)
