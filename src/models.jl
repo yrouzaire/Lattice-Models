@@ -64,8 +64,8 @@ function ForcedXY(params)
     return ForcedXY{float_type}(T,Var,symmetry,omegas,dt,zero(float_type),rho)
 end
 
-## ------------------------- Moving XY -------------------------
-mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
+## --------------------- Self Propelled Particles (SPP) ---------------------
+mutable struct SPP{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     A::AbstractFloat
     symmetry::String
@@ -74,11 +74,11 @@ mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     rho::AbstractFloat
     algo::String
 end
-function MovingXY(params)
+function SPP(params)
     @unpack T,A,rho,symmetry,algo,propulsion,float_type = params
     T,A,rho = convert.(float_type,(T,A,rho))
 
-    return MovingXY{float_type}(T,A,symmetry,propulsion,zero(float_type),rho,algo)
+    return SPP{float_type}(T,A,symmetry,propulsion,zero(float_type),rho,algo)
 end
 
 

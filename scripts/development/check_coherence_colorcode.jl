@@ -30,7 +30,7 @@ L = 10
     propulsion = "polar"
     A = 10
     rho = 5/L^2
-    algo = "A" # rule for collision!() for model = MovingXY
+    algo = "A" # rule for collision!() for model = SPP
     float_type = Float32
     init = "lowtemp"
     q = 1/2
@@ -44,7 +44,7 @@ L = 10
     params_init = Dict("init"=>init,"q"=>q,"r0"=>r0,"type1defect"=>type1defect,"type2defect"=>type2defect)
     params = merge(params_num,params_phys,params_init)
 
-model = MovingXY(params) # T,A,symmetry,propulsion,t,rho,algo,width_proposal
+model = SPP(params) # T,A,symmetry,propulsion,t,rho,algo,width_proposal
 lattice = SquareLattice(L)
 thetas = 0*init_thetas(model,lattice,params_init=params_init)
 thetas .+= pi/2

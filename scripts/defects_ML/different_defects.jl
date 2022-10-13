@@ -199,9 +199,9 @@ histogram([onecold(NN(Xtest[:,i])) - onecold(Ytest[:,i]) for i in 1:Ntest],norma
 
 ## Creation of actual systems for testing the NN efficiency on in vivo defects
 include(srcdir("../parameters.jl"));
-model = MovingXY(params) ; lattice = TriangularLattice(L)
+model = SPP(params) ; lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
-tmax = 3000
+tmax = 2000
 update!(thetas,model,lattice,tmax=tmax)
     plot_thetas(thetas,model,lattice,defects=false)
 delta = 100
@@ -209,7 +209,8 @@ update!(thetas,model,lattice,delta)
     plot_thetas(thetas,model,lattice,defects=false)
 number_defects(thetas,model,lattice)
 
-zoom_quiver(thetas,model,lattice,15,55)
+zoom_quiver(thetas,model,lattice,20,95)
+plot_thetas(thetas,model,lattice,defects=true)
 
 # jldsave("data/for_ML/thetas/L$(L)_$(symmetry)Moving_rho$(rho)_A$(A)_tmax$(tmax)_n$(number_defects(thetas,model,lattice)).jld2";thetas)
 def = spot_defects(thetas,model,lattice)

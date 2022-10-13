@@ -7,7 +7,7 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 ## Movies
 include(srcdir("../parameters.jl"));
 
-model = MovingXY(params)
+model = SPP(params)
 lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice)
@@ -26,7 +26,7 @@ global const NN_negative = load("NN_negative_12_defects_N1000_W7.jld2","NN")
 global const possible_negative_defects = load("NN_negative_12_defects_N1000_W7.jld2","possible_defects")
 
 include(srcdir("../parameters.jl"));
-    model = MovingXY(params)
+    model = SPP(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
 

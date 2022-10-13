@@ -247,7 +247,7 @@ function update!(thetas::Matrix{<:FT},model::Union{ForcedXY{FT},PropagationForce
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::SPP{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     L = lattice.L
     order_trials = StatsBase.shuffle(1:L^2)
     for n in order_trials
@@ -295,7 +295,7 @@ end
 
 ## ------------------------ Other Evolution Methods ------------------------
 
-function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
+function collision!(thetas::Matrix{<:FT},model::SPP{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
     # @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
     width_proposal = 2sqrt(model.T)
     proposal = width_proposal*randn(FT)+theta1
@@ -354,7 +354,6 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
     else
         # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
         # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
-        # angle = mod(rand(Cauchy(theta-π/2,one(T)/A)),2π) # Wrapped Cauchy, contractile activity
         angle = mod(rand(Cauchy(theta,one(T)/A)),2π) # Wrapped Cauchy, contractile activity
 
         #= Important Note :
