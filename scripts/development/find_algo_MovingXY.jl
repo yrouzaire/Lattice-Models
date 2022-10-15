@@ -62,54 +62,54 @@ lattice = TriangularLattice(L)
 saving_times = vcat(0:100:40000) ; transients = Inf #saving_times[end]/3
 
 # params["rho"] = 1
-#     model = MonteCarloXY(params)
+#     model = MCXY(params)
 #     thetas = init_thetas(lattice,params=params)
 #     z = @elapsed anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
 #     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MCXY_rho1.mp4")
 #     prinz(z)
 #
 # params["rho"] = 0.95
-#     model = MonteCarloXY(params)
+#     model = MCXY(params)
 #     thetas = init_thetas(lattice,params=params)
 #     anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
 #     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MCXY_rho0.95.mp4")
 
 params["rho"] = 1
     params["A"] = 0.5
-    model = SPP(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     z = @elapsed anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
     prinz(z)
 
     params["A"] = 0
-    model = SPP(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
 
 
     params["A"] = 1
-    model = SPP(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
 
 params["rho"] = 0.95
     params["A"] = 0
-    model = SPP(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
 
     params["A"] = 0.5
-    model = SPP(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     anim = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"]).mp4")
 
 params["A"] = 2
-    model = SPP(params)
+    model = MovingXY(params)
     thetas = init_thetas(lattice,params=params)
     z = @elapsed anim = movies(thetas,model,lattice,defects=false,saving_times=saving_times,transients=transients)
     mp4(anim,"D:/Documents/Research/projects/LatticeModels/films/MovXY_rho$(params["rho"])_A$(params["A"])_.mp4",fps=15)

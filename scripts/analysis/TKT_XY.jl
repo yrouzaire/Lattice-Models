@@ -63,7 +63,7 @@ p=plot(xlabel="r",ylabel="C(r,∞)",legend=:bottomleft,axis=:log,size=(450,400))
 
 ## Problem : T > Tkt, still kind of ordered (Answer : TKT = 1.47 for TriangularLattice )
 include(srcdir("../parameters.jl"));
-model = SPP(params)
+model = MovingXY(params)
 lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
 # plot()
