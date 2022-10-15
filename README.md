@@ -114,7 +114,7 @@ Both are subtypes of `AbstractXYModel`, which itself is a subtype of `AbstractMo
 ## core_methods.jl
 Basically implements the temporal evolution of the system, making extensive use of multiple dispatch.
 The `get_neighbours` method is central, and dynamically adapts to the lattice type.
-The `update!` method is defined for every single model.
+The `update!` method is defined for every single model. 
 
 Note: `update!(thetas,model,lattice)` updates each spin once. This is by definition what I define as *one* timestep $dt$.
 
