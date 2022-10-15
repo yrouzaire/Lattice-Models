@@ -9,7 +9,7 @@ function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
     #= This function returns the signed arclength (in radians) on the unit trigonometric circle .
     Clockwise        >> sign -
     Counterclockwise >> sign +
-    WARNING : Note that the inputs thetas need to lie within [0,π] or [0,2π], depending on the symmetry of the model =#
+    WARNING : Note that the inputs thetas need to lie within [0,π] or [0,2π], depending on the symmetry "symm" of the model =#
     dtheta = theta2 - theta1
     dtheta_abs = abs(theta2 - theta1)
 

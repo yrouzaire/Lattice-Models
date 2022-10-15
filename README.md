@@ -51,7 +51,7 @@ Here we comment the most important methods in each of these files.
 Contains physical, numerical and initialisation parameters.
 ### Physical Parameters
   - $L$ is the (integer) size of the 2D $L\times L$ lattice. It thus contains $L^2$ agents/spins/particles/rotors (all synonyms),
-  such that the runtime is of minimum complexity $_mathcal{O}(L^2)$.
+  such that the runtime is of minimum complexity $\mathcal{O}(L^2)$.
   - $T\ge 0$ is the temperature of the bath related to the angle diffusion.
   - `symmetry` is the symmetry of the interaction and can be either "nematic" or "polar".
   Polar means that 2 interacting particles $i$ and $j$ want to point in the same direction, and the force $\propto \sin(\theta_j - \theta_i)$
@@ -59,10 +59,10 @@ Contains physical, numerical and initialisation parameters.
   - `propulsion` is the symmetry of propulsion of Self Propelled Particles (SPP model) and can only be "polar" for now. Polar propulsion: self-propelled rods. Nematic propulsion (reverses from times to times): active nematics
   - `Var` $\ge 0$ is the variance of the distribution of intrinsic/internal frequency for the model ForcedXY.
   - $A\ge 0$ is the value of the coupling between orientation and propulsion. $A = 0$: no coupling, $A \to \infty$: high coupling, i.e you are sure you move in the direction of your arrow (if polar propulsion)
-  - $0 <\rho \le 1$ is the density. If $\rho 0.9$, 10% of the sites will be empty.
+  - $0 <\rho \le 1$ is the density. If $\rho = 0.9$, 10% of the sites will be empty.
   - `algo` is used independently (but never at the same time) for two cases.
     - If the model is of type XY, `algo = "Langevin"` will make its temporal evolution follow a Langevin dynamics.
-    - If the model is of type XY, `algo = "MonteCarlo"` (alias `MC`)  will make its temporal evolution follow a Metropolis MonteCarlo dynamics.
+    - If the model is of type XY, `algo = "MonteCarlo"` (alias `"MC"`)  will make its temporal evolution follow a Metropolis MonteCarlo dynamics.
     - If the model is `SPP`, set `algo = "A"` (only one functional)
 
 ### Numerical Parameters
@@ -82,14 +82,24 @@ Contains physical, numerical and initialisation parameters.
 
 ## lattice.jl
 
+
 ## models.jl
 ## init_visu.jl
 ## core_methods.jl
+Basically implements the temporal evolution of the system, making extensive use of multiple dispatch.
+The `get_neighbours` method is central, and dynamically adapts to the lattice type.
+The `update!` method is defined for every single model.
 
 # Other files
 ## auxiliary.jl
+Contains useful functions unrelated to the specifics of `LatticeModels`
 ## measurements.jl
+Contains functions to measure physical quantities in the system: polar/nematic order (=magnetisation), correlation functions and correlation lengths etc
 
 # About topological defects (detection, tracking in-vivo)
 The code is located in the defects_methods.jl file.
 I will for now only comment on the first 3 methods, used to detect defects.
+  - `arclength` returns the (signed) distance, in radians (hence the name) between two angles.
+  -`get_vorticity` returns the vorticity of a given site $i,j$ on the lattice, following the standard procedure (well explained in Fig. 2.34 of *Advanced Statistical Physics: 2. Phase Transitions* of Leticia Cugliandolo)
+  - `spot_defects` scans the system site by site and applies `get_vorticity` so localize defects. Often, the algo detects 2/3 (also depends on the lattice type) numerical defects for a single physical defect.
+  This issue seems to be only dealt with *a posteriori*, this is what the routine `merge_duplicates` does. I won't explain the `find_types` routine for now. 
