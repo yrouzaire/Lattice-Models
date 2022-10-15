@@ -27,9 +27,9 @@ This code aims at simulating the temporal evolution of a 2D vector-field,
 parametrized in space by a scalar $\theta(x,y) \in [0,2\pi[$.
 
 Throughout the entire project, we discretize this $\theta$ field onto a discrete 2D lattice.
-Pros: the numerical simulations are much faster and easily controlled, in particular
+  - Pros: the numerical simulations are much faster and easily controlled, in particular
 the topological defect detection/tracking.
-Cons: discrete lattices tend to induce undesired discretization artifacts, especially the
+  - Cons: discrete lattices tend to induce undesired discretization artifacts, especially the
 usual `SquareLattice`.
 
 
@@ -46,9 +46,12 @@ Each physical model will thus be instantiated and then run following this proced
     - Until a given time $t$: update!(thetas,model,lattice,tmax=$t$)
 
 # Important files to get started
+
 Here we comment the most important methods in each of these files.
+
 ## parameters.jl
 Contains physical, numerical and initialisation parameters.
+
 ### Physical Parameters
   - $L$ is the (integer) size of the 2D $L\times L$ lattice. It thus contains $L^2$ agents/spins/particles/rotors (all synonyms),
   such that the runtime is of minimum complexity $\mathcal{O}(L^2)$.
@@ -81,25 +84,48 @@ Contains physical, numerical and initialisation parameters.
     - "2pair" or "2pairs" for TWO manually created vortex pairs (in cross shape).
 
 ## lattice.jl
+All the methods to create and handle $L\times L$ 2D lattices: `SquareLattice` (4 nearest neighbours) and `TriangularLattice` (6 nearest neighbours) are implemented.
+Motivation for implementing lattices different from the standard square one:
+  - Discrete lattices may induce artifacts. The `TriangularLattice` is the closer to a continuum description in the thermodynamic limit $N\to\infty$.
+  - Geometric frustration is usually observed on triangular or honeycomb lattices.
 
+### Attributes
+  - $L$ (integer) the linear size of the lattice. For now, only "$L_x = L_y$" lattices are supported.
+  - `periodic=true` stands for Periodic Boundary Conditions. `periodic=false` stands for Free Boundary Conditions.
+  - `single=true` is unused for now, don't care about it.
+
+### Implementation
+Nothing exotic to say about the `SquareLattice`, the implementation is straightforward.
+On the other hand, he TriangularLattice is somewhat more technical, so that it could be represented by a usual Matrix.
+The trick is to modify the neighbourhood depending on the parity of the row of the considered site, cf. `get_neighbours(thetas,model,lattice::TriangularLattice,i,j)` `core_methods.jl`
 
 ## models.jl
+The file where all the models are defined.
+Each instantiable model (i.e. `ForcedXY`) is a subtype of `AbstractModel`.
+Note on the XY model, the base model from which I depart from equilibrium:
+Two dynamics are available:
+  - the overdamped Langevin dynamics (`LangevinXY`), the default.
+  - the Metropolis Monte Carlo dynamics (`MonteCarloXY`)
+You choose one or the other specifying `algo = "MonteCarlo"` or `algo = "Langevin"` in *parameters.jl* and then running `XY(params)`,
+or by specifically running `LangevinXY(params)` / `MonteCarloXY(params)`
+
 ## init_visu.jl
+
 ## core_methods.jl
 Basically implements the temporal evolution of the system, making extensive use of multiple dispatch.
 The `get_neighbours` method is central, and dynamically adapts to the lattice type.
 The `update!` method is defined for every single model.
 
+Note: `update!(thetas,model,lattice)` updates each spin once. This is by definition what I define as *one* timestep $dt$.
+
 # Other files
-## auxiliary.jl
-Contains useful functions unrelated to the specifics of `LatticeModels`
-## measurements.jl
-Contains functions to measure physical quantities in the system: polar/nematic order (=magnetisation), correlation functions and correlation lengths etc
+`auxiliary.jl` contains useful functions unrelated to the specifics of `LatticeModels`
+`measurements.jl` contains functions to measure physical quantities in the system: polar/nematic order (=magnetisation), correlation functions and correlation lengths etc
 
 # About topological defects (detection, tracking in-vivo)
 The code is located in the defects_methods.jl file.
 I will for now only comment on the first 3 methods, used to detect defects.
   - `arclength` returns the (signed) distance, in radians (hence the name) between two angles.
-  -`get_vorticity` returns the vorticity of a given site $i,j$ on the lattice, following the standard procedure (well explained in Fig. 2.34 of *Advanced Statistical Physics: 2. Phase Transitions* of Leticia Cugliandolo)
+  - `get_vorticity` returns the vorticity of a given site $i,j$ on the lattice, following the standard procedure (well explained in Fig. 2.34 of *Advanced Statistical Physics: 2. Phase Transitions* of Leticia Cugliandolo)
   - `spot_defects` scans the system site by site and applies `get_vorticity` so localize defects. Often, the algo detects 2/3 (also depends on the lattice type) numerical defects for a single physical defect.
-  This issue seems to be only dealt with *a posteriori*, this is what the routine `merge_duplicates` does. I won't explain the `find_types` routine for now. 
+  This issue seems to be only dealt with *a posteriori*, this is what the routine `merge_duplicates` does. I won't explain the `find_types` routine for now.
