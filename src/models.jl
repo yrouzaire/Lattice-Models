@@ -5,12 +5,16 @@ abstract type AbstractPropagationModel{AbstractFloat} <: AbstractModel{AbstractF
 
 ## ---------------------------- Classical XY Model ----------------------------
 abstract type AbstractXYModel{AbstractFloat} <: AbstractModel{AbstractFloat} end
-function XY(params)
+function XY(params) # by default, return LangevinXY
     @unpack T,symmetry,dt,float_type,rho,algo = params
-    if algo == "Langevin"
-        return LangevinXY{float_type}(T,symmetry,dt,zero(float_type),rho)
-    elseif algo in ["MC","MonteCarlo"]
+    if algo in ["MC","MonteCarlo"]
         return MonteCarloXY{float_type}(T,symmetry,zero(float_type),rho)
+    elseif algo == "Langevin"
+        return LangevinXY{float_type}(T,symmetry,dt,zero(float_type),rho)
+    else
+        println()
+        println("WARNING ! Unknown algo provided for XY model: return XY with Langevin dynamics.")
+        return LangevinXY{float_type}(T,symmetry,dt,zero(float_type),rho)
     end
 end
 
