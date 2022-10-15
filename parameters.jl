@@ -7,7 +7,7 @@ Var = 0.
 A = 2
 vision = 5π/3
 rho = 0.95
-algo = "A" # rule for collision!() for model = SPP
+algo = "A" # rule for collision!() for model = SPP : algo = "A", or type of XY model : algo = "MonteCarlo"/"MC" or"Langevin
 
 # Numerical Parameters
 dt = 1E-2

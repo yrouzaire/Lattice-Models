@@ -6,11 +6,10 @@ using Hungarian
 import Random.shuffle
 
 function arclength(theta1::T,theta2::T,symm)::T where T<:AbstractFloat
-    #= This function returns the signed arclength on the unit trigonometric circle .
+    #= This function returns the signed arclength (in radians) on the unit trigonometric circle .
     Clockwise        >> sign -
     Counterclockwise >> sign +
-    WARNING
-    Note that the inputs thetas need to lie within [0,π] or [0,2π], depending on the symmetry of the model =#
+    WARNING : Note that the inputs thetas need to lie within [0,π] or [0,2π], depending on the symmetry of the model =#
     dtheta = theta2 - theta1
     dtheta_abs = abs(theta2 - theta1)
 
@@ -26,13 +25,17 @@ end
 function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,i::Int,j::Int)::T where T<:AbstractFloat
     #= Note : thetasmod = mod.(thetas,symm*pi)
         By convention, for a SquareLattice, the neighbours have the following ordering
-           2
-        3  x  1
-           4
+           2                            3
+        3  x  1 when plotted and     4  x  2  in the matrix form
+           4                            1
        By convention, for a TriangularLattice, the neighbours have the following ordering
-          3  2
-        4  x  1
-          5  6
+          3  2                         4  3
+        4  x  1 when plotted and     5  x  2  in the matrix form
+          5  6                         6  1
+
+        Indeed, recall that the visualisation procedure operates a 90° counterclockwise rotation.
+        We thus anticipate the rotation already in the matrix form, so that the first neighbour
+        is on the right, following mathematical use (associated to angle θ = 0).
         =#
     if     model.symmetry == "nematic" symm = T(pi)
     elseif model.symmetry == "polar"   symm = T(2pi)
