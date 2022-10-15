@@ -21,7 +21,7 @@ possible_defects = ["source","sink","clockwise","counterclockwise"]
 include(srcdir("../parameters.jl"));
 
 params["symmetry"] = "polar"
-model = SPP(params)
+model = MovingXY(params)
 lattice = TriangularLattice(L)
 params_init["init"] = "single"
 params_init["q"] = 1
@@ -43,7 +43,7 @@ zoom_quiver(thetas,model,lattice,110,110,15)
 include(srcdir("../parameters.jl"));
 
 params["symmetry"] = "nematic"
-model = SPP(params)
+model = MovingXY(params)
 lattice = TriangularLattice(L)
 params_init["init"] = "pair"
 params_init["q"] = 1/2
