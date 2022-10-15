@@ -47,27 +47,31 @@ function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice
     return float_type.(thetas)
 end
 
-function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type)
+function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="random")
+
+    condition0 = (type == "random") || (isa(type,Number))
     condition1 = (q > 0 && type in ["source","sink","clockwise","counterclockwise"])
-    condition2 = (q < 0 && type in ["split","join","convergent","divergent","threefold1","threefold2"])
-    @assert condition1 || condition2
+    condition2 = (q < 0 && type in ["split","join","convergent","divergent","threefold1","threefold2","31","32"])
+    @assert condition0 || condition1 || condition2
 
     thetas = zeros(L,L)
-    for y in 1:L , x in 1:L
-        # q > 0
-        if     type == "counterclockwise"     thetas[x,y] = q * atan(y-y0,x-x0)
-        elseif type == "clockwise"            thetas[x,y] = q * atan(y-y0,x-x0) + pi
-        elseif type == "sink"                 thetas[x,y] = q * atan(y-y0,x-x0) + pi/2
-        elseif type == "source"               thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
-        # elseif type == "source"               thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
-        # q = -1/2 (when q = -1, I think they are all equivalent)
-        elseif type in ["threefold2"]          thetas[x,y] = q * atan(y-y0,x-x0)
-        elseif type in ["threefold1"]          thetas[x,y] = q * atan(y-y0,x-x0) + pi
-        elseif type in ["divergent" ,"split"]     thetas[x,y] = q * atan(y-y0,x-x0) + pi/2
-        elseif type in ["convergent","join"]      thetas[x,y] = q * atan(y-y0,x-x0) - pi/2
+    for y in 1:L , x in 1:L thetas[x,y] = q * atan(y-y0,x-x0) end
+    if     isa(type,Number) offset = type
+    elseif isa(type,String)
+        if     type == "random"                 offset = 2π*rand() - π
+            # q > 0
+        elseif type == "source"                 offset = 0
+        elseif type == "sink"                   offset = π
+        elseif type == "counterclockwise"       offset = π/2
+        elseif type == "clockwise"              offset = -π/2
+            # q = -1/2 (when q = -1, I think they are all equivalent)
+        elseif type in ["convergent","join"]    offset = 0
+        elseif type in ["divergent" ,"split"]   offset = π
+        elseif type in ["threefold1","31"]      offset = π/2
+        elseif type in ["threefold2","32"]      offset = -π/2
         end
     end
-    return thetas
+    return thetas .+ offset
 end
 
 function create_pair_vortices(L;r0=Int(L/2),q,type)
@@ -75,16 +79,19 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
     otherwise the defaults will annihilate with relaxation =#
     @assert r0 ≤ 0.5L  "Error : r0 > L/2. "
     @assert iseven(r0) "Error : r0 has to be even. "
-
+    # println()
+    # println(type)
+    # println(typeof(type))
     if isa(type,String)
         # type in ["shortname","what you actually see (after interferences)"] , type_pos,type_neg ="what you have to put in (before interferences)"
-        if     type in ["pair1","sink_join"] type_pos,type_neg = "source","threefold1"
-        elseif type in ["pair2","source_split"]    type_pos,type_neg = "source","threefold2"
-        elseif type in ["pair3","cw_32"]        type_pos,type_neg = "source","join"
-        elseif type in ["pair4","ccw_31"]       type_pos,type_neg = "source","split"
+        if     type in ["random"]                type_pos,type_neg = "random","random"
+        elseif type in ["pair1","source_split"]  type_pos,type_neg = "source","join"
+        elseif type in ["pair2","sink_join"]     type_pos,type_neg = "source","split"
+        elseif type in ["pair3","clock_31"]      type_pos,type_neg = "source","threefold2"
+        elseif type in ["pair4","cclock_32"]     type_pos,type_neg = "source","threefold1"
         else error("Type Unknown!")
         end
-    elseif isa(type,Vector{String})
+    elseif isa(type,Vector{String}) || isa(type,Tuple{Number,Number}) || isa(type,Vector{<:Number})
         type_pos , type_neg = type
     else error("Type Unknown!")
     end
@@ -138,7 +145,6 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
     elseif model.symmetry == "polar"   modd = 2pi
     end
     p = heatmap(mod.(thetas',modd),c=cols,clims=(0,modd),size=size,
-    # p = heatmap(mod.(rotate_clockwise90(thetas),modd),c=cols,clims=(0,modd),size=size,
         colorbar=colorbar,colorbartitle="θ",title=title,aspect_ratio=1)
 
     if defects
@@ -168,8 +174,7 @@ function display_quiver!(p,thetas_zoom,window)
     p
     for j in 1:2window+1
         quiver!(j*ones(2window+1),collect(1:2window+1),
-        # quiver=(sin.(thetas_zoom[j,:]),-cos.(thetas_zoom[j,:])), # original
-        quiver=(-sin.(thetas_zoom[j,:]),cos.(thetas_zoom[j,:])),
+        quiver=(cos.(thetas_zoom[j,:]),sin.(thetas_zoom[j,:])),
         c=:white,lw=0.8)
     end
     return p
@@ -178,10 +183,10 @@ end
 # xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 
-function zoom_quiver(thetas,model,lattice::Abstract2DLattice,i,j,window=7;defects=false)
+function zoom_quiver(thetas,model,lattice::Abstract2DLattice,i,j,window=WINDOW;defects=false)
     L = lattice.L
-    no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,window)
 
+    no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,window)
     if no_problem_go_ahead
         p=plot_thetas(thetas_zoom,model,lattice,defects=defects)
         display_quiver!(p,thetas_zoom,window)

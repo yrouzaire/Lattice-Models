@@ -24,7 +24,7 @@ plot_thetas(thetas,model,lattice,defects=true)
 
 ## Preconditionning of the theta field
 include(srcdir("../parameters.jl"));
-    model = MovingXY(params)
+    model = SPP(params)
     lattice = SquareLattice(L,periodic=true,single=true)
     thetas = init_thetas(lattice,params=params)
     # update!(thetas,model,lattice,100)

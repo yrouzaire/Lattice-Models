@@ -21,7 +21,7 @@ z = @elapsed for i in each(Ts) , j in each(As) , k in each(rhos)
     params["A"] = As[j]
     params["rho"] = rhos[k]
 
-    model   = MovingXY(params)
+    model   = SPP(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
     thetas  = init_thetas(model,lattice,params_init=params_init)
 
@@ -48,6 +48,6 @@ z = @elapsed for i in each(Ts) , j in each(As) , k in each(rhos)
 end
 prinz(z)
 
-comments = "Extensive simulations, scanning over A (T and rho fixed). Model $(symmetry)MovingXY, on Triangular Lattice"
+comments = "Extensive simulations, scanning over A (T and rho fixed). Model $(symmetry)SPP, on Triangular Lattice"
 @save "data/testcluster_r$(real).jld2" dfts thetas_save polar_order nematic_order C xi n times_log times_lin params runtime=z comments
 # @save "data/$(symmetry)MovXY_r$(real).jld2" dfts thetas_save polar_order nematic_order C xi n times_log times_lin params runtime=z comments
