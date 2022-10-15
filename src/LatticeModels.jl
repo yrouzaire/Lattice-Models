@@ -5,7 +5,7 @@ include("init_visu.jl")
 include("core_methods.jl")
 include("defects_methods.jl")
 
-include("misc.jl")
+include("auxiliary.jl")
 include("measurements.jl")
 
 using BenchmarkTools
