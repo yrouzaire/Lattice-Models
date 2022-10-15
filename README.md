@@ -77,8 +77,8 @@ Contains physical, numerical and initialisation parameters.
 
 ### Initialisation Parameters
   - `init` is the type of initialisation. Can be:
-    - "ordered" or "lowtemp" for an ordered initial configuration ($T=0$).
-    - "disordered" or "hightemp" for a disordered initial configuration ($T=\infty$).
+    - "ordered" or "lowtemp" for an ordered initial configuration ( $T=0$ ).
+    - "disordered" or "hightemp" for a disordered initial configuration ( $T=\infty$ ).
     - "single" or "isolated" for a manually created vortex (in this case, the charge $q$ and its type `type1defect` should be provided)
     - "pair" for a manually created vortex pair (in this case, the absolute value of the charge $q$, the interdefect separation `r0` (integer) and its type `type2defect` should be provided)
     - "2pair" or "2pairs" for TWO manually created vortex pairs (in cross shape).
@@ -90,7 +90,7 @@ Motivation for implementing lattices different from the standard square one:
   - Geometric frustration is usually observed on triangular or honeycomb lattices.
 
 ### Attributes
-  - $L$ (integer) the linear size of the lattice. For now, only "$L_x = L_y$" lattices are supported.
+  - $L$ (integer) the linear size of the lattice. For now, only $L_x = L_y$ lattices are supported.
   - `periodic=true` stands for Periodic Boundary Conditions. `periodic=false` stands for Free Boundary Conditions.
   - `single=true` is unused for now, don't care about it.
 
@@ -114,7 +114,7 @@ Both are subtypes of `AbstractXYModel`, which itself is a subtype of `AbstractMo
 ## core_methods.jl
 Basically implements the temporal evolution of the system, making extensive use of multiple dispatch.
 The `get_neighbours` method is central, and dynamically adapts to the lattice type.
-The `update!` method is defined for every single model. 
+The `update!` method is defined for every single model.
 
 Note: `update!(thetas,model,lattice)` updates each spin once. This is by definition what I define as *one* timestep $dt$.
 
