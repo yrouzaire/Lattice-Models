@@ -77,7 +77,6 @@ mu = 0;
     lattice = SquareLattice(L)
     params_init["type1defect"] = mu;
     thetas = init_thetas(model,lattice,params_init=params_init)
-    # thetas_rotated = imrotate(thetas,90)
 
 rotangle = 45
     pl = Rotate(rotangle) |> Resize(2WINDOW+1, 2WINDOW+1)
@@ -87,8 +86,8 @@ rotangle = 45
 
 ## Create base data set (without augmentation, just the different µ)
 include(srcdir("../parameters.jl"));
-dµ = pi/16
-mus = Float32.(round.(collect(0:dµ:2pi),digits=2))
+dµ = pi/64
+mus = Float32.(round.(collect(0:dµ:2pi-dµ),digits=2))
 base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
 for i in each(mus)
     model = XY(params)
@@ -98,8 +97,8 @@ for i in each(mus)
 end
 # using JLD2
 # jldsave("data/for_ML/base_dataset_µP12.jld2";base_dataset,mus,dµ,WINDOW)
-# p=plot_thetas(base_dataset[:,:,rand(1:length(mus))],model,lattice)
-    # display_quiver!(p,base_dataset[:,:,rand(1:length(mus))],WINDOW)
+p=plot_thetas(base_dataset[:,:,rand(1:length(mus))],model,lattice)
+    display_quiver!(p,base_dataset[:,:,rand(1:length(mus))],WINDOW)
 
 ## Augmentation of the base_dataset for Dense NN
 using Augmentor
