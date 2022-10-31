@@ -271,6 +271,7 @@ function update!(thetas::Matrix{<:FT},model::SPP{FT},lattice::Abstract2DLattice)
     model.t += 1 # here = number of MonteCarlo steps
     return thetas
 end
+
 ## ------------------------ Update Propagation Models ------------------------
 function update!(thetas::Vector{FT},model::AbstractPropagationModel{FT},lattice::Abstract1DLattice)::Vector{FT} where FT<:AbstractFloat
     thetas_old = copy(thetas)
@@ -389,7 +390,7 @@ end
 # Meant to relax reconstruction for spotting defects
 function relax!(thetas::Matrix{T},model::AbstractModel{T},trelax=0.5) where T<:AbstractFloat
     dummy_dt = T(1E-2)
-    dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
+    dummy_model = LangevinXY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
     dummy_lattice = SquareLattice(size(thetas,1),true,true,"chebychev")
     update!(thetas,dummy_model,dummy_lattice,trelax)
 end

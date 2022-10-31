@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 15
+L = 200
 T = 0.1
 symmetry = "nematic"
 propulsion = "polar"
@@ -17,7 +17,7 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "single"
+init = "hightemp"
 q = 1/2
 r0 = round(Int,L/2)
 type1defect = "counterclockwise"

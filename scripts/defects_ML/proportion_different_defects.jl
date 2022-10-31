@@ -43,11 +43,11 @@ number_defects_types(dft)*2/sum(number_defects_types(dft))
 
 
 ## Moving XY
-params["symmetry"] = "nematic" ; params["rho"] = 0.95 ; params["A"] = 1.5
+params["symmetry"] = "nematic" ; params["rho"] = 0.95 ; params["A"] = 2
 model = SPP(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
-update!(thetas,model,lattice,tmax=3000)
+update!(thetas,model,lattice,tmax=1000)
     plot_thetas(thetas,model,lattice,defects=false)
 number_defects(thetas,model,lattice)
-dft = DefectTracker(thetas,model,lattice,find_type=true)
+dft = DefectTracker(thetas,model,lattice,find_type=false)
 number_defects_types(dft)*2/sum(number_defects_types(dft))

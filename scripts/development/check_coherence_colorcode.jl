@@ -30,6 +30,7 @@ L = 10
     propulsion = "polar"
     A = 10
     rho = 5/L^2
+    rho = 0.9
     algo = "A" # rule for collision!() for model = SPP
     float_type = Float32
     init = "lowtemp"
@@ -69,17 +70,17 @@ but now, for 'directions obliques', it depends on the parity of "i"
 
 ## Step 2 (ca tourne dans le bon sens) OK
 include(srcdir("../parameters.jl"));
-params["init"] = "single"
-    params["symmetry"] = "polar"
-    params_init["q"] = -1/2
+params_init["init"] = "single"
+    params["symmetry"] = "nematic"
+    params_init["q"] = 1/2
     params_init["type1defect"] = pi/2
     model = XY(params)
     lattice = SquareLattice(L,periodic=true,single=true)
     thetas = init_thetas(model,lattice,params_init=params_init)
-    display(plot_thetas(thetas,model,lattice,defects=true))
+    display(plot_thetas(thetas,model,lattice,defects=false))
 
 
-## Step 3 OK
+## Step 3 (defects are correctly localized) OK
 include(srcdir("../parameters.jl"));
     params["init"] = "single"
     params["q"] = q = 1/2
@@ -99,15 +100,15 @@ x0,y0 = round(Int,L/4),round(Int,L/4)
     thetas = Float32.(create_single_defect(L,x0,y0,q=q,type=type1defect)) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
     display(plot_thetas(thetas,model,lattice,defects=true))
 
-## Step 4 and 4bis OK alhamdoullah
+## Step 4 (arrows of quiver! indicate the correct direction) and 4bis (holes location) OK alhamdoullah
 include(srcdir("../parameters.jl"));
     params_init["init"] = "single"
-    params_init["q"] = -1/2
+    params_init["q"] = 1/2
     params["rho"] = 1
-    params_init["type1defect"] = pi
+    params_init["type1defect"] = pi/2
     params["symmetry"] = params_init["symmetry"] = "nematic"
     model = XY(params)
-    lattice = SquareLattice(L,periodic=true,single=true)
+    lattice = TriangularLattice(L,periodic=true,single=true)
     thetas = init_thetas(model,lattice,params_init=params_init)
     p = plot_thetas(thetas,model,lattice,defects=true)
     window = 9
