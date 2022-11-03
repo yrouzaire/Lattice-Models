@@ -8,9 +8,20 @@ include("defects_methods.jl")
 include("auxiliary.jl")
 include("measurements.jl")
 
-using BenchmarkTools
+using BenchmarkTools, JLD2
 global const WINDOW = 7
-# using Flux:onecold, Chain, Dense, softmax
+global const W21 = 2*WINDOW+1
+
+using Flux
+using Flux:onecold, Chain, Dense, softmax
+struct Reshape # has to be defined before Augmentor.jl is loaded to avoid conflicts
+    shape
+end
+Reshape(args...) = Reshape(args)
+(r::Reshape)(x) = reshape(x, r.shape)
+Flux.@functor Reshape ()
+global const DAE_positive12 = load("DAE_rotation+flip_positive12.jld2","NN")
+
 # global const NN_positive12 = load("NN_positive_12_defects_N1000_W7.jld2","NN")
 # global const possible_positive12_defects = load("NN_positive_12_defects_N1000_W7.jld2","possible_defects")
 # global const NN_negative12 = load("NN_negative_12_defects_N1000_W7.jld2","NN")
