@@ -63,7 +63,7 @@ function infer_mu(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
         # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
         # tmp += exp(im*muss[i,j] - 0.25sqrt((i-window)^2 + (j-window)^2))
     end
-    
+
     # muss[window,window] = 0
     moyenne = angle(mean(exp.(im*muss)))
     if     abs(q) == 1   correction = pi - 0.33228605
