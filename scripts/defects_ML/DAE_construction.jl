@@ -19,16 +19,29 @@ Constraints : zero-mean noise, so that the leaning procedure
 is unbaised.
 =#
 
+## Create base data set (without augmentation, just the different µ)
+# include(srcdir("../parameters.jl"));
+# dµ = pi/32
+# mus = Float32.(round.(collect(0:dµ:2pi-dµ),digits=2))
+# base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
+# model = XY(params)
+# lattice = SquareLattice(W21)
+# for i in each(mus)
+#     params_init["type1defect"] = mus[i];
+#     base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
+# end
+# # using JLD2
+# # jldsave("data/for_ML/base_dataset_µP1.jld2";base_dataset,mus,dµ,WINDOW)
+# ind = rand(1:length(mus))
+#     p=plot_thetas(base_dataset[:,:,ind],model,lattice)
+#     display_quiver!(p,base_dataset[:,:,ind],WINDOW)
+
+## Some functions
 function random_flip(image,xpu;seuil=0.35)
     pi32 = Float32(π)
     return image .+ xpu(pi32*rand(Bernoulli(seuil), size(image)))
 end
 
-# function add_noise(image,degree,seuil,xpu)
-#     image = image .+ Float32(deg2rad(degree)) # compensate for the rotation
-#     image = random_flip(image,xpu,seuil=seuil)
-#     return image
-# end
 
 function proba_flip(epoch,epoch0=300,pmax=0.25;slope = 5E-4)
     linear_increase_at_from_e0 = max(0,slope*(epoch-epoch0))
@@ -36,40 +49,42 @@ function proba_flip(epoch,epoch0=300,pmax=0.25;slope = 5E-4)
     return ceiled
 end
 
-# function rotation_angles(e,e0;slope=1E-3)
-#     if e < e0 return 0:0
-#     else
-#         drots = [180,90,45,40,35,30,25,20,10,5]
-#         drot = drots[min(length(drots),Int(floor(slope*(e-e0)))+1)]
-#         return 0:drot:360-drot
-#     end
-# end
-# function rotation_angles1(e,e0;slope=5E-3)
-#     drot = 10
-#     angle_max = min(drot*round(Int,max(0,slope*(e-e0)+1)),180)
-#     return (-angle_max:drot:angle_max) .+ 180
-# end
-
 function infer_mu(thetas::Array{T,4},q;window=WINDOW)::T where T<:AbstractFloat
     thetas_reshaped = reshape(thetas,(2*window+1,2*window+1,1,1))
     return infer_mu(thetas_reshaped,q,window=window)
 end
-function infer_mu(thetas::Matrix{T},q;window=WINDOW)::T where T<:AbstractFloat
+function infer_mu(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
     L = size(thetas,1)
     @assert L == 2window+1
     muss = zeros(size(thetas))
+    # tmp = Complex(0)
     for j in 1:L, i in 1:L
-        muss[i,j] = thetas[i,j] - q*atan( (i-window) ,(j-window))
-        # i<->j irrelevant because i,j and j,i has the same weight for "mean" operation
+        muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
+        # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
+        # tmp += exp(im*muss[i,j] - 0.25sqrt((i-window)^2 + (j-window)^2))
     end
+    # muss[window,window] = 0
     moyenne = angle(mean(exp.(im*muss)))
-    # correction (might come from the non-correction of the rotation)
-    # moyenne += 0.1
-    return mod(moyenne,2π)
+    if     abs(q) == 1   correction = pi - 0.33228605
+    elseif abs(q) == 1/2 correction = 0.1
+    end
+    #= tbh, I don't know where the shifts might come from,
+    In the beggining, I thought maybe from the spin at the center of the defect,
+    where theta should not be defined. But if one changes mean->sum and adds the condition
+    "if (i == j == window)", the result only becomes weirder... =#
+    # return mod.(muss,2pi)
+    return mod(moyenne .+ correction,2π)
 end
 
+# # test infer_mu()
+# inferred = zeros(length(mus))
+#     for ind in 1:64
+#         inferred[ind] = infer_mu(base_dataset[:,:,ind],1)
+#     end
+#     plot(mus,inferred,m=true)
+#     plot!(x->x)
+
 ## Define Neural Network
-&
 function DenseAutoEncoder(input_dim,hidden_dim,latent_dim)
     encoder = Chain(
     Dense(input_dim,hidden_dim,relu),
@@ -171,41 +186,51 @@ export_to_gpu = true
 
 ## Data
 W21 = 2WINDOW+1
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
 
 ## Declare NN, Loss and Optimiser
-sqnorm(x) = sum(abs, x);
-penalty() = sum(sqnorm,Flux.params(NN))
-loss_pen(X, y) = mse(NN(X), y) + 1E-5*penalty()
+L1norm(x) = sum(abs, x);
+L1penalty() = sum(L1norm,Flux.params(NN))
+L2norm(x) = sum(abs2, x);
+L2penalty() = sum(L2norm,Flux.params(NN))
+loss_pen(X, y) = mse(NN(X), y) + 1E-2*L2penalty()
 loss(X, y) = mse(NN(X), y)
 # progress = () -> @show(loss(Xtrain, Ytrain)) # callback to show loss
 # evalcb = throttle(progress, 1)
 NN = 0
-    NN = ConvResAutoEncoder0(10) |> xpu
+    NN = ConvAutoEncoder(10) |> xpu
     opt = Adam(1E-3)
     # NN = DenseAutoEncoder(W21*W21,100,16) |> xpu
 
 ## Training
-epochs = Int(2E4)
+epochs = Int(5E3)
 trainL = zeros(epochs)
+trainLpen = zeros(epochs)
 
 multi_fact = 5
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 z = @elapsed for e in 1:epochs
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
     e0_noise = 2000 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
-    seuil_flip = 0#proba_flip(e,e0_noise,pmax,slope=slope)
+    seuil_flip = proba_flip(e,e0_noise,pmax,slope=slope)
     pi32 = Float32(π)
     for i in 1:size(shuffled_dataset,3)
-        # Rotate
-        degree = rand(0:10:350)
-        ppl = Rotate(degree) |> Resize(W21,W21)
-        tmp = augment(shuffled_dataset[:,:,i],ppl)
-        tmp .+= Float32(deg2rad(degree))
+        # # Rotate
+        # if rand() < 0. degree = rand([0,10,20,30,350,340,330])
+        # else degree = rand(0:10:350)
+        # end
+        # ppl = Rotate(degree) |> Resize(W21,W21)
+        # tmp = augment(shuffled_dataset[:,:,i],ppl)
+        # tmp .+= Float32(deg2rad(degree))
 
         # Flip
-        tmp .+= pi32*rand(Bernoulli(seuil_flip), size(tmp))
-        X_noisy[:,:,i] = tmp
+        # tmp .+= pi32*rand(Bernoulli(seuil_flip), size(tmp))
+
+        # Thermal Noise
+        # tmp += 0.2*rand()*randn(size(tmp))
+
+        # X_noisy[:,:,i] = tmp
+        X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.2*rand()*randn(W21,W21))
     end
     pi232 = Float32(2pi)
     X_noisy = mod.(X_noisy,pi232)
@@ -215,6 +240,7 @@ z = @elapsed for e in 1:epochs
 
     Flux.train!(loss_pen, Flux.params(NN),[(X_noisy_reshaped,dataset_reshaped)], opt)
     trainL[e] = loss(X_noisy_reshaped,dataset_reshaped)
+    trainLpen[e] = loss_pen(X_noisy_reshaped,dataset_reshaped)
 
     if isinteger(e/100)
         println("e = $e/$epochs : train loss = $(round(trainL[e],digits=5))")
@@ -227,118 +253,25 @@ z = @elapsed for e in 1:epochs
 end
 prinz(z)
 
-comments = ["if trainL[e] < 0.5 opt.eta = 5E-4
-    elseif trainL[e] < 0.1 opt.eta = 2.5E-4
-    elseif trainL[e] < 0.02 opt.eta = 1E-4
-    end","e0_noise = 300 ; pmax = 0.3 ; slope = pmax/(epochs-e0_noise)*1.5"]
-JLD2.@save "DAE_positive12_02_11_2022.jld2" NN trainL base_dataset comments epochs runtime=z
-@unpack NN, trainL, epochs = load("DAE_rotation+flip_positive12.jld2")
+# comments = ["if trainL[e] < 0.5 opt.eta = 5E-4
+#     elseif trainL[e] < 0.1 opt.eta = 2.5E-4
+#     elseif trainL[e] < 0.02 opt.eta = 1E-4
+#     end", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
+# JLD2.@save "DAE_positive1___03_11_2022.jld2" NN trainL base_dataset comments epochs runtime=z
+# @unpack NN, trainL, epochs = load(".jld2")
 
-# plot(legend=:bottomleft)
-plot!(1:epochs-1,trainL[1:end-1],axis=:log,lw=0.1)
+plot(legend=:bottomleft)
+    plot!(1:epochs-1,trainL[1:end-1],axis=:log,lw=0.5)
+    plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5)
+    plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1)
 
+# xx = reshape(base_dataset,(15,15,64,1))
+# recon = NN(xx[:,:,1:1,1:1])[:,:]
+# model = XY(params)
+# lattice = TriangularLattice(15)
+# plot_thetas(recon,model,lattice,defects=false)
+#
+# infer_mu(recon,1)
+# NN = cpu(NN)
 
-## Testing (for CNN) on noisy defects
-model = XY(params)
-W21 = 2WINDOW+1
-lattice = TriangularLattice(W21)
-
-NN = cpu(NN)
-ind = rand(1:63)
-    degree = rand(0:10:350)
-    ppl = Rotate(degree) |> Resize(W21,W21)
-    tmp = augment(base_dataset[:,:,ind],ppl)
-    tmp .+= Float32(deg2rad(degree))
-    seuil_flip = 0
-    tmp .+= Float32(pi)*rand(Bernoulli(seuil_flip), size(tmp))
-    X_noisy = tmp
-    # X_noisy += 0.2randn((W21,W21))
-    pi232 = Float32(2pi)
-    X_noisy = mod.(X_noisy,pi232)
-    X_noisy_reshaped = reshape(X_noisy,(W21,W21,1,:))
-    thetas = base_dataset[:,:,ind]
-        p0=plot_thetas(thetas,model,lattice,defects=false)
-        display_quiver!(p0,thetas,WINDOW)
-    p1=plot_thetas(X_noisy,model,lattice,defects=false)
-        display_quiver!(p1,X_noisy,WINDOW)
-    recon = NN(X_noisy_reshaped)[:,:,1,1]
-    p2=plot_thetas(recon,model,lattice,defects=false)
-    display_quiver!(p2,recon,WINDOW)
-    plot(p0,p1,p2,size=(485*3,400),layout=(1,3))
-mus[ind]
-infer_mu(mod.(recon,2pi),1/2)
-&
-
-## Estimating the error margin
-R = 10
-flip_strength = [0.1,0.2,0.3]
-errors = zeros(length(mus),length(flip_strength),R)
-
-drot = 10 ; ppl_aug = Rotate(0:drot:360-drot) |> Resize(W21,W21)
-z = @elapsed for i in each(mus)
-    original = base_dataset[:,:,i]
-    for j in each(flip_strength) , r in 1:R
-        X_aug = similar(original)
-        X_aug = augment(original,ppl_aug)
-        seuil = flip_strength[j]
-        X_aug_reshaped = reshape(X_aug,(W21,W21,1,:))
-        X_aug += 0.2randn(size(X_aug))
-        X_noisy = mapslices(image->add_noise(image,degree,seuil,xpu),X_aug,dims=(1,2))
-        X_noisy_reshaped = reshape(X_noisy,(W21,W21,1,:))
-        recon = NN(X_noisy_reshaped[:,:,:,1:1])[:,:,1,1]
-        errors[i,j,r] = abs(infer_mu(mod.(recon,2pi),1/2) .+ 0.1 - mus[i])
-    end
-end
-prinz(z)
-errors_avg = mean(errors,dims=3)[:,:,1]
-p=plot(legend=:topleft)
-    for j in each(flip_strength)
-        plot!(mus[4:end],errors_avg[4:end,j],label="Proba Flip = $(flip_strength[j])")
-    end
-    p
-
-## Testing for Dense AutoEncoder
-ind = rand(1:63)
-    drot = 1
-    degree = rand(0:drot:360-drot)
-    X_aug = similar(base_dataset)
-    ppl_aug = Rotate(degree) |> Resize(W21,W21)
-    augmentbatch!(X_aug,base_dataset,ppl_aug)
-    seuil = 0.
-    # X_aug += 0.2randn(size(X_aug))
-    X_noisy = mapslices(image->add_noise(image,degree,seuil,xpu),X_aug,dims=(1,2))
-    # X_noisy += 0.2randn(size(X_noisy))
-    thetas = base_dataset[:,:,ind]
-        p0=plot_thetas(thetas,model,lattice,defects=false)
-        display_quiver!(p0,thetas,WINDOW)
-    original = X_noisy[:,:,ind]
-        p1=plot_thetas(original,model,lattice,defects=false)
-        display_quiver!(p1,original,WINDOW)
-    recon = reshape(NN(vec(X_noisy[:,:,ind])),(W21,W21))
-    p2=plot_thetas(recon,model,lattice,defects=false)
-    display_quiver!(p2,recon,WINDOW)
-    plot(p0,p1,p2,size=(485*3,400),layout=(1,3))
-mus[ind]
-infer_mu(mod.(recon,2pi),1/2)
-
-## Test on vivo defects :
-params["symmetry"] = "nematic" ; params["rho"] = 1 ; params["A"] = 0
-lattice = TriangularLattice(L)
-model = LangevinXY(params)
-
-thetas = init_thetas(model,lattice,params_init=params_init)
-update!(thetas,model,lattice) # calentamiento
-update!(thetas,model,lattice,tmax=20)  # updates until time = t
-    p = plot_thetas(thetas,model,lattice,defects=false)
-
-    dft = DefectTracker(thetas,model,lattice,find_type=true)
-    histogram(last_types(dft),bins=50,normalize=true)
-update_and_track!(thetas,model,lattice,dft,2000,100,find_type=true)
-number_active_defects(dft)
-filter(isnan,last_types(dft))
-
-~,thetas_zoom= zoom(thetas,lattice,114,120)
-zoom_quiver(thetas_zoom,model,lattice,8,8)
-recon = reshape(DAE_positive12(reshape(thetas_zoom,(15,15,1,1))),(15,15))
-zoom_quiver(recon,model,lattice,8,8)
-infer_mu(recon,1/2)
+## END OF FILE

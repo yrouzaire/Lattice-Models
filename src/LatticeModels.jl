@@ -10,7 +10,7 @@ include("measurements.jl")
 
 using BenchmarkTools, JLD2
 global const WINDOW = 7
-global const W21 = 2*WINDOW+1
+global const W21 = 2WINDOW+1
 
 using Flux
 using Flux:onecold, Chain, Dense, softmax
@@ -20,7 +20,7 @@ end
 Reshape(args...) = Reshape(args)
 (r::Reshape)(x) = reshape(x, r.shape)
 Flux.@functor Reshape ()
-global const DAE_positive12 = load("DAE_rotation+flip_positive12.jld2","NN")
+global const DAE_positive12 = load("DAE_positive12___03_11_2022.jld2","NN")
 
 # global const NN_positive12 = load("NN_positive_12_defects_N1000_W7.jld2","NN")
 # global const possible_positive12_defects = load("NN_positive_12_defects_N1000_W7.jld2","possible_defects")

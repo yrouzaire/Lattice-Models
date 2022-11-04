@@ -79,7 +79,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     vortices_plus_no_duplicates  = merge_duplicates(vortices_plus,lattice)
     vortices_minus_no_duplicates = merge_duplicates(vortices_minus,lattice)
 
-    if find_type return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,thetas,lattice)
+    if find_type return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,mod.(thetas,2pi),lattice)
     else return vortices_plus_no_duplicates,vortices_minus_no_duplicates
     end
 end
@@ -99,7 +99,7 @@ function find_types(list_p,list_n,thetas,lattice)
 
     # define Denoising AutoEncoder DAE
     if charge_p[1] == 1
-        DAE = NN_positive1
+        DAE = cpu(NN)
     elseif charge_p[1] == 0.5
         DAE = DAE_positive12
     end
@@ -114,7 +114,7 @@ function find_types(list_p,list_n,thetas,lattice)
         even enter the computationally expensive operations hereafter.
         =#
         for n in each(pos_p)
-            if true#alone_in_window(pos_p[n],pos_all,lattice,WINDOW) # heavy, computes distance
+            if alone_in_window(pos_p[n],pos_all,lattice,WINDOW) # heavy, computes distance
                 i,j = pos_p[n]
                 no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,WINDOW)
                 if no_problem_go_ahead
@@ -123,7 +123,7 @@ function find_types(list_p,list_n,thetas,lattice)
                     unchanged, i.e =NaN =#
                     denoised_theta_zoom = DAE(reshape(thetas_zoom,(W21,W21,1,1)))
                     denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
-                    type_p[n] = infer_mu(denoised_theta_zoom_reshaped,1/2)
+                    type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
                     # TODO : generaliser ce 1/2
                 end
             end
