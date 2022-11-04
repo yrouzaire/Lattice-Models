@@ -17,15 +17,16 @@ For this tuto, take
 =#
 include(srcdir("../parameters.jl")) # Load them
 
-#  Declare your lattice: SquareLattice(L) or TriangularLattice(L).
+## Declare your lattice: SquareLattice(L) or TriangularLattice(L).
 lattice = SquareLattice(L)
 
-# Declare your model: LangevinXY(params), MonteCarloXY(params), VisionXY(params), SPP(params) etc
+## Declare your model: LangevinXY(params), MonteCarloXY(params), VisionXY(params), SPP(params) etc
 model = LangevinXY(params)
 
-# Initialisation of the theta field:
+## Initialisation of the theta field:
 thetas = init_thetas(model,lattice,params_init=params_init)
 
+## Temporal evolution
 model.t # current time of the model = 0
 # Update the model:
 update!(thetas,model,lattice) # For one time step only
@@ -55,7 +56,7 @@ plot_thetas(thetas,model,lattice,defects=true) # circle = +1 defect, triangle = 
 It is recommended to first plot with `defects=false` (the default value) to evaluate visually
 the number of defects. =#
 
-# Some measurement on the system
+## Some measurement on the system
 polarOP, nematicOp = OP(thetas) # polar and nematic order parameters
 C = corr(thetas,model,lattice) # the spatial correlation function C(r)
 threshold = exp(-1)
@@ -70,3 +71,33 @@ plot(xlabel="r",ylabel="C(r)")
 # Where are the defects ?
 positively_charged_defects,negatively_charged_defects = spot_defects(thetas,model,lattice)
 positively_charged_defects[1] # charge, x, y, type (don't care about it)
+
+## Create a movie
+lattice = SquareLattice(L)
+model = LangevinXY(params)
+thetas = init_thetas(model,lattice,params_init=params_init)
+every = 1 ; tmax = 200 ; transients = 50 # defects are not plotted before t ≥ transients (if defects=true)
+saving_times = every:every:tmax
+z = @elapsed animation = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
+prinz(z) # takes approximately 2 minutes, go grab a coffee
+filename = "films/my_first_movie_of_critical_XY_model.mp4"
+mp4(animation,filename,fps=20) # creates the file in the given directory
+# open manually the .mp4 file
+
+## Visualise the flow field
+plot_thetas(thetas,model,lattice)
+
+# At random loc
+xlocation, ylocation = (50,50)
+half_width_of_window = 10 # not too big because plotting the arrows is damn slow
+zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
+
+# Around a randomly chosen +1 defect
+vortices,antivortices = spot_defects(thetas,model,lattice)
+nb_defects = length(vortices)
+xlocation, ylocation = vortices[rand(1:nb_defects)][1:2]
+zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
+
+# Around a randomly chosen -1 defect
+xlocation, ylocation = antivortices[rand(1:nb_defects)][1:2]
+zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
