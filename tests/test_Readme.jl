@@ -1,4 +1,4 @@
-using DrWatson ; @quickactivate "LatticeModels" # tell Julia to load the correct package versions
+using DrWatson ; @quickactivate "LatticeModels" # tells Julia to load the correct package versions
 include(srcdir("LatticeModels.jl")) # loads the entire code, might precompile some packages
 
 using Plots,ColorSchemes,LaTeXStrings
@@ -26,21 +26,34 @@ model = LangevinXY(params)
 # Initialisation of the theta field:
 thetas = init_thetas(model,lattice,params_init=params_init)
 
-model.t # Now the current time of the model = 0
+model.t # current time of the model = 0
 # Update the model:
 update!(thetas,model,lattice) # For one time step only
 model.t # Now the current time of the model = dt
-duration = 5
-update!(thetas,model,lattice,duration) # For a given duration, here 1:
-model.t # Now the current time of the model = dt + duration
-tmaxx = 50
-update!(thetas,model,lattice,tmax=tmaxx) # Until a given time, here 50
-model.t # Now the current time of the model = tmaxx, no matter what was done before
+#= Indeed, the `update!` function also updates time.
+Thus, don't forget to re-instantiate the model if you want to
+restart a fresh simulation =#
 
+duration = 15
+z = @elapsed update!(thetas,model,lattice,duration) # For a given duration
+model.t # Now the current time of the model = dt + duration
+prinz(z) # prints the rounded runtime of this function call
+tmax = 50
+update!(thetas,model,lattice,tmax=tmax) # Until a given time
+model.t # Now the current time of the model = tmax, no matter what was done before
+# equivalently, if one wants to perform measurements over time
+tmax2 = 60
+while model.t < tmax2
+  update!(thetas,model,lattice)
+  # perform measurements
+end
 
 # Visualise the system
 plot_thetas(thetas,model,lattice,defects=false)
 plot_thetas(thetas,model,lattice,defects=true) # circle = +1 defect, triangle = -1 defect
+#= WARNING: plotting the defects can take enormous time if they are to many.
+It is recommended to first plot with `defects=false` (the default value) to evaluate visually
+the number of defects. =#
 
 # Some measurement on the system
 polarOP, nematicOp = OP(thetas) # polar and nematic order parameters
