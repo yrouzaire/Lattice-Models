@@ -6,7 +6,7 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 ## Tests Movies
 # gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
-model = MovingXY(params)
+model = SPP(params)
 lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice)

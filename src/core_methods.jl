@@ -136,7 +136,7 @@ function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::Abstract
 end
 update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,Δt) where T<:AbstractFloat = update!(thetas,model,lattice,tmax=model.t+Δt)
 
-function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{LangevinXY{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -171,7 +171,7 @@ function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice:
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::MonteCarloXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     T  = model.T
@@ -247,7 +247,7 @@ function update!(thetas::Matrix{<:FT},model::Union{ForcedXY{FT},PropagationForce
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::SPP{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     L = lattice.L
     order_trials = StatsBase.shuffle(1:L^2)
     for n in order_trials
@@ -271,6 +271,7 @@ function update!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::Abstract2DLat
     model.t += 1 # here = number of MonteCarlo steps
     return thetas
 end
+
 ## ------------------------ Update Propagation Models ------------------------
 function update!(thetas::Vector{FT},model::AbstractPropagationModel{FT},lattice::Abstract1DLattice)::Vector{FT} where FT<:AbstractFloat
     thetas_old = copy(thetas)
@@ -295,7 +296,7 @@ end
 
 ## ------------------------ Other Evolution Methods ------------------------
 
-function collision!(thetas::Matrix{<:FT},model::MovingXY{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
+function collision!(thetas::Matrix{<:FT},model::SPP{FT},lattice::AbstractLattice,pos1::Tuple{T,T},theta1::FT,pos2::Tuple{T,T},theta2::FT,bulk::Bool) where {T<:Int,FT<:AbstractFloat}
     # @assert model.symmetry == "nematic" "Energy is only coded for nematic interaction for now !"
     width_proposal = 2sqrt(model.T)
     proposal = width_proposal*randn(FT)+theta1
@@ -354,13 +355,22 @@ function direction_of_motion(theta::T,A::T) where T<:AbstractFloat
     else
         # angle = 1.0/sqrt(A)*randn()+theta  # Wrapped Normal
         # angle = rand(VonMises(theta,A)) # Von Mises, indistinguishable from Wrapped Normal for A > 4
-        angle = mod(rand(Cauchy(theta,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
-        # angle = mod(rand(Cauchy(theta-pi/2,one(T)/A)),2pi) # Wrapped Cauchy, contractile activity
-        #= Important Note. If instead of centering tha variable 'angle' on the variable 'theta',
-        one centers it on thetas + pi or thetas +pi/2, there is no qualitative difference in the movies.
+        angle = mod(rand(Cauchy(theta,one(T)/A)),2π) # Wrapped Cauchy, contractile activity
+
+        #= Important Note :
+        If instead of centering the variable 'angle' on the variable 'theta',
+        one centers it on thetas +π or thetas +π/2, there is no qualitative difference in the movies.
         +1/2 comet-shaped defects are superdiffusive/ballistic, the rest of the behaviour is also left
         unchanged. It basicaly is just a shift in the colours. This means that the details of the coupling
-        orientation/polar_propulsion don't matter. =#
+        orientation/polar_propulsion don't matter.
+        I take advantage of this fact to plot coherently the field thetas.
+        Hence the -π/2 , which is mandatory if one want coherence between the colors
+        and the direction of motion once plotted. Because heatmap(thetas') is equivalent to
+        a 90° counterclockwise rotation, I choose the neighbour with a 90° clockwise biais (the -pi/2).
+        I am aware that this is kind of a weird choice but abandoning the heatmap(thetas') procedure
+        complexifies averything else. With this plotting procedure, the visual and the mathematical
+        field theta = arctan(y/x) + µ are the same. Otherwise, it seems to me that, for instance,
+        µ = 0 is mathematically a source but visually is a counterclockwise vortex etc etc.  =#
     end
     return angle
 end
@@ -380,7 +390,7 @@ end
 # Meant to relax reconstruction for spotting defects
 function relax!(thetas::Matrix{T},model::AbstractModel{T},trelax=0.5) where T<:AbstractFloat
     dummy_dt = T(1E-2)
-    dummy_model = XY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
+    dummy_model = LangevinXY{T}(zero(T),model.symmetry,dummy_dt,zero(T),model.rho)
     dummy_lattice = SquareLattice(size(thetas,1),true,true,"chebychev")
     update!(thetas,dummy_model,dummy_lattice,trelax)
 end

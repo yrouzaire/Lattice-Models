@@ -4,10 +4,10 @@ include("../src/models.jl");
 include(srcdir("../parameters.jl"));
 
 model = XY(params)
-model = MCXY(params)
+model = MonteCarloXY(params)
 model = ForcedXY(params)
 model = VisionXY(params)
-model = MovingXY(params)
+model = SPP(params)
 
 # WARNING, incohérence !
 iszero(Float32(π) - (π)) # true
