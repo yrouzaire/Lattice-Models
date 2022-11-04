@@ -1,10 +1,3 @@
-cd("D:/Documents/Research/projects/LatticeModels")
- using DrWatson ; @quickactivate "LatticeModels"
- include(srcdir("LatticeModels.jl"))
- using Plots,ColorSchemes,LaTeXStrings
- pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
-
-
 #= CheckList to pass
 1. Verify to which displacement and which color corrresponds θ = 0,π/2,π,-π/2 on a Square Lattice.
 2. Check that the colors of the visual aspect of a +/- defect rotates the good way.
@@ -13,17 +6,8 @@ cd("D:/Documents/Research/projects/LatticeModels")
 4bis. Check that the holes are correctly localized.
 =#
 
-## Step 0 : Comprendre heatmap
-test = reshape(1:16,4,4)
-test'
-heatmap(test)
-heatmap(test)
-heatmap(test)
-heatmap(test')
-heatmap(rotr90(test)')
 
-## Step 1 : OK
-# noir vers la droite, blue vers le haut, vert vers la gauche, rouge vers le bas
+## Step 1 OK
 L = 10
     T = 0.1
     symmetry = "polar"
@@ -68,7 +52,7 @@ but now, for 'directions obliques', it depends on the parity of "i"
 
 =#
 
-## Step 2 (ca tourne dans le bon sens) OK
+## Step 2 OK
 include(srcdir("../parameters.jl"));
 params_init["init"] = "single"
     params["symmetry"] = "nematic"
@@ -83,7 +67,7 @@ params_init["init"] = "single"
 ## Step 3 (defects are correctly localized) OK
 include(srcdir("../parameters.jl"));
     params["init"] = "single"
-    params["q"] = q = 1/2
+    params["q"] = 1/2
     params["symmetry"] = "nematic"
     model = XY(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
@@ -112,4 +96,4 @@ include(srcdir("../parameters.jl"));
     thetas = init_thetas(model,lattice,params_init=params_init)
     p = plot_thetas(thetas,model,lattice,defects=true)
     window = 9
-    zoom_quiver(thetas,model,lattice,100,100,window)
+    display_quiver!(p,thetas,window)

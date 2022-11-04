@@ -7,7 +7,7 @@ Var = 0.
 As = [0,3]
 vision = 5π/3
 rhos = [0.975,0.9]
-algo = "A" # rule for collision!() for model = SPP
+algo = "A" # rule for collision!() for model = MovingXY
 
 # Numerical Parameters
 dt = 1E-2

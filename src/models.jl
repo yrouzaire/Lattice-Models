@@ -1,5 +1,6 @@
 using Parameters
 
+
 abstract type AbstractModel{AbstractFloat} end
 abstract type AbstractPropagationModel{AbstractFloat} <: AbstractModel{AbstractFloat} end
 
@@ -26,26 +27,26 @@ mutable struct LangevinXY{AbstractFloat} <: AbstractXYModel{AbstractFloat}
     rho::AbstractFloat
 
 end
-function LangevinXY(params)
+function XY(params)
     @unpack T,symmetry,dt,float_type,rho = params
     T,dt,rho = convert.(float_type,(T,dt,rho))
 
-    return LangevinXY{float_type}(T,symmetry,dt,zero(float_type),rho)
+    return XY{float_type}(T,symmetry,dt,zero(float_type),rho)
 end
 
 # MonteCarlo
-mutable struct MonteCarloXY{AbstractFloat} <: AbstractModel{AbstractFloat}
+mutable struct MCXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     symmetry::String
     t::AbstractFloat
     rho::AbstractFloat
 
 end
-function MonteCarloXY(params)
+function MCXY(params)
     @unpack T,symmetry,float_type,rho = params
     T,rho = convert.(float_type,(T,rho))
 
-    return MonteCarloXY{float_type}(T,symmetry,zero(float_type),rho)
+    return MCXY{float_type}(T,symmetry,zero(float_type),rho)
 end
 
 
@@ -68,8 +69,8 @@ function ForcedXY(params)
     return ForcedXY{float_type}(T,Var,symmetry,omegas,dt,zero(float_type),rho)
 end
 
-## --------------------- Self Propelled Particles (SPP) ---------------------
-mutable struct SPP{AbstractFloat} <: AbstractModel{AbstractFloat}
+## ------------------------- Moving XY -------------------------
+mutable struct MovingXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     A::AbstractFloat
     symmetry::String
@@ -78,11 +79,11 @@ mutable struct SPP{AbstractFloat} <: AbstractModel{AbstractFloat}
     rho::AbstractFloat
     algo::String
 end
-function SPP(params)
+function MovingXY(params)
     @unpack T,A,rho,symmetry,algo,propulsion,float_type = params
     T,A,rho = convert.(float_type,(T,A,rho))
 
-    return SPP{float_type}(T,A,symmetry,propulsion,zero(float_type),rho,algo)
+    return MovingXY{float_type}(T,A,symmetry,propulsion,zero(float_type),rho,algo)
 end
 
 

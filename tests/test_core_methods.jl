@@ -13,7 +13,7 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 include(srcdir("../parameters.jl"));
 
 ## Benchmark update
-model = SPP(params)
+model = MovingXY(params)
 lattice = TriangularLattice(L,periodic=true)
 thetas = init_thetas(lattice,params=params)
 update!(thetas,model,lattice,10)
@@ -37,7 +37,7 @@ model = ForcedXY(params_phys,params_num)
 model = VisionXY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
 
-model = SPP(params_phys,params_num)
+model = MovingXY(params_phys,params_num)
 thetas = init_thetas(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
 update!(thetas,model,lattice)
 @btime update!(thetas,model,lattice)
@@ -54,7 +54,7 @@ model.t
 
 ## Visual verification
 include(srcdir("../parameters.jl"));
-model = SPP(params)
+model = MovingXY(params)
 lattice = TriangularLattice(L,periodic=true)
 thetas = init_thetas(lattice,params=params)
 plot_thetas(thetas,model,lattice)
@@ -85,7 +85,7 @@ model = XY(params_phys,params_num)
 model = ForcedXY(params_phys,params_num)
     @btime get_neighbours(thetas,model,lattice,i,j)
 
-model = SPP(params_phys,params_num)
+model = MovingXY(params_phys,params_num)
     @btime get_neighbours(thetas,model,lattice,i,j)
 
 model = VisionXY(params_phys,params_num)

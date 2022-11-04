@@ -33,7 +33,7 @@ lattice = TriangularLattice(L)
 
 # Results for MonteCarlo XY
 params["symmetry"] = "nematic" ; params["rho"] = 1
-model = MonteCarloXY(params)
+model = MCXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
 update!(thetas,model,lattice,tmax=3000)
 number_defects(thetas,model,lattice)
