@@ -27,26 +27,26 @@ mutable struct LangevinXY{AbstractFloat} <: AbstractXYModel{AbstractFloat}
     rho::AbstractFloat
 
 end
-function XY(params)
+function LangevinXY(params)
     @unpack T,symmetry,dt,float_type,rho = params
     T,dt,rho = convert.(float_type,(T,dt,rho))
 
-    return XY{float_type}(T,symmetry,dt,zero(float_type),rho)
+    return LangevinXY{float_type}(T,symmetry,dt,zero(float_type),rho)
 end
 
 # MonteCarlo
-mutable struct MCXY{AbstractFloat} <: AbstractModel{AbstractFloat}
+mutable struct MonteCarloXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     symmetry::String
     t::AbstractFloat
     rho::AbstractFloat
 
 end
-function MCXY(params)
+function MonteCarloXY(params)
     @unpack T,symmetry,float_type,rho = params
     T,rho = convert.(float_type,(T,rho))
 
-    return MCXY{float_type}(T,symmetry,zero(float_type),rho)
+    return MonteCarloXY{float_type}(T,symmetry,zero(float_type),rho)
 end
 
 

@@ -136,7 +136,7 @@ function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::Abstract
 end
 update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,Δt) where T<:AbstractFloat = update!(thetas,model,lattice,tmax=model.t+Δt)
 
-function update!(thetas::Matrix{<:FT},model::Union{XY{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{AbstractXYModel{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
