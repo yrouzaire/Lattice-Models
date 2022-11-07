@@ -1,7 +1,7 @@
 # Physical Parameters
 L = 200
 T = 0.1
-symmetry = "polar"
+symmetry = "nematic"
 propulsion = "polar"
 Var = 0.
 A = 0

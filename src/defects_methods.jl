@@ -99,9 +99,9 @@ function find_types(list_p,list_n,thetas,lattice)
 
     # define Denoising AutoEncoder DAE
     if charge_p[1] == 1
-        DAE = cpu(NN)
+        DAE = NN_test
     elseif charge_p[1] == 0.5
-        DAE = DAE_positive12
+        DAE = NN_test
     end
 
     total_number_defects = length(pos_n) + length(pos_p)

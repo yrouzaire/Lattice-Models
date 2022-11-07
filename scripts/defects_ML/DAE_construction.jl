@@ -42,7 +42,6 @@ function random_flip(image,xpu;seuil=0.35)
     return image .+ xpu(pi32*rand(Bernoulli(seuil), size(image)))
 end
 
-
 function proba_flip(epoch,epoch0=300,pmax=0.25;slope = 5E-4)
     linear_increase_at_from_e0 = max(0,slope*(epoch-epoch0))
     ceiled = min(linear_increase_at_from_e0,pmax)
@@ -58,13 +57,13 @@ function infer_mu(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
     @assert L == 2window+1
     muss = zeros(size(thetas))
     # tmp = Complex(0)
-    for j in 1:L, i in 1:L
+    for j in 2:L-1, i in 2:L-1
         muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
         # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
         # tmp += exp(im*muss[i,j] - 0.25sqrt((i-window)^2 + (j-window)^2))
     end
     # muss[window,window] = 0
-    moyenne = angle(mean(exp.(im*muss)))
+    moyenne = angle(mean(exp.(im*muss[2:L-1,2:L-1])))
     if     abs(q) == 1   correction = pi - 0.33228605
     elseif abs(q) == 1/2 correction = 0.1
     end
@@ -187,13 +186,14 @@ export_to_gpu = true
 ## Data
 W21 = 2WINDOW+1
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
+include(srcdir("../parameters.jl"));
 
 ## Declare NN, Loss and Optimiser
 L1norm(x) = sum(abs, x);
 L1penalty() = sum(L1norm,Flux.params(NN))
 L2norm(x) = sum(abs2, x);
 L2penalty() = sum(L2norm,Flux.params(NN))
-loss_pen(X, y) = mse(NN(X), y) + 1E-2*L2penalty()
+loss_pen(X, y) = mse(NN(X), y) + 5E-3*L2penalty()
 loss(X, y) = mse(NN(X), y)
 # progress = () -> @show(loss(Xtrain, Ytrain)) # callback to show loss
 # evalcb = throttle(progress, 1)
@@ -208,15 +208,19 @@ trainL = zeros(epochs)
 trainLpen = zeros(epochs)
 
 multi_fact = 5
+params["symmetry"] = "polar"
+model = LangevinXY(params)
+lattice = TriangularLattice(W21,periodic=false)
+
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 z = @elapsed for e in 1:epochs
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
-    e0_noise = 2000 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
-    seuil_flip = proba_flip(e,e0_noise,pmax,slope=slope)
+    e0_noise = 1500 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
+    seuil_flip = 0#proba_flip(e,e0_noise,pmax,slope=slope)
     pi32 = Float32(π)
     for i in 1:size(shuffled_dataset,3)
-        # # Rotate
-        # if rand() < 0. degree = rand([0,10,20,30,350,340,330])
+        # Rotate
+        # if rand() < 0.2 degree = rand([0,10,20,30,350,340,330])
         # else degree = rand(0:10:350)
         # end
         # ppl = Rotate(degree) |> Resize(W21,W21)
@@ -226,11 +230,15 @@ z = @elapsed for e in 1:epochs
         # Flip
         # tmp .+= pi32*rand(Bernoulli(seuil_flip), size(tmp))
 
-        # Thermal Noise
+        # Thermal Noise (useless if relaxation at T>0)
         # tmp += 0.2*rand()*randn(size(tmp))
 
-        # X_noisy[:,:,i] = tmp
-        X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.2*rand()*randn(W21,W21))
+        # Relax
+        tmp = shuffled_dataset[:,:,i]
+        trelax = .1 ; update!(tmp,model,lattice,trelax)
+
+        X_noisy[:,:,i] = tmp
+        # X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.2*rand()*randn(W21,W21))
     end
     pi232 = Float32(2pi)
     X_noisy = mod.(X_noisy,pi232)
@@ -242,13 +250,8 @@ z = @elapsed for e in 1:epochs
     trainL[e] = loss(X_noisy_reshaped,dataset_reshaped)
     trainLpen[e] = loss_pen(X_noisy_reshaped,dataset_reshaped)
 
-    if isinteger(e/100)
+    if isinteger(e/10)
         println("e = $e/$epochs : train loss = $(round(trainL[e],digits=5))")
-    end
-    # here, you may tune opt.η
-    if trainL[e] < 0.5 opt.eta = 5E-4
-    elseif trainL[e] < 0.1 opt.eta = 2.5E-4
-    elseif trainL[e] < 0.02 opt.eta = 1E-4
     end
 end
 prinz(z)
@@ -257,8 +260,8 @@ prinz(z)
 #     elseif trainL[e] < 0.1 opt.eta = 2.5E-4
 #     elseif trainL[e] < 0.02 opt.eta = 1E-4
 #     end", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
-# JLD2.@save "DAE_positive1___03_11_2022.jld2" NN trainL base_dataset comments epochs runtime=z
-# @unpack NN, trainL, epochs = load(".jld2")
+# JLD2.@save "DAE_positive1___07_11_2022.jld2" NN trainL trainLpen base_dataset epochs runtime=z
+@unpack NN, trainL, epochs = load(".jld2")
 
 plot(legend=:bottomleft)
     plot!(1:epochs-1,trainL[1:end-1],axis=:log,lw=0.5)
