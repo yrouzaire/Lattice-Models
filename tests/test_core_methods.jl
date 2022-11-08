@@ -38,6 +38,8 @@ model = ForcedXY(params_phys,params_num)
 model = VisionXY(params_phys,params_num)
     @btime update!(thetas,model,lattice)
 
+model = SoftVisionXY(params_phys,params_num)
+    @btime update!(thetas,model,lattice)
 model = SPP(params_phys,params_num)
 thetas = init_thetas(model,lattice,init="2pair",q=1,r0=60,type=["source","divergent"])
 update!(thetas,model,lattice)
@@ -55,12 +57,12 @@ model.t
 
 ## Visual verification
 include(srcdir("../parameters.jl"));
-model = SPP(params)
+model = SoftVisionXY(params)
 lattice = TriangularLattice(L,periodic=true)
-thetas = init_thetas(lattice,params=params)
+thetas = init_thetas(model,lattice,params_init=params_init)
 plot_thetas(thetas,model,lattice)
-tmax = 1000
-    z = @elapsed update!(thetas,model,lattice,tmax)
+tmax = 10
+    z = @elapsed update!(thetas,model,lattice,tmax=tmax)
     plot_thetas(thetas,model,lattice)
     # ok tout semble correspondre à mes attentes
 prinz(z)

@@ -95,10 +95,11 @@ function get_neighbours(thetas::Vector{T},model::AbstractPropagationModel{T},lat
     end
 end
 
-function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
+function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vector{<:T},model::AbstractModel{T},lattice::AbstractLattice)::T where T<:AbstractFloat
     # default case, nothing to worry about
     if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
     else
+        # return sum(sin,sym(model)*(angles_neighbours .- theta)) # 33% times slower
         if model.symmetry == "polar"
             return sum(sin,(angles_neighbours .- theta))
         elseif model.symmetry == "nematic"

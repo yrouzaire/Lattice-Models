@@ -1,13 +1,13 @@
 # Physical Parameters
-L = 100
+L = 200
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.
 A = 0
-vision = 0.
+vision = 0.2
 rho = 1
-algo = "MonteCarlo" # rule for collision!() for model = SPP : algo = "A", or type of XY model : algo = "MonteCarlo"/"MC" or"Langevin
+algo = "Langevin" # rule for collision!() for model = SPP : algo = "A", or type of XY model : algo = "MonteCarlo"/"MC" or"Langevin
 
 # Numerical Parameters
 dt = 1E-2

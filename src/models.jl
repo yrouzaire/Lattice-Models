@@ -9,8 +9,8 @@ function modd(model::AbstractModel{FT}) where FT<:AbstractFloat
     end
 end
 function sym(model::AbstractModel{FT})::FT where FT<:AbstractFloat
-    if model.symmetry == "polar" return 1
-    elseif model.symmetry == "nematic" return 2
+    if model.symmetry == "polar" return 1.0
+    elseif model.symmetry == "nematic" return 2.0
     end
 end
 
