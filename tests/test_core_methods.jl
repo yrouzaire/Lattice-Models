@@ -13,9 +13,10 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 include(srcdir("../parameters.jl"));
 
 ## Benchmark update
-model = SPP(params)
+model = SoftVisionXY(params)
 lattice = TriangularLattice(L,periodic=true)
-thetas = init_thetas(lattice,params=params)
+thetas = init_thetas(model,lattice,params_init=params_init)
+update!(thetas,model,lattice)
 update!(thetas,model,lattice,10)
     # plot_thetas(thetas,model,lattice)
 @btime update!($thetas,$model,$lattice)

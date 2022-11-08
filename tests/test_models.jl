@@ -7,6 +7,7 @@ model = XY(params)
 model = MonteCarloXY(params)
 model = ForcedXY(params)
 model = VisionXY(params)
+model = SoftVisionXY(params)
 model = SPP(params)
 
 # WARNING, incohérence !

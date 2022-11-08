@@ -108,9 +108,9 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
     end
 end
 
-function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::Abstract2DLattice)::T where T<:AbstractFloat
+function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vector{<:T},model::VisionXY{T},lattice::Abstract2DLattice)::T where T<:AbstractFloat
     weights  = zeros(T,length(angles_neighbours))
-    theta0   = mod(theta,sym(model)*pi)
+    theta0   = mod(theta,modd(model))
     if     isa(lattice,TriangularLattice) constant = T(π/3)
     elseif isa(lattice,SquareLattice)     constant = T(π/2)
     end
@@ -125,7 +125,21 @@ function sum_influence_neighbours(theta::T,angles_neighbours::Vector{<:T},model:
         end
     end
     if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
-    else return sum(sin.(sym(model)(angles_neighbours .- theta)) .* weights)
+    else return sum(sin.(sym(model)*(angles_neighbours .- theta)) .* weights)
+    end
+end
+
+function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vector{<:T},model::SoftVisionXY{T},lattice::Abstract2DLattice)::T where T<:AbstractFloat
+    weights  = zeros(T,length(angles_neighbours))
+    theta0   = mod(theta,modd(model))
+    if     isa(lattice,TriangularLattice) nnn = 6
+    elseif isa(lattice,SquareLattice)     nnn = 4
+    end
+    ID = ID_projection_angle_onto_lattice(theta,i,j,lattice)
+    weights = ones(length(angles_neighbours))*(1-model.vision)
+    weights[ID] = 1+(nnn-1)*model.vision
+    if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
+    else return sum(sin.(sym(model)*(angles_neighbours .- theta)) .* weights)
     end
 end
 
@@ -136,7 +150,7 @@ function update!(thetas::AbstractArray{T},model::AbstractModel,lattice::Abstract
 end
 update!(thetas::AbstractArray{T},model::AbstractModel,lattice::AbstractLattice,Δt) where T<:AbstractFloat = update!(thetas,model,lattice,tmax=model.t+Δt)
 
-function update!(thetas::Matrix{<:FT},model::Union{LangevinXY{FT},VisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::Union{LangevinXY{FT},VisionXY{FT},SoftVisionXY{FT}},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     dt = model.dt
@@ -148,7 +162,7 @@ function update!(thetas::Matrix{<:FT},model::Union{LangevinXY{FT},VisionXY{FT}},
         for i in 2:L-1
             θ = thetas_old[i,j]
             angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-            thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
+            thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,i,j,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
         end
     end
 
@@ -158,12 +172,12 @@ function update!(thetas::Matrix{<:FT},model::Union{LangevinXY{FT},VisionXY{FT}},
         for j in [1,L] , i in 1:L
             θ = thetas_old[i,j]
             angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-            thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
+            thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,i,j,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
         end
         for j in 2:L-1 , i in [1,L]
             θ = thetas_old[i,j]
             angle_neighbours = get_neighbours(thetas_old,model,lattice,i,j,ij_in_bulk)
-            thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
+            thetas[i,j] =  θ + dt*sum_influence_neighbours(θ,i,j,angle_neighbours,model,lattice) + sqrt(2T*dt)*randn(FT)
         end
     end
 
@@ -385,6 +399,17 @@ function project_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::
         index_nearest_neighbour = 1
     end
     return nearest_neighbours[index_nearest_neighbour]
+end
+
+# same as above but only returns the index instead of the offset to reach the said projected neighbour
+function ID_projection_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::Abstract2DLattice)::Int
+    nearest_neighbours = offsets(lattice,iseven(i)) # can be of length 4, 6 or 8
+    nb_nn = length(nearest_neighbours)
+    index_nearest_neighbour = round(Int,mod(angle,2π)/(2π/nb_nn),RoundNearest) + 1
+    if index_nearest_neighbour == nb_nn + 1
+        index_nearest_neighbour = 1
+    end
+    return index_nearest_neighbour
 end
 
 # Meant to relax reconstruction for spotting defects

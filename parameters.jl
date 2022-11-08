@@ -5,7 +5,7 @@ symmetry = "polar"
 propulsion = "polar"
 Var = 0.
 A = 0
-vision = 5π/3
+vision = 0.
 rho = 1
 algo = "MonteCarlo" # rule for collision!() for model = SPP : algo = "A", or type of XY model : algo = "MonteCarlo"/"MC" or"Langevin
 
