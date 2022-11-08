@@ -11,10 +11,13 @@ CHARGE = 1
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
+
+using CUDA, Flux, BSON
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
-@unpack NN, trainL, epochs, comments = load("DAE_positive1___03_11_2022.jld2")
-NN_test = cpu(NN)
-comments
+@unpack NN, trainL, epochs = load("DAE_positive1___07_11_2022_fonctionnel.bson")
+BSON.@load "DAE_positive1___07_11_2022_fonctionnel.bson" NN_saved
+NN_test = cpu(NN_saved)
+# comments
 
 using Augmentor
 
@@ -63,7 +66,7 @@ z = @elapsed for i in each(mus)
 
         X_noisy_reshaped = reshape(tmp,(W21,W21,1,:))
         recon = NN_test(X_noisy_reshaped)[:,:,1,1]
-        mus_infered[i,r] = infer_mu(original,q=CHARGE)
+        mus_infered[i,r] = infer_mu_decay(tmp,q=CHARGE)
     end
 end
 plot(xlabel="True µ",ylabel="Inferred µ")
@@ -75,7 +78,7 @@ plot(xlabel="True µ",ylabel="Inferred µ")
 R = 1000
 flip_strength = [0.1,0.2,0.3]
 mus_infered = zeros(length(flip_strength),R)
-original = base_dataset[:,:,42] # µ = 0
+original = base_dataset[:,:,1] # µ = 0
 
 
 z = @elapsed for j in each(flip_strength) , r in 1:R
@@ -86,7 +89,7 @@ z = @elapsed for j in each(flip_strength) , r in 1:R
     recon = NN_test(X_noisy_reshaped)[:,:,1,1]
     mus_infered[j,r] = infer_mu(recon,q=CHARGE)
 end
-histogram(mod.(mus_infered[2,:].+pi,2pi).-pi,bins=50,normalize=true)
+histogram(mod.(mus_infered[2,:].-pi,2pi).+pi,bins=50,normalize=true)
 mean(mod.(mus_infered[1,:].+pi,2pi).-pi)
 std(mod.(mus_infered[1,:].+pi,2pi).-pi)
 
@@ -128,7 +131,7 @@ update!(thetasagg,model,latticeagg,tmax=500)  # updates until time = t
 
 dft = DefectTracker(thetasagg,model,latticeagg,find_type=true)
     plot(xlims=(0,2pi))
-    histogram!(last_types(dft),bins=50,normalize=true)
+    histogram!(last_types(dft),bins=28,normalize=true)
 
 loc = dft.defectsP[1].pos[1]
     zoom_quiver(thetasagg,model,latticeagg,loc...)

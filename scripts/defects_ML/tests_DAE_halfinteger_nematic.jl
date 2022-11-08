@@ -7,14 +7,14 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 include(srcdir("../parameters.jl"));
 params["symmetry"] = "nematic"
-CHARGE = 1/2
+CHARGE = -1/2
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN12.jld2")
 @unpack NN, trainL, epochs = load("DAE_positive12___06_11_2022.jld2")
 NN_test = cpu(NN)
-comments
+# comments
 
 using Augmentor
 
@@ -77,7 +77,7 @@ plot(xlabel="True µ",ylabel="Inferred µ")
 R = 1000
 flip_strength = [0.1,0.2,0.3]
 mus_infered = zeros(length(flip_strength),R)
-original = base_dataset[:,:,2] # µ = 0
+original = base_dataset[:,:,1] # µ = 0
 
 
 z = @elapsed for j in each(flip_strength) , r in 1:R

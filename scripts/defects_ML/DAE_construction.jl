@@ -8,7 +8,7 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 using Flux, Augmentor, Random, Statistics, CUDA
 using Flux:params, onehotbatch, crossentropy, logitcrossentropy, onecold, throttle, mse, trainmode!, testmode!
-using Distributions, JLD2
+using Distributions, JLD2,BSON
 
 #= --------------------- Idea ---------------------
 One of the various uses of AutoEncoders is to denoise
@@ -25,16 +25,16 @@ is unbaised.
 # mus = Float32.(round.(collect(0:dµ:2pi-dµ),digits=2))
 # base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
 # model = XY(params)
-# lattice = SquareLattice(W21)
+# lattice = SquareLattice(W21,periodic=false)
 # for i in each(mus)
 #     params_init["type1defect"] = mus[i];
 #     base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
 # end
-# # using JLD2
-# # jldsave("data/for_ML/base_dataset_µP1.jld2";base_dataset,mus,dµ,WINDOW)
+# using JLD2
+# jldsave("data/for_ML/base_dataset_µN12.jld2";base_dataset,mus,dµ,WINDOW)
 # ind = rand(1:length(mus))
-#     p=plot_thetas(base_dataset[:,:,ind],model,lattice)
-#     display_quiver!(p,base_dataset[:,:,ind],WINDOW)
+    # p=plot_thetas(base_dataset[:,:,ind],model,lattice)
+    # display_quiver!(p,base_dataset[:,:,ind],WINDOW)
 
 ## Some functions
 function random_flip(image,xpu;seuil=0.35)
@@ -47,34 +47,34 @@ function proba_flip(epoch,epoch0=300,pmax=0.25;slope = 5E-4)
     ceiled = min(linear_increase_at_from_e0,pmax)
     return ceiled
 end
-
-function infer_mu(thetas::Array{T,4},q;window=WINDOW)::T where T<:AbstractFloat
-    thetas_reshaped = reshape(thetas,(2*window+1,2*window+1,1,1))
-    return infer_mu(thetas_reshaped,q,window=window)
-end
-function infer_mu(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
-    L = size(thetas,1)
-    @assert L == 2window+1
-    muss = zeros(size(thetas))
-    # tmp = Complex(0)
-    for j in 2:L-1, i in 2:L-1
-        muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
-        # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
-        # tmp += exp(im*muss[i,j] - 0.25sqrt((i-window)^2 + (j-window)^2))
-    end
-    # muss[window,window] = 0
-    moyenne = angle(mean(exp.(im*muss[2:L-1,2:L-1])))
-    if     abs(q) == 1   correction = pi - 0.33228605
-    elseif abs(q) == 1/2 correction = 0.1
-    end
-    #= tbh, I don't know where the shifts might come from,
-    In the beggining, I thought maybe from the spin at the center of the defect,
-    where theta should not be defined. But if one changes mean->sum and adds the condition
-    "if (i == j == window)", the result only becomes weirder... =#
-    # return mod.(muss,2pi)
-    return mod(moyenne .+ correction,2π)
-end
-
+#
+# function infer_mu(thetas::Array{T,4},q;window=WINDOW)::T where T<:AbstractFloat
+#     thetas_reshaped = reshape(thetas,(2*window+1,2*window+1,1,1))
+#     return infer_mu(thetas_reshaped,q,window=window)
+# end
+# function infer_mu(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
+#     L = size(thetas,1)
+#     @assert L == 2window+1
+#     muss = zeros(size(thetas))
+#     # tmp = Complex(0)
+#     for j in 2:L-1, i in 2:L-1
+#         muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
+#         # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
+#         # tmp += exp(im*muss[i,j] - 0.25sqrt((i-window)^2 + (j-window)^2))
+#     end
+#     # muss[window,window] = 0
+#     moyenne = angle(mean(exp.(im*muss[2:L-1,2:L-1])))
+#     if     abs(q) == 1   correction = pi - 0.33228605
+#     elseif abs(q) == 1/2 correction = 0.1
+#     end
+#     #= tbh, I don't know where the shifts might come from,
+#     In the beggining, I thought maybe from the spin at the center of the defect,
+#     where theta should not be defined. But if one changes mean->sum and adds the condition
+#     "if (i == j == window)", the result only becomes weirder... =#
+#     # return mod.(muss,2pi)
+#     return mod(moyenne .+ correction,2π)
+# end
+#
 # # test infer_mu()
 # inferred = zeros(length(mus))
 #     for ind in 1:64
@@ -185,7 +185,7 @@ export_to_gpu = true
 
 ## Data
 W21 = 2WINDOW+1
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
 include(srcdir("../parameters.jl"));
 
 ## Declare NN, Loss and Optimiser
@@ -203,7 +203,7 @@ NN = 0
     # NN = DenseAutoEncoder(W21*W21,100,16) |> xpu
 
 ## Training
-epochs = Int(5E3)
+epochs = Int(6E3)
 trainL = zeros(epochs)
 trainLpen = zeros(epochs)
 
@@ -216,25 +216,25 @@ X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 z = @elapsed for e in 1:epochs
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
     e0_noise = 1500 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
-    seuil_flip = 0#proba_flip(e,e0_noise,pmax,slope=slope)
+    seuil_flip = proba_flip(e,e0_noise,pmax,slope=slope)
     pi32 = Float32(π)
     for i in 1:size(shuffled_dataset,3)
         # Rotate
-        # if rand() < 0.2 degree = rand([0,10,20,30,350,340,330])
-        # else degree = rand(0:10:350)
-        # end
-        # ppl = Rotate(degree) |> Resize(W21,W21)
-        # tmp = augment(shuffled_dataset[:,:,i],ppl)
-        # tmp .+= Float32(deg2rad(degree))
+        if rand() < 0. degree = rand([0,10,20,30,350,340,330])
+        else degree = rand(0:10:350)
+        end
+        ppl = Rotate(degree) |> Resize(W21,W21)
+        tmp = augment(shuffled_dataset[:,:,i],ppl)
+        tmp .+= Float32(deg2rad(degree))
 
         # Flip
-        # tmp .+= pi32*rand(Bernoulli(seuil_flip), size(tmp))
+        tmp .+= pi32*rand(Bernoulli(seuil_flip), size(tmp))
 
         # Thermal Noise (useless if relaxation at T>0)
         # tmp += 0.2*rand()*randn(size(tmp))
 
         # Relax
-        tmp = shuffled_dataset[:,:,i]
+        # tmp = shuffled_dataset[:,:,i]
         trelax = .1 ; update!(tmp,model,lattice,trelax)
 
         X_noisy[:,:,i] = tmp
@@ -256,13 +256,6 @@ z = @elapsed for e in 1:epochs
 end
 prinz(z)
 
-# comments = ["if trainL[e] < 0.5 opt.eta = 5E-4
-#     elseif trainL[e] < 0.1 opt.eta = 2.5E-4
-#     elseif trainL[e] < 0.02 opt.eta = 1E-4
-#     end", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
-# JLD2.@save "DAE_positive1___07_11_2022.jld2" NN trainL trainLpen base_dataset epochs runtime=z
-@unpack NN, trainL, epochs = load(".jld2")
-
 plot(legend=:bottomleft)
     plot!(1:epochs-1,trainL[1:end-1],axis=:log,lw=0.5)
     plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5)
@@ -276,5 +269,14 @@ plot(legend=:bottomleft)
 #
 # infer_mu(recon,1)
 # NN = cpu(NN)
+
+# comments = ["if trainL[e] < 0.5 opt.eta = 5E-4
+#     elseif trainL[e] < 0.1 opt.eta = 2.5E-4
+#     elseif trainL[e] < 0.02 opt.eta = 1E-4
+#     end", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
+using BSON
+NN_saved = cpu(NN)
+BSON.@save "DAE_negative12___07_11_2022.bson" NN_saved trainL trainLpen base_dataset epochs runtime=z
+# @unpack NN, trainL, epochs = load(".jld2")
 
 ## END OF FILE
