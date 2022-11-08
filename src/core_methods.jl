@@ -171,7 +171,7 @@ function update!(thetas::Matrix{<:FT},model::Union{AbstractXYModel{FT},VisionXY{
     return thetas
 end
 
-function update!(thetas::Matrix{<:FT},model::MCXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
+function update!(thetas::Matrix{<:FT},model::MonteCarloXY{FT},lattice::Abstract2DLattice) where FT<:AbstractFloat
     thetas_old = copy(thetas)
     L  = lattice.L
     T  = model.T

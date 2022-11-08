@@ -52,7 +52,7 @@ end
 # Visualise the system
 plot_thetas(thetas,model,lattice,defects=false)
 plot_thetas(thetas,model,lattice,defects=true) # circle = +1 defect, triangle = -1 defect
-#= WARNING: plotting the defects can take enormous time if they are to many.
+#= WARNING: plotting the defects can take enormous time if they are too many.
 It is recommended to first plot with `defects=false` (the default value) to evaluate visually
 the number of defects. =#
 
@@ -72,7 +72,7 @@ plot(xlabel="r",ylabel="C(r)")
 lattice = SquareLattice(L)
 model = LangevinXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
-every = 1 ; tmax = 200 ; transients = 50 # defects are not plotted before t ≥ transients (if defects=true)
+every = 1 ; tmax = 20 ; transients = 50 # defects are not plotted before t ≥ transients (if defects=true)
 saving_times = every:every:tmax
 z = @elapsed animation = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
 prinz(z) # takes approximately 2 minutes, go grab a coffee
@@ -104,11 +104,11 @@ xlocation, ylocation = antivortices[rand(1:nb_defects)][1:2]
 params_init["init"] = "hightemp" # equivalent of "disordered"
     thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice)
-&
+
 params_init["init"] = "lowtemp" # equivalent of "ordered"
     thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice)
-&
+
 # For a +1 defect, "type1defect" should be "source" or "sink" or "clockwise" or "counterclockwise"
 params_init["init"] = "single" ;  params_init["q"] = 1 ; params_init["type1defect"] = "source"
     thetas = init_thetas(model,lattice,params_init=params_init)
