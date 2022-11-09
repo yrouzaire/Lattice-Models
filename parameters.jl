@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 100
+L = 140
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -17,11 +17,11 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "single"
+init = "pair"
 q = 1
 r0 = round(Int,L/2)
 type1defect = pi/2
-type2defect = "pair1"
+type2defect = "pair3"
 
 # Containers
 params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"algo"=>algo)
