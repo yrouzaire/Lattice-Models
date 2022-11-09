@@ -12,7 +12,7 @@ model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
-BSON.@load "NeuralNets/DAE_negative12___07_11_2022_fonctionnel.bson" NN_saved
+BSON.@load "NeuralNets/DAE_positive12___09_11_2022.bson" DAE
 NN_test = cpu(DAE)
 # comments
 
@@ -26,7 +26,7 @@ ind = rand(1:63)
         ppl = Rotate(degree) |> Resize(W21,W21)
         tmp = augment(base_dataset[:,:,ind],ppl)
         tmp .+= Float32(deg2rad(degree))
-    seuil_flip = 0.2
+    seuil_flip = 0.3
         tmp .+= Float32(pi)*rand(Bernoulli(seuil_flip), size(tmp))
     trelax = .1 ; update!(tmp,model,lattice,trelax)
     X_noisy = tmp
@@ -38,7 +38,7 @@ ind = rand(1:63)
         display_quiver!(p0,thetas,WINDOW)
     p1=plot_thetas(X_noisy,model,lattice,defects=false,title="Inferred µ = $(round(infer_mu(X_noisy,q=CHARGE),digits=2))")
         display_quiver!(p1,X_noisy,WINDOW)
-    recon = NN_test(X_noisy_reshaped)[:,:,1,1]
+    recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
     p2=plot_thetas(recon,model,lattice,defects=false,title="Inferred µ = $(round(infer_mu(recon,q=CHARGE),digits=2))")
     display_quiver!(p2,recon,WINDOW)
     plot(p0,p1,p2,size=(485,400*3),layout=(3,1))
@@ -66,7 +66,7 @@ z = @elapsed for i in each(mus)
         tmp = mod.(tmp,2pi)
 
         X_noisy_reshaped = reshape(tmp,(W21,W21,1,:))
-        recon = NN_test(X_noisy_reshaped)[:,:,1,1]
+        recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
         mus_infered_withDAE[i,j,r] = infer_mu_decay(recon,q=CHARGE)
         mus_infered_withoutDAE[i,j,r] = infer_mu_decay(tmp,q=CHARGE)
     end
@@ -76,12 +76,12 @@ p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
     plot!(x->x-0.3,c=:red,lw=0.5)
     plot!(x->x+0.3,c=:red,lw=0.5)
 
-p2=plot(xlabel="True µ",ylabel="Inferred µ",title="With DAE preprocess. ")
+    p2=plot(xlabel="True µ",ylabel="Inferred µ",title="With DAE preprocess. ")
     scatter!(mus,mus_infered_withDAE[1:end,1,:],c=:black,ms=1)
     plot!(x->x-0.3,c=:red,lw=0.5)
     plot!(x->x+0.3,c=:red,lw=0.5)
 
-plot(p1,p2,size=(800,400))
+    plot(p1,p2,size=(800,400))
 # savefig("plots/DAE/nematic/comparison_with_without_DAE_nematic.png")
 
 ## Third Test : Errors when inferring true µ = 0

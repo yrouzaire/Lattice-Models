@@ -25,6 +25,12 @@ using Distributions,BSON
 # ind = rand(1:length(mus))
     # p=plot_thetas(base_dataset[:,:,ind],model,lattice)
     # display_quiver!(p,base_dataset[:,:,ind],WINDOW)
+##
+function proba_flip(epoch,epoch0=300,pmax=0.25;slope = 5E-4)
+    linear_increase_at_from_e0 = max(0,slope*(epoch-epoch0))
+    ceiled = min(linear_increase_at_from_e0,pmax)
+    return ceiled
+end
 
 ## Define Neural Network
 # We define a reshape layer to use in our decoder
@@ -44,13 +50,17 @@ end
             Conv((3, 3), 32=>32, relu),
                 Flux.flatten,
             Dense(prod(output_conv_layer), 120, relu),
+            Dropout(0.5),
             Dense(120,60,relu),
-            Dense(60,latent_dim,relu)
+            Dropout(0.5),
+            Dense(60,latent_dim,relu),
             )
         decoder = Chain(
         Dense(latent_dim,60,relu),
         Dense(60,120,relu),
+        Dropout(0.5),
         Dense(120,prod(output_conv_layer), relu),
+        Dropout(0.5),
         Reshape(output_conv_layer...,:),
         ConvTranspose((3,3),32=>32,relu),
         ConvTranspose((3,3),32=>16,relu),
@@ -60,10 +70,10 @@ end
         return autoencoder
     end
 
-    function ConvResAE(latent_dim=16)
+    function ConvResAE_divrot(latent_dim=16)
         output_conv_layer = (9,9,32)
         return Chain(
-        Conv((3, 3), 1=>16, relu),
+        Conv((3, 3), 3=>16, relu),
         SkipConnection( # beggining of outer skip
             Chain(Conv((3, 3), 16=>32, relu),
             Conv((3, 3), 32=>32, relu),
@@ -107,12 +117,12 @@ loss(X, y) = mse(NN(X), y)
 # evalcb = throttle(progress, 1)
 ## Training
 dim_latent_space = 10
-extra_training_close_to_µ0 = 0
+extra_training_close_to_µ0 = 0.
 model = XY(params) ; lattice = SquareLattice(W21,periodic=false)
 NN = 0
     NN = ConvAE_divrot(dim_latent_space) |> xpu
     opt = Adam(1E-3)
-    epochs = 2000
+    epochs = 10000
 
 trainL = zeros(epochs)
     trainLpen = zeros(epochs)
@@ -122,10 +132,10 @@ multi_fact = 10
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
 z = @elapsed for e in 1:epochs
+    # trainmode!(NN)
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
-    e0_noise = 1500 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
-    seuil_flip = 0#proba_flip(e,e0_noise,pmax,slope=slope)
-
+    # e0_noise = 1500 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
+    seuil_flip = 0.3#proba_flip(e,e0_noise,pmax,slope=slope)
     for i in 1:size(shuffled_dataset,3)
         #= Rotate =#
         if rand() < extra_training_close_to_µ0 degree = rand([0,10,20,30,350,340,330])
@@ -153,6 +163,8 @@ z = @elapsed for e in 1:epochs
     Flux.train!(loss_pen, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     trainL[e] = loss(Xtrain,Ytrain)
     trainLpen[e] = loss_pen(Xtrain,Ytrain)
+
+    # testmode!(NN)
     testL[e] =  loss(Xtest,Ytest)
 
     if isinteger(e/50)
