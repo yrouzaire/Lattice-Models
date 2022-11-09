@@ -30,11 +30,11 @@ lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
 plot_thetas(thetas,model,lattice,defects=false)
 
-every = 2 ; tmax = 100 ; transients = Inf#round(Int,tmax*0.8) # defects are not plotted before t ≥ transients (if defects=true)
+every = 0.5 ; tmax = 40 ; transients = Inf#round(Int,tmax*0.8) # defects are not plotted before t ≥ transients (if defects=true)
 saving_times = every:every:tmax
 z = @elapsed animation = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
 prinz(z)
-filename = "films/soft_vision/pair2_$(params["symmetry"])_vision_$(model.vision).mp4"
+filename = "films/soft_vision/single_µpi_$(params["symmetry"])_vision_$(model.vision).mp4"
 mp4(animation,filename,fps=20)
 
 plot_thetas(thetas,model,lattice,defects=false)
