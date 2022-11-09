@@ -95,7 +95,7 @@ export_to_gpu = true
 
 ## Data
 W21 = 2WINDOW+1
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
 include(srcdir("../parameters.jl"));
 
 ## Declare NN, Loss and Optimiser
@@ -107,34 +107,47 @@ loss(X, y) = mse(NN(X), y)
 # evalcb = throttle(progress, 1)
 ## Training
 dim_latent_space = 10
+extra_training_close_to_µ0 = 0
+model = XY(params) ; lattice = SquareLattice(W21,periodic=false)
 NN = 0
     NN = ConvAE(dim_latent_space) |> xpu
     opt = Adam(1E-3)
+    epochs = 2000
 
-epochs = Int(1E3)
 trainL = zeros(epochs)
-trainLpen = zeros(epochs)
-testL = zeros(epochs)
+    trainLpen = zeros(epochs)
+    testL = zeros(epochs)
 
 multi_fact = 10
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
 z = @elapsed for e in 1:epochs
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
-    for i in 1:Ntrain # Train Set
-        X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.2 *rand()*randn(W21,W21))
+    e0_noise = 1500 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
+    seuil_flip = 0#proba_flip(e,e0_noise,pmax,slope=slope)
+
+    for i in 1:size(shuffled_dataset,3)
+        #= Rotate =#
+        if rand() < extra_training_close_to_µ0 degree = rand([0,10,20,30,350,340,330])
+        else degree = rand(0:10:350)
+        end
+        ppl = Rotate(degree) |> Resize(W21,W21)
+        tmp = augment(shuffled_dataset[:,:,i],ppl)
+        tmp .+= Float32(deg2rad(degree))
+
+        #= Flip   =# tmp .+= Float32(pi)*rand(Bernoulli(seuil_flip), size(tmp))
+        #= Noise  =# tmp += 0.2*rand()*randn(size(tmp))
+        # = Relax  =# trelax = .1 ; update!(tmp,model,lattice,trelax)
+        X_noisy[:,:,i] = tmp
     end
-    for i in 1+Ntrain:size(shuffled_dataset,3) # Validation Set
-        X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.2 *rand()*randn(W21,W21))
-    end
-    pi232 = Float32(2pi)
-    X_noisy = mod.(X_noisy,pi232)
-    # if needed, reshape to feed the conv/Dense layer
+    #= Modulo =# pi232 = Float32(2pi) ; X_noisy = mod.(X_noisy,pi232)
+    #= Reshape and Load on CPU/GPU =#
     Xtrain = xpu(reshape(X_noisy[:,:,1:Ntrain],(W21,W21,1,:)))
     Xtest  = xpu(reshape(X_noisy[:,:,1+Ntrain:end],(W21,W21,1,:)))
     Ytrain = xpu(reshape(shuffled_dataset[:,:,1:Ntrain],(W21,W21,1,:)))
     Ytest  = xpu(reshape(shuffled_dataset[:,:,1+Ntrain:end],(W21,W21,1,:)))
 
+    #= Train and compute losses =#
     Flux.train!(loss_pen, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     trainL[e] = loss(Xtrain,Ytrain)
     trainLpen[e] = loss_pen(Xtrain,Ytrain)
@@ -155,6 +168,6 @@ plot(legend=:bottomleft)
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 using BSON
 DAE = cpu(NN)
-BSON.@save "DAE_positive1___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
+BSON.@save "NeuralNets/DAE_positive12___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
 
 ## END OF FILE

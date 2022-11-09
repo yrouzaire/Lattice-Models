@@ -26,33 +26,6 @@ using Distributions,BSON
     # p=plot_thetas(base_dataset[:,:,ind],model,lattice)
     # display_quiver!(p,base_dataset[:,:,ind],WINDOW)
 
-## Provide Divergence and Rotationnal
-function provide_div_rot(X::Matrix{T}) where T<:AbstractFloat
-    LL = size(X,1)
-    latt = TriangularLattice(LL,periodic=false)
-    X_divrot = zeros(T,LL,LL,3)
-    X_divrot[:,:,1] = X
-    divmat, rotmat = get_div_rot(X,latt)
-    X_divrot[:,:,2] = divmat
-    X_divrot[:,:,3] = rotmat
-    return X_divrot
-end
-
-function provide_div_rot(X::Array{T,4}) where T<:AbstractFloat
-    LL = size(X,1)
-    M  = size(X,4)
-    latt = TriangularLattice(LL,periodic=false)
-    X_divrot = zeros(T,LL,LL,3,M)
-    for m in 1:M
-        X_divrot[:,:,1,m] = X
-        divmat, rotmat = get_div_rot(X[:,:,1,m],latt)
-        X_divrot[:,:,2,m] = divmat
-        X_divrot[:,:,3,m] = rotmat
-    end
-    return X_divrot
-end
-
-
 ## Define Neural Network
 # We define a reshape layer to use in our decoder
 # Source :https://github.com/alecokas/flux-vae/blob/master/conv-vae/main.jl
@@ -63,7 +36,7 @@ end
     (r::Reshape)(x) = reshape(x, r.shape)
     Flux.@functor Reshape ()
 
-    function ConvAE_divrot(latent_dim=16)
+    function ConvAE_divrot(latent_dim=10)
         output_conv_layer = (9,9,32)
         encoder = Chain(
             Conv((3, 3), 3=>16, relu),
@@ -90,7 +63,7 @@ end
     function ConvResAE(latent_dim=16)
         output_conv_layer = (9,9,32)
         return Chain(
-        Conv((3, 3), 3=>16, relu),
+        Conv((3, 3), 1=>16, relu),
         SkipConnection( # beggining of outer skip
             Chain(Conv((3, 3), 16=>32, relu),
             Conv((3, 3), 32=>32, relu),
@@ -122,7 +95,7 @@ export_to_gpu = true
 
 ## Data
 W21 = 2WINDOW+1
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
 include(srcdir("../parameters.jl"));
 
 ## Declare NN, Loss and Optimiser
@@ -134,10 +107,12 @@ loss(X, y) = mse(NN(X), y)
 # evalcb = throttle(progress, 1)
 ## Training
 dim_latent_space = 10
+extra_training_close_to_µ0 = 0
+model = XY(params) ; lattice = SquareLattice(W21,periodic=false)
 NN = 0
     NN = ConvAE_divrot(dim_latent_space) |> xpu
     opt = Adam(1E-3)
-    epochs = 500
+    epochs = 2000
 
 trainL = zeros(epochs)
     trainLpen = zeros(epochs)
@@ -148,30 +123,33 @@ X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
 z = @elapsed for e in 1:epochs
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
-    for i in 1:Ntrain # Train Set
-        X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.3 *rand()*randn(W21,W21))
-    end
-    for i in 1+Ntrain:size(shuffled_dataset,3) # Validation Set
-        X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.3 *rand()*randn(W21,W21))
-    end
-    pi232 = Float32(2pi)
-    X_noisy = mod.(X_noisy,pi232)
+    e0_noise = 1500 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
+    seuil_flip = 0#proba_flip(e,e0_noise,pmax,slope=slope)
 
-    # Provide div and rot to help the NN
-    batchsize = length(mus)*multi_fact
-    X_aug_divrot = zeros(Float32,W21,W21,3,batchsize)
-    for i in 1:batchsize
-        X_aug_divrot[:,:,1,i] = X_noisy[:,:,i] # ch1 = augmented thetas
-        divmat, rotmat = get_div_rot(X_noisy[:,:,i],TriangularLattice(W21,periodic=false))
-        X_aug_divrot[:,:,2,i] = divmat # ch2 = div
-        X_aug_divrot[:,:,3,i] = rotmat # ch3 = rot
+    for i in 1:size(shuffled_dataset,3)
+        #= Rotate =#
+        if rand() < extra_training_close_to_µ0 degree = rand([0,10,20,30,350,340,330])
+        else degree = rand(0:10:350)
+        end
+        ppl = Rotate(degree) |> Resize(W21,W21)
+        tmp = augment(shuffled_dataset[:,:,i],ppl)
+        tmp .+= Float32(deg2rad(degree))
+
+        #= Flip   =# tmp .+= Float32(pi)*rand(Bernoulli(seuil_flip), size(tmp))
+        #= Noise  =# tmp += 0.2*rand()*randn(size(tmp))
+        # = Relax  =# trelax = .1 ; update!(tmp,model,lattice,trelax)
+        X_noisy[:,:,i] = tmp
     end
-    # if needed, reshape to feed the conv/Dense layer
-    Xtrain = xpu(X_aug_divrot[:,:,:,1:Ntrain])
-    Xtest = xpu(X_aug_divrot[:,:,:,1+Ntrain:end])
+    #= Modulo =# pi232 = Float32(2pi) ; X_noisy = mod.(X_noisy,pi232)
+    #= DivRot =# X_divrot = provide_div_rot(X_noisy)
+
+    #= Reshape and Load on CPU/GPU =#
+    Xtrain = xpu(X_divrot[:,:,:,1:Ntrain])
+    Xtest  = xpu(X_divrot[:,:,:,1+Ntrain:end])
     Ytrain = xpu(reshape(shuffled_dataset[:,:,1:Ntrain],(W21,W21,1,:)))
     Ytest  = xpu(reshape(shuffled_dataset[:,:,1+Ntrain:end],(W21,W21,1,:)))
 
+    #= Train and compute losses =#
     Flux.train!(loss_pen, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     trainL[e] = loss(Xtrain,Ytrain)
     trainLpen[e] = loss_pen(Xtrain,Ytrain)
@@ -192,6 +170,6 @@ plot(legend=:bottomleft)
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 using BSON
 DAE = cpu(NN)
-BSON.@save "DAE_positive1___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
+BSON.@save "NeuralNets/DAE_positive12___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
 
 ## END OF FILE

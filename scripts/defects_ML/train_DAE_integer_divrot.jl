@@ -27,7 +27,7 @@ using Distributions,BSON
     # display_quiver!(p,base_dataset[:,:,ind],WINDOW)
 
 ## Provide Divergence and Rotationnal
-function provide_div_rot(X::Matrix{T}) where T<:AbstractFloat
+function provide_div_rot(X::Array{T,2}) where T<:AbstractFloat
     LL = size(X,1)
     latt = TriangularLattice(LL,periodic=false)
     X_divrot = zeros(T,LL,LL,3)
@@ -38,13 +38,26 @@ function provide_div_rot(X::Matrix{T}) where T<:AbstractFloat
     return X_divrot
 end
 
+function provide_div_rot(X::Array{T,3}) where T<:AbstractFloat
+    LL = size(X,1)
+    M  = size(X,3)
+    latt = TriangularLattice(LL,periodic=false)
+    X_divrot = zeros(T,LL,LL,3,M)
+    for m in 1:M
+        X_divrot[:,:,1,m] = X[:,:,m]
+        divmat, rotmat = get_div_rot(X[:,:,m],latt)
+        X_divrot[:,:,2,m] = divmat
+        X_divrot[:,:,3,m] = rotmat
+    end
+    return X_divrot
+end
 function provide_div_rot(X::Array{T,4}) where T<:AbstractFloat
     LL = size(X,1)
     M  = size(X,4)
     latt = TriangularLattice(LL,periodic=false)
     X_divrot = zeros(T,LL,LL,3,M)
     for m in 1:M
-        X_divrot[:,:,1,m] = X
+        X_divrot[:,:,1,m] = X[:,:,1,m]
         divmat, rotmat = get_div_rot(X[:,:,1,m],latt)
         X_divrot[:,:,2,m] = divmat
         X_divrot[:,:,3,m] = rotmat
@@ -148,24 +161,16 @@ X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
 z = @elapsed for e in 1:epochs
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
-    for i in 1:Ntrain # Train Set
-        X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.3 *rand()*randn(W21,W21))
-    end
-    for i in 1+Ntrain:size(shuffled_dataset,3) # Validation Set
+
+    for i in 1:size(shuffled_dataset,3) # Both Train and Validation Sets
         X_noisy[:,:,i] = shuffled_dataset[:,:,i] + Float32.(0.3 *rand()*randn(W21,W21))
     end
     pi232 = Float32(2pi)
     X_noisy = mod.(X_noisy,pi232)
 
     # Provide div and rot to help the NN
-    batchsize = length(mus)*multi_fact
-    X_aug_divrot = zeros(Float32,W21,W21,3,batchsize)
-    for i in 1:batchsize
-        X_aug_divrot[:,:,1,i] = X_noisy[:,:,i] # ch1 = augmented thetas
-        divmat, rotmat = get_div_rot(X_noisy[:,:,i],TriangularLattice(W21,periodic=false))
-        X_aug_divrot[:,:,2,i] = divmat # ch2 = div
-        X_aug_divrot[:,:,3,i] = rotmat # ch3 = rot
-    end
+    X_aug_divrot = provide_div_rot(X_noisy)
+
     # if needed, reshape to feed the conv/Dense layer
     Xtrain = xpu(X_aug_divrot[:,:,:,1:Ntrain])
     Xtest = xpu(X_aug_divrot[:,:,:,1+Ntrain:end])

@@ -14,7 +14,7 @@ lattice = TriangularLattice(W21,periodic=false)
 
 using CUDA, Flux, BSON
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
-BSON.@load "DAE_positive1___09_11_2022.bson" DAE
+BSON.@load "NeuralNets/DAE_positive1___09_11_2022.bson" DAE
 NN_test = cpu(DAE)
 # comments
 

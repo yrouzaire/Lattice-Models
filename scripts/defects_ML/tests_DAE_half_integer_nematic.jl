@@ -12,8 +12,8 @@ model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
-BSON.@load "DAE_negative12___07_11_2022_fonctionnel.bson" NN_saved
-NN_test = cpu(NN_saved)
+BSON.@load "NeuralNets/DAE_negative12___07_11_2022_fonctionnel.bson" NN_saved
+NN_test = cpu(DAE)
 # comments
 
 using Augmentor
