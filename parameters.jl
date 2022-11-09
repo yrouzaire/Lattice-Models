@@ -1,7 +1,7 @@
 # Physical Parameters
-L = 100
+L = 200
 T = 0.1
-symmetry = "polar"
+symmetry = "nematic"
 propulsion = "polar"
 Var = 0.
 A = 0
@@ -17,8 +17,8 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "single"
-q = 1
+init = "hightemp"
+q = 1/2
 r0 = round(Int,L/2)
 type1defect = pi
 type2defect = "pair3"

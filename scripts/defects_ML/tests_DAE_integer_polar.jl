@@ -14,12 +14,10 @@ lattice = TriangularLattice(W21,periodic=false)
 
 using CUDA, Flux, BSON
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
-@unpack NN, trainL, epochs = load("DAE_positive1___07_11_2022_fonctionnel.bson")
+# @unpack NN, trainL, epochs = load("DAE_positive1___07_11_2022_fonctionnel.bson")
 BSON.@load "DAE_positive1___07_11_2022_fonctionnel.bson" NN_saved
 NN_test = cpu(NN_saved)
 # comments
-
-using Augmentor
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
 params["symmetry"] = "polar"
@@ -35,7 +33,7 @@ ind = rand(1:63)
     thetas = base_dataset[:,:,ind]
         p0=plot_thetas(thetas,model,lattice,defects=false,title="µ = $(mus[ind])")
         display_quiver!(p0,thetas,WINDOW)
-    p1=plot_thetas(X_noisy,model,lattice,defects=false)
+    p1=plot_thetas(X_noisy,model,lattice,defects=false,title="µ = $(round(infer_mu(X_noisy,q=CHARGE),digits=2))")
         display_quiver!(p1,X_noisy,WINDOW)
     recon = NN_test(X_noisy_reshaped)[:,:,1,1]
     p2=plot_thetas(recon,model,lattice,defects=false,title="µ = $(round(infer_mu(recon,q=CHARGE),digits=2))")
@@ -55,7 +53,10 @@ round(infer_mu(mod.(thetas_modified,2pi),q=CHARGE),digits=2)
 
 ## Second Test : check the reconstruction is correct for all mus
 R = 100
-mus_infered = zeros(length(mus),R)
+mus_infered_withDAE = zeros(length(mus),R)
+mus_infered_withoutDAE = zeros(length(mus),R)
+model = XY(params)
+lattice = TriangularLattice(W21,periodic=false)
 
 z = @elapsed for i in each(mus)
     original = base_dataset[:,:,i]
@@ -66,13 +67,23 @@ z = @elapsed for i in each(mus)
 
         X_noisy_reshaped = reshape(tmp,(W21,W21,1,:))
         recon = NN_test(X_noisy_reshaped)[:,:,1,1]
-        mus_infered[i,r] = infer_mu_decay(tmp,q=CHARGE)
+        mus_infered_withDAE[i,r] = infer_mu_decay(recon,q=CHARGE)
+        mus_infered_withoutDAE[i,r] = infer_mu_decay(tmp,q=CHARGE)
     end
 end
-plot(xlabel="True µ",ylabel="Inferred µ")
-    scatter!(mus,mus_infered[1:end,:],c=:black,ms=1)
+p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
+    scatter!(mus,mus_infered_withoutDAE[1:end,:],c=:black,ms=1)
     plot!(x->x-0.3,c=:red,lw=0.5)
     plot!(x->x+0.3,c=:red,lw=0.5)
+
+p2=plot(xlabel="True µ",ylabel="Inferred µ",title="With DAE preprocess. ")
+    scatter!(mus,mus_infered_withDAE[1:end,:],c=:black,ms=1)
+    plot!(x->x-0.3,c=:red,lw=0.5)
+    plot!(x->x+0.3,c=:red,lw=0.5)
+
+plot(p1,p2,size=(800,400))
+# savefig("plots/comparison_with_without_DAE_polar.png")
+
 
 ## Third Test : Errors when inferring true µ = 0
 R = 1000
@@ -94,7 +105,7 @@ mean(mod.(mus_infered[1,:].+pi,2pi).-pi)
 std(mod.(mus_infered[1,:].+pi,2pi).-pi)
 
 ## Forth Test : check the constance over time with in vitro defects
-p=plot(ylims=(0,2pi))
+p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
     for initmu in 1:6 ,  r in 1:1
         params["L"] = 200 ; params["T"] = 0.2
         params["symmetry"] = "polar" ; params["rho"] = 1 ; params["A"] = 0
@@ -110,28 +121,39 @@ p=plot(ylims=(0,2pi))
         plot!(dft.defectsP[1].type,m=false,line=true,c=initmu)
     end
     p
-&
+savefig("plots/constance_over_time_polar.png")
+
 
 ## Fifth Test : In vivo defects, LangevinXY, measure P(µ,t)
 include(srcdir("../parameters.jl"));
 params["symmetry"] = "polar" ; params["rho"] = 1 ; params["A"] = 0
 params["L"] = 200 ; params["T"] = 0.2
 lattice = TriangularLattice(L)
-model = MonteCarloXY(params)
+latticeagg = TriangularLattice(2L)
 
-thetas = init_thetas(model,lattice,params_init=params_init)
-update!(thetas,model,lattice) # calentamiento
-update!(thetas,model,lattice,tmax=100)  # updates until time = t
-    p = plot_thetas(thetas,model,lattice,defects=false)
-thetasagg = zeros(Float32,2 .*size(thetas))
-    thetasagg[1:L,1:L] = thetasagg[1:L,1+L:end] = thetasagg[1+L:end,1:L] = thetasagg[1+L:end,1+L:end] = thetas
-    latticeagg = TriangularLattice(2L)
-update!(thetasagg,model,latticeagg,tmax=500)  # updates until time = t
-    p = plot_thetas(thetasagg,model,latticeagg,defects=false)
+R = 10
+dfts = Vector{DefectTracker}(undef,R)
+z = @elapsed for r in 1:R
+    println("r=$r/$R")
+    model = MonteCarloXY(params)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    update!(thetas,model,lattice) # calentamiento
+    update!(thetas,model,lattice,tmax=100)  # updates until time = t
+        # p = plot_thetas(thetas,model,lattice,defects=false)
+    thetasagg = zeros(Float32,2 .*size(thetas))
+        thetasagg[1:L,1:L] = thetasagg[1:L,1+L:end] = thetasagg[1+L:end,1:L] = thetasagg[1+L:end,1+L:end] = thetas
+    update!(thetasagg,model,latticeagg,tmax=500)  # updates until time = t
+        # p = plot_thetas(thetasagg,model,latticeagg,defects=false)
 
-dft = DefectTracker(thetasagg,model,latticeagg,find_type=true)
-    plot(xlims=(0,2pi))
-    histogram!(last_types(dft),bins=28,normalize=true)
+    dfts[r] = DefectTracker(thetasagg,model,latticeagg,find_type=true)
+end
+prinz(z)
+last_types_vec = []
+    for r in 1:R push!(last_types_vec,last_types(dfts[r])...) end
+    plot(xlims=(0,2pi),xlabel="µ",ylabel="P(µ)")
+    histogram!(last_types_vec,bins=50,normalize=true)
+    hline!([1/2pi],c=:black)
+# savefig("plots/DAE/polar/Pmu_constant_polar.png")
 
 loc = dft.defectsP[1].pos[1]
     zoom_quiver(thetasagg,model,latticeagg,loc...)

@@ -29,7 +29,7 @@ function infer_mu_0(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
     corrmat = zeros(size(thetas)) ; corrmat[window,window] = 1
     moyenne = angle(mean(exp.(im*muss[range,range])-0corrmat[range,range]))
     if     abs(q) == 1   correction = pi - 0.33228605 # 0.2 works perfectly with corrmat, 0.33228605 was the original cst
-    elseif abs(q) == 1/2 correction = 0.1
+    elseif abs(q) == 1/2 correction = 0.8
     end
     #= To be honest, I don't know where the shifts might come from,
     In the beggining, I thought maybe from the spin at the center of the defect,
@@ -46,7 +46,7 @@ function infer_mu_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloa
     range = 2:L-1
     for j in range, i in range
         muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
-        # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
+        # i<->j irrelevant because i,j and j,i have the same weight for "mean" or "sum" operation
         tmp += exp(im*muss[i,j] - sqrt((i-window)^2 + (j-window)^2))
     end
     moyenne = angle(tmp)
@@ -61,24 +61,42 @@ function infer_mu_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloa
     return mod(moyenne .+ correction,2π)
 end
 
-## Test  noiseless
-inferred1  = zeros(length(mus))
-inferred12 = zeros(length(mus))
-    for ind in 1:64
-        inferred1[ind] = infer_mu(base_dataset1[:,:,ind],q=1)
-        inferred12[ind] = infer_mu(base_dataset12[:,:,ind],q=-1/2)
-    end
-    plot(mus,inferred1,m=true,c=:red)
-    plot!(mus,inferred12,m=true,c=:green)
-    plot!(x->x,c=:black)
-
-## Test with noise
-inferred1  = zeros(length(mus))
-inferred12 = zeros(length(mus))
-    for ind in 1:64
-        inferred1[ind]  = infer_mu(base_dataset1[:,:,ind] + 0.2randn(W21,W21),q=1)
-        inferred12[ind] = infer_mu(base_dataset12[:,:,ind]+ 0.2randn(W21,W21),q=-1/2)
-    end
-    plot(mus,inferred1,m=true,c=:red)
-    plot!(mus,inferred12,m=true,c=:green)
-    plot!(x->x,c=:black)
+# ## Test noiseless
+# inferred1  = zeros(length(mus))
+# inferred12 = zeros(length(mus))
+#     for ind in 1:64
+#         inferred1[ind] = infer_mu(base_dataset1[:,:,ind],q=1,decay=false)
+#         inferred12[ind] = infer_mu(base_dataset12[:,:,ind],q=-1/2,decay=false)
+#     end
+#     p1 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noiseless")
+#     plot!(mus,inferred1,m=true,c=:red,label="Polar")
+#     plot!(mus,inferred12,m=true,c=:green,label="Nematic")
+#     plot!(x->x,c=:black)
+#
+# ## Test with noise
+# inferred1  = zeros(length(mus))
+# inferred12 = zeros(length(mus))
+# noise = 0.3randn(W21,W21,64)
+# decay = false
+#     for ind in 1:64
+#         inferred1[ind]  = infer_mu(base_dataset1[:,:,ind] + noise[:,:,ind],q=1,decay=decay)
+#         inferred12[ind] = infer_mu(base_dataset12[:,:,ind]+ noise[:,:,ind],q=-1/2,decay=decay)
+#     end
+#     p2 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (without decay)")
+#     plot!(mus,inferred1,line=false,m=true,c=:red,label="Polar")
+#     plot!(mus,inferred12,line=false,m=true,c=:green,label="Nematic")
+#     plot!(x->x,c=:black)
+#
+# decay = true
+#     for ind in 1:64
+#         inferred1[ind]  = infer_mu(base_dataset1[:,:,ind] + noise[:,:,ind],q=1,decay=decay)
+#         inferred12[ind] = infer_mu(base_dataset12[:,:,ind]+ noise[:,:,ind],q=-1/2,decay=decay)
+#     end
+#     p3 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (with decay)")
+#     plot!(mus,inferred1,line=false,m=true,c=:red,label="Polar")
+#     plot!(mus,inferred12,line=false,m=true,c=:green,label="Nematic")
+#     plot!(x->x,c=:black)
+#
+#
+# plot(p1,p2,p3,size=(1200,400),layout=(1,3))
+# savefig("plots/procedure_infer_mu_polar.png")

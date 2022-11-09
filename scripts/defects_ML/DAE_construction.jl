@@ -261,22 +261,12 @@ plot(legend=:bottomleft)
     plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5)
     plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1)
 
-# xx = reshape(base_dataset,(15,15,64,1))
-# recon = NN(xx[:,:,1:1,1:1])[:,:]
-# model = XY(params)
-# lattice = TriangularLattice(15)
-# plot_thetas(recon,model,lattice,defects=false)
-#
-# infer_mu(recon,1)
-# NN = cpu(NN)
-
 # comments = ["if trainL[e] < 0.5 opt.eta = 5E-4
 #     elseif trainL[e] < 0.1 opt.eta = 2.5E-4
 #     elseif trainL[e] < 0.02 opt.eta = 1E-4
 #     end", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 using BSON
-NN_saved = cpu(NN)
-BSON.@save "DAE_negative12___07_11_2022.bson" NN_saved trainL trainLpen base_dataset epochs runtime=z
-# @unpack NN, trainL, epochs = load(".jld2")
+DAE = cpu(NN)
+BSON.@save "DAE_negative12___07_11_2022.bson" DAE trainL trainLpen base_dataset epochs runtime=z
 
 ## END OF FILE
