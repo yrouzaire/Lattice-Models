@@ -22,19 +22,19 @@ update!(thetasagg,model,latticeagg,tmax=50)  # updates until time = t
 ## Movies
 include(srcdir("../parameters.jl"));
 params["vision"] = 0.2
-params["symmetry"] = "polar"
-params_init["init"] = "single"
-params_init["type1defect"] = pi/2
+# params["symmetry"] = "polar"
+# params_init["init"] = "single"
+# params_init["type1defect"] = pi/2
 model = SoftVisionXY(params)
 lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
 plot_thetas(thetas,model,lattice,defects=false)
 
-every = 2 ; tmax = 400 ; transients = round(Int,tmax*0.8) # defects are not plotted before t ≥ transients (if defects=true)
+every = 5 ; tmax = 1000 ; transients = Inf#round(Int,tmax*0.8) # defects are not plotted before t ≥ transients (if defects=true)
 saving_times = every:every:tmax
 z = @elapsed animation = movies(thetas,model,lattice,defects=true,saving_times=saving_times,transients=transients)
 prinz(z)
-filename = "films/soft_vision/$(params["symmetry"])_vision_$(model.vision).mp4"
+filename = "films/soft_vision/single_$(params["symmetry"])_vision_$(model.vision).mp4"
 mp4(animation,filename,fps=20)
 
 plot_thetas(thetas,model,lattice,defects=false)
