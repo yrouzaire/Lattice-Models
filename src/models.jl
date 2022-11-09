@@ -129,8 +129,6 @@ function SoftVisionXY(params)
     @unpack T,vision,symmetry,dt,float_type,rho = params
     T,vision,dt,rho = convert.(float_type,(T,vision,dt,rho))
 
-    if vision ≠ 2π @assert symmetry == "polar" "I am not sure how to interpret a vision cone with nematic symmetry" end
-
     return SoftVisionXY{float_type}(T,vision,symmetry,dt,zero(float_type),rho)
 end
 

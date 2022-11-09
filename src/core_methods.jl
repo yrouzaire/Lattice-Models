@@ -138,7 +138,12 @@ function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vect
     end
     ID = ID_projection_angle_onto_lattice(theta,i,j,lattice)
     weights = ones(length(angles_neighbours))*(1-model.vision)
-    weights[ID] = 1+(nnn-1)*model.vision
+    if model.symmetry == "polar"
+        weights[ID] = 1+(nnn-1)*model.vision
+    elseif model.symmetry == "polar"
+        weights[ID] = 1+(nnn-1)/2*model.vision
+        weights[mod(Int(ID+nnn/2),nnn)] = 1+(nnn-1)/2*model.vision
+    end
     if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
     else return sum(sin.(sym(model)*(angles_neighbours .- theta)) .* weights)
     end

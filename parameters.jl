@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 200
+L = 100
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -17,10 +17,10 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "hightemp"
-q = -1/2
+init = "single"
+q = 1
 r0 = round(Int,L/2)
-type1defect = "counterclockwise"
+type1defect = pi/2
 type2defect = "pair1"
 
 # Containers
