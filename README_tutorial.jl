@@ -62,15 +62,11 @@ C = corr(thetas,model,lattice) # the spatial correlation function C(r)
 threshold = exp(-1)
 ξ = corr_length(C,seuil=threshold) # the correlation length ξ (xi)
 plot(xlabel="r",ylabel="C(r)")
-    plot!(1:L/2,C,axis=:log)
+    plot!(1:L/2,remove_negative(C),axis=:log) # remove_negative
     hline!([threshold],c=:grey,lw=0.5)
     vline!([ξ],c=:grey,lw=0.5,line=:dash)
-    annotate!((1.5,1.1threshold,text("y = threshold",7,:left)))
-    annotate!((8,0.1,text("r = ξ",7,:center,90.)))
-
-# Where are the defects ?
-positively_charged_defects,negatively_charged_defects = spot_defects(thetas,model,lattice)
-positively_charged_defects[1] # charge, x, y, type (don't care about it)
+    annotate!((1.5,1.15threshold,text("y = threshold",7,:left)))
+    annotate!((0.85ξ,0.1,text("r = ξ",7,:center,90.)))
 
 ## Create a movie
 lattice = SquareLattice(L)
@@ -92,12 +88,56 @@ xlocation, ylocation = (50,50)
 half_width_of_window = 10 # not too big because plotting the arrows is damn slow
 zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
 
-# Around a randomly chosen +1 defect
+# Where are the defects ?
 vortices,antivortices = spot_defects(thetas,model,lattice)
 nb_defects = length(vortices)
+
+# Around a randomly chosen +1 defect
 xlocation, ylocation = vortices[rand(1:nb_defects)][1:2]
-zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
+    zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
 
 # Around a randomly chosen -1 defect
 xlocation, ylocation = antivortices[rand(1:nb_defects)][1:2]
-zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
+    zoom_quiver(thetas,model,lattice,xlocation,ylocation,half_width_of_window)
+
+## Explore the different initialisations
+params_init["init"] = "hightemp" # equivalent of "disordered"
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)
+
+params_init["init"] = "lowtemp" # equivalent of "ordered"
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)
+
+# For a +1 defect, "type1defect" should be "source" or "sink" or "clockwise" or "counterclockwise"
+params_init["init"] = "single" ;  params_init["q"] = 1 ; params_init["type1defect"] = "source"
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    p=plot_thetas(thetas,model,lattice)
+zoom_quiver(thetas,model,lattice,50,50)
+
+params_init["init"] = "single" ;  params_init["q"] = +1 ; params_init["type1defect"] = "sink"
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)
+zoom_quiver(thetas,model,lattice,50,50)
+
+# For a -1 defect, "type1defect" should be "join" or "split" or "threefold1" or "threefold2"
+    # For now, it doesn't mak much sense, but it does for some other use of this code.
+params_init["init"] = "single" ;  params_init["q"] = -1 ; params_init["type1defect"] = "join"
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    p=plot_thetas(thetas,model,lattice)
+zoom_quiver(thetas,model,lattice,50,50)
+
+params_init["init"] = "single" ;  params_init["q"] = -1 ; params_init["type1defect"] = "threefold1"
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)
+zoom_quiver(thetas,model,lattice,50,50)
+
+# Pairs of defects
+params_init["init"] = "pair" ;  params_init["r0"] = round(Int,L/2) ; params_init["type2defect"] = ["source","join"]
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)
+
+# 2 Pairs
+params_init["init"] = "2pair" ;  params_init["r0"] = 40 ; params_init["type2defect"] = ["source","join"]
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)

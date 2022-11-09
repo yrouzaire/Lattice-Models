@@ -170,7 +170,7 @@ function get_div_rot(thetas::Matrix{T},i,j,lattice::Abstract2DLattice) where T<:
     L = size(thetas,1)
 
     dummy_rho = one(T) # so that the NaN do not get filtered out, I need them here
-    rho1_model = XY{T}(zero(T),"polar",zero(T),zero(T),dummy_rho)
+    rho1_model = LangevinXY{T}(zero(T),"polar",zero(T),zero(T),dummy_rho)
 
     if isa(lattice,TriangularLattice) cst = π/3 # ; surface_unit_cell = 3sqrt(3)/2
     elseif isa(lattice,SquareLattice) cst = π/2 # ; surface_unit_cell = 2

@@ -65,8 +65,8 @@ end
 
 function smooth(X;over=3) ## for smoother plots
     smoothed = copy(X)
-    coeff = [2^(i-1) for i in 1:over]
-    coeff = coeff./sum(coeff)
+    coeff = [2^(-(i-1)) for i in 1:over]
+    coeff = coeff.*sum(coeff)
     s = length(coeff)
     for i in 1+s:length(smoothed)
         smoothed[i] = X[i-s+1:i]'*coeff

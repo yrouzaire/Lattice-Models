@@ -3,6 +3,17 @@ using Parameters
 abstract type AbstractModel{AbstractFloat} end
 abstract type AbstractPropagationModel{AbstractFloat} <: AbstractModel{AbstractFloat} end
 
+function modd(model::AbstractModel{FT}) where FT<:AbstractFloat
+    if model.symmetry == "polar" return FT(2pi)
+    elseif model.symmetry == "nematic" return FT(pi)
+    end
+end
+function sym(model::AbstractModel{FT})::FT where FT<:AbstractFloat
+    if model.symmetry == "polar" return 1.0
+    elseif model.symmetry == "nematic" return 2.0
+    end
+end
+
 ## ---------------------------- Classical XY Model ----------------------------
 abstract type AbstractXYModel{AbstractFloat} <: AbstractModel{AbstractFloat} end
 function XY(params) # by default, return LangevinXY
@@ -86,7 +97,8 @@ function SPP(params)
 end
 
 
-## ------------------- Non Reciprocal (Vision Cone) XY Model -------------------
+## ------------------- Non Reciprocal XY Models -------------------
+# (Vision Cone)
 mutable struct VisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
     T::AbstractFloat
     vision::AbstractFloat
@@ -102,6 +114,22 @@ function VisionXY(params)
     if vision ≠ 2π @assert symmetry == "polar" "I am not sure how to interpret a vision cone with nematic symmetry" end
 
     return VisionXY{float_type}(T,vision,symmetry,dt,zero(float_type),rho)
+end
+
+# (Softly Tuned Couplings)
+mutable struct SoftVisionXY{AbstractFloat} <: AbstractModel{AbstractFloat}
+    T::AbstractFloat
+    vision::AbstractFloat
+    symmetry::String
+    dt::AbstractFloat
+    t::AbstractFloat
+    rho::AbstractFloat
+end
+function SoftVisionXY(params)
+    @unpack T,vision,symmetry,dt,float_type,rho = params
+    T,vision,dt,rho = convert.(float_type,(T,vision,dt,rho))
+
+    return SoftVisionXY{float_type}(T,vision,symmetry,dt,zero(float_type),rho)
 end
 
 ## Propagation Models

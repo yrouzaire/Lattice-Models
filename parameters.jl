@@ -4,10 +4,10 @@ T = 0.1
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.
-A = 2
-vision = 5π/3
+A = 0
+vision = 0.1
 rho = 1
-algo = "A" # rule for collision!() for model = SPP : algo = "A", or type of XY model : algo = "MonteCarlo"/"MC" or"Langevin
+algo = "Langevin" # rule for collision!() for model = SPP : algo = "A", or type of XY model : algo = "MonteCarlo"/"MC" or"Langevin
 
 # Numerical Parameters
 dt = 1E-2
@@ -20,8 +20,8 @@ every = 1E2
 init = "hightemp"
 q = 1/2
 r0 = round(Int,L/2)
-type1defect = "counterclockwise"
-type2defect = "pair1"
+type1defect = pi
+type2defect = "pair3"
 
 # Containers
 params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"algo"=>algo)

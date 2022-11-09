@@ -57,8 +57,8 @@ end
 number_defects(thetas,model,lattice) = sum(length,spot_defects(thetas,model,lattice))
 function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice;find_type=false) where T<:AbstractFloat
     L = lattice.L
-    vortices_plus  = Tuple{Int,Int,T,String}[]
-    vortices_minus = Tuple{Int,Int,T,String}[]
+    vortices_plus  = Tuple{Int,Int,T,T}[]
+    vortices_minus = Tuple{Int,Int,T,T}[]
 
     if     model.symmetry == "nematic" modd = T(pi)
     elseif model.symmetry == "polar"   modd = T(2pi)
@@ -67,18 +67,19 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     if model.rho < 1 preconditionning!(thetasmod,model,lattice) end
     # trelax = 0.3 ; relax!(thetasmod,model,trelax)
     if lattice.periodic range_bc = 1:L else range_bc = 2:L-1 end
+    temporary_type = NaN
     for i in range_bc
         for j in range_bc
             q = get_vorticity(thetasmod,model,lattice,i,j)
-            if     q > + 0.1 push!(vortices_plus,(i,j,q,"unknown")) # we want to keep ±½ defects, and not rounding errors
-            elseif q < - 0.1 push!(vortices_minus,(i,j,q,"unknown"))
+            if     q > + 0.1 push!(vortices_plus,(i,j,q,temporary_type)) # we want to keep ±½ defects, and not rounding errors
+            elseif q < - 0.1 push!(vortices_minus,(i,j,q,temporary_type))
             end
         end
     end
     vortices_plus_no_duplicates  = merge_duplicates(vortices_plus,lattice)
     vortices_minus_no_duplicates = merge_duplicates(vortices_minus,lattice)
 
-    if find_type return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,relax!(copy(thetas),model,0.3),lattice)
+    if find_type return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,mod.(thetas,2pi),lattice)
     else return vortices_plus_no_duplicates,vortices_minus_no_duplicates
     end
 end
@@ -96,26 +97,22 @@ function find_types(list_p,list_n,thetas,lattice)
     pos_all = vcat(pos_n,pos_p)
     type_all = vcat(type_n,type_p)
 
+    # define Denoising AutoEncoder DAE
     if charge_p[1] == 1
-        NN_positive = NN_positive1
-        NN_negative = NN_negative1
-        possible_positive_defects = possible_positive1_defects
-        possible_negative_defects = possible_negative1_defects
+        DAE = NN_test
     elseif charge_p[1] == 0.5
-        NN_positive = NN_positive12
-        NN_negative = NN_negative12
-        possible_positive_defects = possible_positive12_defects
-        possible_negative_defects = possible_negative12_defects
+        DAE = NN_test
     end
 
     total_number_defects = length(pos_n) + length(pos_p)
     density_defects = total_number_defects / lattice.L^2
-    if density_defects < 1/(2WINDOW+1)^2
+
+    # TODO : do we check first ?
+    if true #density_defects < 1/(2WINDOW+1)^2
         #= 11 x 11  window around the defect and we want this square
         free of any other defect to proceed. If too crowded, don't
         even enter the computationally expensive operations hereafter.
-        Recall that the default procedure is that an "unknown" cannot
-        replace a previously known type. =#
+        =#
         for n in each(pos_p)
             if alone_in_window(pos_p[n],pos_all,lattice,WINDOW) # heavy, computes distance
                 i,j = pos_p[n]
@@ -123,25 +120,29 @@ function find_types(list_p,list_n,thetas,lattice)
                 if no_problem_go_ahead
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value
-                    unchanged, i.e "unknown" =#
-                    ind_type = onecold(NN_positive(vec(thetas_zoom)))
-                    type_p[n] = possible_positive_defects[ind_type]
+                    unchanged, i.e =NaN =#
+                    denoised_theta_zoom = DAE(reshape(thetas_zoom,(W21,W21,1,1)))
+                    denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
+                    type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
+                    # TODO : generaliser ce 1/2
                 end
             end
         end
-        for n in each(pos_n)
-            if alone_in_window(pos_n[n],pos_all,lattice,WINDOW) # heavy, computes distance
-                i,j = pos_n[n]
-                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,WINDOW)
-                if no_problem_go_ahead
-                    #= A problem could occur if defect close to boundary
-                    and lattice not periodic. If so, leave the type value
-                    unchanged, i.e "unknown" =#
-                    ind_type = onecold(NN_negative(vec(thetas_zoom)))
-                    type_n[n] = possible_negative_defects[ind_type]
-                end
-            end
-        end
+        # TODO : do I do the same for negative defects ? finalité = ?
+        type_n = NaN*zeros(length(pos_n))
+        # for n in each(pos_n)
+        #     if alone_in_window(pos_n[n],pos_all,lattice,WINDOW) # heavy, computes distance
+        #         i,j = pos_n[n]
+        #         no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,WINDOW)
+        #         if no_problem_go_ahead
+        #             #= A problem could occur if defect close to boundary
+        #             and lattice not periodic. If so, leave the type value
+        #             unchanged, i.e "unknown" =#
+        #             # ind_type = onecold(NN_negative(vec(thetas_zoom)))
+        #             type_n[n] = NaN
+        #         end
+        #     end
+        # end
     end
 
     list_p_updated = similar(list_p)
@@ -242,14 +243,14 @@ mutable struct Defect
     id::Int
     charge::Number
     thetas_zoom::Vector{Matrix{Float32}} # types might change over the simulation
-    type::Vector{String} # types might change over the simulation
+    type::Vector{Float64} # types might change over the simulation
     pos::Vector{Tuple{Number,Number}}
     annihilation_time::Union{Float64,Nothing}
     creation_time::Float64
     id_annihilator::Union{Int,Nothing}
 end
-Defect(;id,charge,loc,thetas_zoom,t,type="unknown") = Defect(id,charge,[thetas_zoom],[type],[loc],nothing,t,nothing)
-# Defect(;id,charge,loc,t,type="unknown") = Defect(id,charge,[type],[loc],nothing,t,nothing)
+Defect(;id,charge,loc,thetas_zoom,t,type=NaN) = Defect(id,charge,[thetas_zoom],[type],[loc],nothing,t,nothing)
+# Defect(;id,charge,loc,t,type=NaN) = Defect(id,charge,[type],[loc],nothing,t,nothing)
 
 first_loc(d::Defect) = d.pos[1]
 last_loc(d::Defect)  = d.pos[end]
@@ -269,11 +270,12 @@ function update_position_and_type!(d::Defect,new_loc,new_type,thetas_zoomed)
     push!(d.thetas_zoom,thetas_zoomed)
 end
 
-function number_type_changes(d::Defect)
-    number_changes = 0
-    for i in 2:length(d.type) if d.type[i] ≠ d.type[i-1] number_changes += 1 end end
-    return number_changes
-end
+# n'a plus lieu d'être
+# function number_type_changes(d::Defect)
+#     number_changes = 0
+#     for i in 2:length(d.type) if d.type[i] ≠ d.type[i-1] number_changes += 1 end end
+#     return number_changes
+# end
 
 mutable struct DefectTracker
     defectsP::Vector{Defect} # the id of a defect is its index in this vector
@@ -286,8 +288,8 @@ mutable struct DefectTracker
             defectsP = [Defect(id=i,charge=vortices[i][3],type=vortices[i][4],thetas_zoom=zoom(thetas,lattice,vortices[i][1:2]...,WINDOW)[2],loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
             defectsN = [Defect(id=i,charge=antivortices[i][3],type=antivortices[i][4],thetas_zoom=zoom(thetas,lattice,antivortices[i][1:2]...,WINDOW)[2],loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
         else
-            defectsP = [Defect(id=i,charge=vortices[i][3],thetas_zoom=zoom(thetas,lattice,vortices[i][1:2]...,WINDOW)[2],type="unknown",loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
-            defectsN = [Defect(id=i,charge=antivortices[i][3],thetas_zoom=zoom(thetas,lattice,antivortices[i][1:2]...,WINDOW)[2],type="unknown",loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
+            defectsP = [Defect(id=i,charge=vortices[i][3],thetas_zoom=zoom(thetas,lattice,vortices[i][1:2]...,WINDOW)[2],type=NaN,loc=vortices[i][1:2],t=model.t) for i in each(vortices)]
+            defectsN = [Defect(id=i,charge=antivortices[i][3],thetas_zoom=zoom(thetas,lattice,antivortices[i][1:2]...,WINDOW)[2],type=NaN,loc=antivortices[i][1:2],t=model.t) for i in each(antivortices)]
         end
         new(defectsP,defectsN,model.t)
     end
@@ -295,14 +297,14 @@ end
 number_defectsP(dt::DefectTracker) = length(dt.defectsP)
 number_defectsN(dt::DefectTracker) = length(dt.defectsN)
 number_defects(dt::DefectTracker)  = length(dt.defectsN)  + length(dt.defectsN)
-function number_defects_type(dt::DefectTracker,type)
-    if     type in ["join","split","threefold1","threefold2"]
-        return count(isequal(type),[last_type(dt.defectsN[i]) for i in each(dt.defectsN)])
-    elseif type in ["source","sink","clockwise","counterclockwise"]
-        return count(isequal(type),[last_type(dt.defectsP[i]) for i in each(dt.defectsP)])
-    end
-end
-number_defects_types(dt::DefectTracker) = [number_defects_type(dt,type) for type in ["source","sink","clockwise","counterclockwise","join","split","threefold1","threefold2"]]
+# function number_defects_type(dt::DefectTracker,type)
+#     if     type in ["join","split","threefold1","threefold2"]
+#         return count(isequal(type),[last_type(dt.defectsN[i]) for i in each(dt.defectsN)])
+#     elseif type in ["source","sink","clockwise","counterclockwise"]
+#         return count(isequal(type),[last_type(dt.defectsP[i]) for i in each(dt.defectsP)])
+#     end
+# end
+# number_defects_types(dt::DefectTracker) = [number_defects_type(dt,type) for type in ["source","sink","clockwise","counterclockwise","join","split","threefold1","threefold2"]]
 number_active_defectsP(dt::DefectTracker) = count(isnothing,[d.annihilation_time for d in dt.defectsP])
 number_active_defectsN(dt::DefectTracker) = count(isnothing,[d.annihilation_time for d in dt.defectsN])
 number_active_defects(dt::DefectTracker)  = number_active_defectsN(dt) + number_active_defectsP(dt)
@@ -336,7 +338,7 @@ function ID_active_defects(dt::DefectTracker)
     return activeP,activeN
 end
 
-function add_defect!(dt::DefectTracker;charge,loc,type="unknown",thetas_zoom)
+function add_defect!(dt::DefectTracker;charge,loc,type=NaN,thetas_zoom)
     if charge > 0 push!(dt.defectsP,Defect(id=1+number_defectsP(dt),charge=charge,thetas_zoom=thetas_zoom,type=type,loc=loc,t=dt.current_time))
     else          push!(dt.defectsN,Defect(id=1+number_defectsN(dt),charge=charge,thetas_zoom=thetas_zoom,type=type,loc=loc,t=dt.current_time))
     end
@@ -391,63 +393,67 @@ function find_closest_before_annihilation(dt,lattice,old_loc_defect)
         end
     end
     if ID_antidefect == -1
-        println("Something weird is going on...")
+        @warn "Annihilating defect not found: annihilation location will not be computed."
+        # println("Something weird is going on...")
         println([dt.defectsN[i].annihilation_time == dt.current_time for i in 1:number_defectsN(dt)])
+        return -1,(-1,-1) # dummy
+    else
+        return ID_antidefect,last_loc(dt.defectsN[ID_antidefect])
     end
-    return ID_antidefect,last_loc(dt.defectsN[ID_antidefect])
 end
 
-# estimation_location_annihilation() has been replaced by mean_2_positions()
 function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,lattice)
     for i in ids_annihilated_defects
         old_loc_vortex = last_loc(dt.defectsP[i])
         ID_antivortex,old_loc_antivortex = find_closest_before_annihilation(dt,lattice,old_loc_vortex)
 
-        dt.defectsP[i].id_annihilator = ID_antivortex
-        dt.defectsN[ID_antivortex].id_annihilator = i
+        if ID_antivortex ≠ -1
+            dt.defectsP[i].id_annihilator = ID_antivortex
+            dt.defectsN[ID_antivortex].id_annihilator = i
 
-        # dt.defectsP[i].annihilation_time = dt.current_time
-        # dt.defectsN[ID_antivortex].annihilation_time = dt.current_time
+            # dt.defectsP[i].annihilation_time = dt.current_time
+            # dt.defectsN[ID_antivortex].annihilation_time = dt.current_time
 
-        estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,lattice.L)
-        update_position_and_type!(dt.defectsP[i],estimate,last_type(dt.defectsP[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
-        update_position_and_type!(dt.defectsN[ID_antivortex],estimate,last_type(dt.defectsN[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
+            estimate = mean_2_positions(old_loc_vortex,old_loc_antivortex,lattice.L)
+            update_position_and_type!(dt.defectsP[i],estimate,last_type(dt.defectsP[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
+            update_position_and_type!(dt.defectsN[ID_antivortex],estimate,last_type(dt.defectsN[i]),NaN*zeros(WINDOW,WINDOW)) # dummy thetas_zoom full of NaN
+        end
     end
     return dt
 end
 
 
-function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number) where T<:AbstractFloat
+function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number;find_type=false) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
             println("t = ",model.t)
             next_tracking_time += every
-            update_DefectTracker!(dft,thetas,model,lattice)
+            update_DefectTracker!(dft,thetas,model,lattice,find_type=find_type)
         end
     end
     return dft
 end
 
-function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number;defects=false) where T<:AbstractFloat
+function update_and_track_plot!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number;defects=false,find_type=false) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
             println("t = ",model.t)
             next_tracking_time += every
-            update_DefectTracker!(dft,thetas,model,lattice)
+            update_DefectTracker!(dft,thetas,model,lattice,find_type=find_type)
             display(plot_thetas(thetas,model,lattice,defects=defects))
         end
     end
     return dft
 end
 
-function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
+function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice;find_type=false)
     dt.current_time = model.t
     # NB = lattice.periodic
-    vortices_new,antivortices_new = spot_defects(thetas,model,lattice)
+    vortices_new,antivortices_new = spot_defects(thetas,model,lattice,find_type=find_type)
 
     # if BC == "periodic" @assert length(vortices_new) == length(antivortices_new) && length(vortices_old) == length(antivortices_old) end
     locP_old    = [last_loc(dt.defectsP[i]) for i in each(dt.defectsP)]
