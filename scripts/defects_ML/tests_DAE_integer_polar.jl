@@ -14,19 +14,18 @@ lattice = TriangularLattice(W21,periodic=false)
 
 using CUDA, Flux, BSON
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
-# @unpack NN, trainL, epochs = load("DAE_positive1___07_11_2022_fonctionnel.bson")
-BSON.@load "DAE_positive1___07_11_2022_fonctionnel.bson" NN_saved
-NN_test = cpu(NN_saved)
+BSON.@load "DAE_positive1___09_11_2022.bson" DAE
+NN_test = cpu(NN)
 # comments
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
 params["symmetry"] = "polar"
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
-ind = rand(1:63)
+ind = rand(1:64)
     tmp = base_dataset[:,:,ind]
-    trelax = .5 ; update!(tmp,model,lattice,trelax)
-    X_noisy = tmp
+    # trelax = .5 ; update!(tmp,model,lattice,trelax)
+    X_noisy = tmp + 0.15*randn(15,15)
     pi232 = Float32(2pi)
         X_noisy = mod.(X_noisy,pi232)
     X_noisy_reshaped = reshape(X_noisy,(W21,W21,1,:))
@@ -35,7 +34,7 @@ ind = rand(1:63)
         display_quiver!(p0,thetas,WINDOW)
     p1=plot_thetas(X_noisy,model,lattice,defects=false,title="µ = $(round(infer_mu(X_noisy,q=CHARGE),digits=2))")
         display_quiver!(p1,X_noisy,WINDOW)
-    recon = NN_test(X_noisy_reshaped)[:,:,1,1]
+    recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
     p2=plot_thetas(recon,model,lattice,defects=false,title="µ = $(round(infer_mu(recon,q=CHARGE),digits=2))")
     display_quiver!(p2,recon,WINDOW)
     plot(p0,p1,p2,size=(485,400*3),layout=(3,1))
@@ -62,26 +61,27 @@ z = @elapsed for i in each(mus)
     original = base_dataset[:,:,i]
     for r in 1:R
         tmp = original
-        trelax = .1 ; update!(tmp,model,lattice,trelax)
+        # trelax = .1 ; update!(tmp,model,lattice,trelax)
+        tmp += 0.15randn(15,15)
         tmp = mod.(tmp,2pi)
 
         X_noisy_reshaped = reshape(tmp,(W21,W21,1,:))
-        recon = NN_test(X_noisy_reshaped)[:,:,1,1]
+        recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
         mus_infered_withDAE[i,r] = infer_mu_decay(recon,q=CHARGE)
         mus_infered_withoutDAE[i,r] = infer_mu_decay(tmp,q=CHARGE)
     end
 end
-p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
+    p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
     scatter!(mus,mus_infered_withoutDAE[1:end,:],c=:black,ms=1)
     plot!(x->x-0.3,c=:red,lw=0.5)
     plot!(x->x+0.3,c=:red,lw=0.5)
 
-p2=plot(xlabel="True µ",ylabel="Inferred µ",title="With DAE preprocess. ")
+    p2=plot(xlabel="True µ",ylabel="Inferred µ",title="With DAE preprocess. ")
     scatter!(mus,mus_infered_withDAE[1:end,:],c=:black,ms=1)
     plot!(x->x-0.3,c=:red,lw=0.5)
     plot!(x->x+0.3,c=:red,lw=0.5)
 
-plot(p1,p2,size=(800,400))
+    plot(p1,p2,size=(800,400))
 # savefig("plots/comparison_with_without_DAE_polar.png")
 
 
