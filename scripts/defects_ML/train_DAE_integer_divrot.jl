@@ -197,6 +197,6 @@ plot(legend=:bottomleft)
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 using BSON
 DAE = cpu(NN)
-BSON.@save "DAE_positive1___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
+BSON.@save "NeuralNets/DAE_positive1___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
 
 ## END OF FILE
