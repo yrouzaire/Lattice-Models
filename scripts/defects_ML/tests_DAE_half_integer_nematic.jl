@@ -12,15 +12,13 @@ model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
-BSON.@load "NeuralNets/DAE_positive12___09_11_2022.bson" DAE
+BSON.@load "NeuralNets/DAE_positive12___10_11_2022.bson" DAE
 NN_test = cpu(DAE)
 # comments
 
 using Augmentor
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
-model = XY(params)
-lattice = TriangularLattice(W21,periodic=false)
 ind = rand(1:63)
     degree = rand(0:10:350)
         ppl = Rotate(degree) |> Resize(W21,W21)

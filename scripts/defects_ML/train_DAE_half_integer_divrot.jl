@@ -111,18 +111,18 @@ include(srcdir("../parameters.jl"));
 ## Declare NN, Loss and Optimiser
 L1norm(x) = sum(abs, x); L1penalty() = sum(L1norm,Flux.params(NN))
 L2norm(x) = sum(abs2, x); L2penalty() = sum(L2norm,Flux.params(NN))
-loss_pen(X, y) = mse(NN(X), y) + 5E-3*L2penalty()
+loss_pen(X, y) = mse(NN(X), y) + 2E-3*L2penalty()
 loss(X, y) = mse(NN(X), y)
 # progress = () -> @show(loss(Xtrain, Ytrain)) # callback to show loss
 # evalcb = throttle(progress, 1)
 ## Training
-dim_latent_space = 10
+dim_latent_space = 5
 extra_training_close_to_µ0 = 0.
 model = XY(params) ; lattice = SquareLattice(W21,periodic=false)
 NN = 0
     NN = ConvAE_divrot(dim_latent_space) |> xpu
     opt = Adam(1E-3)
-    epochs = 10000
+    epochs = 20
 
 trainL = zeros(epochs)
     trainLpen = zeros(epochs)
@@ -132,7 +132,7 @@ multi_fact = 10
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
 z = @elapsed for e in 1:epochs
-    # trainmode!(NN)
+    trainmode!(NN)
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
     # e0_noise = 1500 ; pmax = 0.3 ; slope = pmax/abs(epochs-e0_noise)*2
     seuil_flip = 0.3#proba_flip(e,e0_noise,pmax,slope=slope)
@@ -164,7 +164,8 @@ z = @elapsed for e in 1:epochs
     trainL[e] = loss(Xtrain,Ytrain)
     trainLpen[e] = loss_pen(Xtrain,Ytrain)
 
-    # testmode!(NN)
+    testmode!(
+    NN)
     testL[e] =  loss(Xtest,Ytest)
 
     if isinteger(e/50)
@@ -173,15 +174,15 @@ z = @elapsed for e in 1:epochs
 end
 prinz(z)
 
-plot(legend=:bottomleft)
-    plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
-    plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
+plot(legend=:bottomleft,ylims=(1E-2,20))
+    # plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
+    # plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
     plot!(1:epochs-1,testL[1:end-1],axis=:log,lw=0.5,label="Test")
     plot!(1:epochs-1,trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
 
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 using BSON
 DAE = cpu(NN)
-BSON.@save "NeuralNets/DAE_positive12___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
+BSON.@save "NeuralNets/DAE_positive12___10_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
 
 ## END OF FILE
