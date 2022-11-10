@@ -39,3 +39,70 @@ mp4(animation,filename,fps=20)
 
 plot_thetas(thetas,model,lattice,defects=false)
 zoom_quiver(thetas,model,lattice,123,22,12)
+
+## Stability of µ = 0 et µ = pi for XY model, (Langevin et MonteCarlo)
+include(srcdir("../parameters.jl"));
+params_init["init"] = "single"
+z = @elapsed for mu in [0,pi/2,pi,3pi/2]
+    println("µ = $mu")
+    params_init["type1defect"] = mu
+    model = LangevinXY(params)
+    lattice = TriangularLattice(L)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice,defects=false)
+    Nsteps = 100 ; every = 0.5
+    animation = @animate for i in 1:Nsteps
+        update!(thetas,model,lattice,every)
+        zoom_quiver(thetas,model,lattice,40,40,10)
+    end
+    mp4(animation,"films/soft_vision/stability_defects/stab_Langevin_µ$(round(mu,digits=2)).mp4")
+end
+prinz(z)
+
+z = @elapsed for mu in 0#[0,pi/2,pi,3pi/2]
+    println("µ = $mu")
+    params_init["type1defect"] = mu
+    model = MonteCarloXY(params)
+    lattice = TriangularLattice(L)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice,defects=false)
+    Nsteps = 100 ; every = 50
+    animation = @animate for i in 1:Nsteps
+        update!(thetas,model,lattice,every)
+        zoom_quiver(thetas,model,lattice,40,40,10)
+    end
+    mp4(animation,"films/soft_vision/stability_defects/stab_MonteCarlo_µ$(round(mu,digits=2)).mp4")
+end
+prinz(z)
+
+z = @elapsed for mu in [0,pi/2,pi,3pi/2]
+    for vision in [0.2]
+    println("µ = $(mu), vision = $vision")
+    params_init["type1defect"] = mu
+    params["vision"] = vision
+    model = SoftVisionXY(params)
+    lattice = TriangularLattice(L)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice,defects=false)
+    Nsteps = 100 ; every = 0.5
+    animation = @animate for i in 1:Nsteps
+        update!(thetas,model,lattice,every)
+        zoom_quiver(thetas,model,lattice,40,40,10)
+    end
+    mp4(animation,"films/soft_vision/stability_defects/stab_qneg_SoftVision_vision$(vision)_µ$(round(mu,digits=2)).mp4")
+    end
+end
+prinz(z)
+
+## µ(t) from µ(0) = 0 for SoftVisionXY
+R = 2
+visions = 1 .+ [0.02,0.05,0.1,0.2]
+tmax = 10
+for init_mu in [0,pi]
+    for vision in visions
+    for r in 1:R
+        model = SoftVisionXY(params)
+        lattice = TriangularLattice(L)
+        thetas = init_thetas(model,lattice,params_init=params_init)
+        dft = DefectTracker(thetas,model,lattice,find_type=true)
+        update_and_track!(thetas,model,lattice,dft,tmax,every,find_type=true)
