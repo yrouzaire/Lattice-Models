@@ -26,46 +26,6 @@ using Distributions,BSON
     # p=plot_thetas(base_dataset[:,:,ind],model,lattice)
     # display_quiver!(p,base_dataset[:,:,ind],WINDOW)
 
-## Provide Divergence and Rotationnal
-function provide_div_rot(X::Array{T,2}) where T<:AbstractFloat
-    LL = size(X,1)
-    latt = TriangularLattice(LL,periodic=false)
-    X_divrot = zeros(T,LL,LL,3)
-    X_divrot[:,:,1] = X
-    divmat, rotmat = get_div_rot(X,latt)
-    X_divrot[:,:,2] = divmat
-    X_divrot[:,:,3] = rotmat
-    return X_divrot
-end
-
-function provide_div_rot(X::Array{T,3}) where T<:AbstractFloat
-    LL = size(X,1)
-    M  = size(X,3)
-    latt = TriangularLattice(LL,periodic=false)
-    X_divrot = zeros(T,LL,LL,3,M)
-    for m in 1:M
-        X_divrot[:,:,1,m] = X[:,:,m]
-        divmat, rotmat = get_div_rot(X[:,:,m],latt)
-        X_divrot[:,:,2,m] = divmat
-        X_divrot[:,:,3,m] = rotmat
-    end
-    return X_divrot
-end
-function provide_div_rot(X::Array{T,4}) where T<:AbstractFloat
-    LL = size(X,1)
-    M  = size(X,4)
-    latt = TriangularLattice(LL,periodic=false)
-    X_divrot = zeros(T,LL,LL,3,M)
-    for m in 1:M
-        X_divrot[:,:,1,m] = X[:,:,1,m]
-        divmat, rotmat = get_div_rot(X[:,:,1,m],latt)
-        X_divrot[:,:,2,m] = divmat
-        X_divrot[:,:,3,m] = rotmat
-    end
-    return X_divrot
-end
-
-
 ## Define Neural Network
 # We define a reshape layer to use in our decoder
 # Source :https://github.com/alecokas/flux-vae/blob/master/conv-vae/main.jl

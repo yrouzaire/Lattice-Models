@@ -45,22 +45,22 @@ end
     function ConvAE_divrot(latent_dim=10)
         output_conv_layer = (9,9,32)
         encoder = Chain(
-            Conv((3, 3), 3=>16, relu),
+            Conv((3, 3), 4=>16, relu),
             Conv((3, 3), 16=>32, relu),
             Conv((3, 3), 32=>32, relu),
                 Flux.flatten,
             Dense(prod(output_conv_layer), 120, relu),
-            Dropout(0.5),
+            # Dropout(0.3),
             Dense(120,60,relu),
-            Dropout(0.5),
+            # Dropout(0.3),
             Dense(60,latent_dim,relu),
             )
         decoder = Chain(
         Dense(latent_dim,60,relu),
         Dense(60,120,relu),
-        Dropout(0.5),
+        # Dropout(0.3),
         Dense(120,prod(output_conv_layer), relu),
-        Dropout(0.5),
+        # Dropout(0.3),
         Reshape(output_conv_layer...,:),
         ConvTranspose((3,3),32=>32,relu),
         ConvTranspose((3,3),32=>16,relu),
@@ -111,7 +111,7 @@ include(srcdir("../parameters.jl"));
 ## Declare NN, Loss and Optimiser
 L1norm(x) = sum(abs, x); L1penalty() = sum(L1norm,Flux.params(NN))
 L2norm(x) = sum(abs2, x); L2penalty() = sum(L2norm,Flux.params(NN))
-loss_pen(X, y) = mse(NN(X), y) + 2E-3*L2penalty()
+loss_pen(X, y) = mse(NN(X), y) + 0E-3*L2penalty()
 loss(X, y) = mse(NN(X), y)
 # progress = () -> @show(loss(Xtrain, Ytrain)) # callback to show loss
 # evalcb = throttle(progress, 1)
@@ -122,7 +122,7 @@ model = XY(params) ; lattice = SquareLattice(W21,periodic=false)
 NN = 0
     NN = ConvAE_divrot(dim_latent_space) |> xpu
     opt = Adam(1E-3)
-    epochs = 20
+    epochs = 3000
 
 trainL = zeros(epochs)
     trainLpen = zeros(epochs)
@@ -131,6 +131,7 @@ trainL = zeros(epochs)
 multi_fact = 10
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
+
 z = @elapsed for e in 1:epochs
     trainmode!(NN)
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
@@ -141,6 +142,7 @@ z = @elapsed for e in 1:epochs
         if rand() < extra_training_close_to_µ0 degree = rand([0,10,20,30,350,340,330])
         else degree = rand(0:10:350)
         end
+        # degree = 0
         ppl = Rotate(degree) |> Resize(W21,W21)
         tmp = augment(shuffled_dataset[:,:,i],ppl)
         tmp .+= Float32(deg2rad(degree))
@@ -151,7 +153,8 @@ z = @elapsed for e in 1:epochs
         X_noisy[:,:,i] = tmp
     end
     #= Modulo =# pi232 = Float32(2pi) ; X_noisy = mod.(X_noisy,pi232)
-    #= DivRot =# X_divrot = provide_div_rot(X_noisy)
+    #= DivRot =# X_divrot = provide_div_rot_muss(X_noisy)
+    # Muss =# X_divrot = provide_muss(X_noisy)
 
     #= Reshape and Load on CPU/GPU =#
     Xtrain = xpu(X_divrot[:,:,:,1:Ntrain])
@@ -163,9 +166,7 @@ z = @elapsed for e in 1:epochs
     Flux.train!(loss_pen, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     trainL[e] = loss(Xtrain,Ytrain)
     trainLpen[e] = loss_pen(Xtrain,Ytrain)
-
-    testmode!(
-    NN)
+    testmode!(NN)
     testL[e] =  loss(Xtest,Ytest)
 
     if isinteger(e/50)
@@ -174,9 +175,9 @@ z = @elapsed for e in 1:epochs
 end
 prinz(z)
 
-plot(legend=:bottomleft,ylims=(1E-2,20))
+plot(legend=:bottomleft,ylims=(4E-3,20))
     # plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
-    # plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
+    plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
     plot!(1:epochs-1,testL[1:end-1],axis=:log,lw=0.5,label="Test")
     plot!(1:epochs-1,trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
 

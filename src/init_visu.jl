@@ -198,7 +198,7 @@ end
 
 
 ## ------------------------ Movies  ------------------------
-function movies(thetas,model,lattice;defects=false,saving_times,transients)
+function movies(thetas,model,lattice;defects=false,saving_times,transients=Inf)
     anim = @animate for t in saving_times
         println("$(round(t/saving_times[end]*100,digits=2)) %")
         update!(thetas,model,lattice,tmax=t)  # updates until time = t

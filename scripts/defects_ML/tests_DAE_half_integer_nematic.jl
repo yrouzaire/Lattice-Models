@@ -14,19 +14,20 @@ lattice = TriangularLattice(W21,periodic=false)
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP12.jld2")
 BSON.@load "NeuralNets/DAE_positive12___10_11_2022.bson" DAE
 NN_test = cpu(DAE)
+NN_test = cpu(NN)
 # comments
 
 using Augmentor
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
-ind = rand(1:63)
+ind = rand(1:64)
     degree = rand(0:10:350)
         ppl = Rotate(degree) |> Resize(W21,W21)
         tmp = augment(base_dataset[:,:,ind],ppl)
         tmp .+= Float32(deg2rad(degree))
-    seuil_flip = 0.3
+    seuil_flip = 0.
         tmp .+= Float32(pi)*rand(Bernoulli(seuil_flip), size(tmp))
-    trelax = .1 ; update!(tmp,model,lattice,trelax)
+    # trelax = .1 ; update!(tmp,model,lattice,trelax)
     X_noisy = tmp
     pi232 = Float32(2pi)
         X_noisy = mod.(X_noisy,pi232)
@@ -36,7 +37,7 @@ ind = rand(1:63)
         display_quiver!(p0,thetas,WINDOW)
     p1=plot_thetas(X_noisy,model,lattice,defects=false,title="Inferred µ = $(round(infer_mu(X_noisy,q=CHARGE),digits=2))")
         display_quiver!(p1,X_noisy,WINDOW)
-    recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
+    recon = NN_test(provide_div_rot_muss(X_noisy_reshaped))[:,:,1,1]
     p2=plot_thetas(recon,model,lattice,defects=false,title="Inferred µ = $(round(infer_mu(recon,q=CHARGE),digits=2))")
     display_quiver!(p2,recon,WINDOW)
     plot(p0,p1,p2,size=(485,400*3),layout=(3,1))
@@ -45,12 +46,11 @@ ind = rand(1:63)
 
 ## Second Test : check the reconstruction is correct for all mus
 R = 100
-flip_strength = [0.1,0.2,0.3]
-flip_strength = [0.3]
-mus_infered_withDAE = zeros(length(mus),length(flip_strength),R)
-mus_infered_withoutDAE = zeros(length(mus),length(flip_strength),R)
+    flip_strength = [0.]
+    mus_infered_withDAE = zeros(length(mus),length(flip_strength),R)
+    mus_infered_withoutDAE = zeros(length(mus),length(flip_strength),R)
 
-z = @elapsed for i in each(mus)
+    z = @elapsed for i in each(mus)
     original = base_dataset[:,:,i]
     for j in each(flip_strength) , r in 1:R
         degree = rand(0:10:350)
@@ -64,7 +64,7 @@ z = @elapsed for i in each(mus)
         tmp = mod.(tmp,2pi)
 
         X_noisy_reshaped = reshape(tmp,(W21,W21,1,:))
-        recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
+        recon = NN_test(provide_div_rot_muss(X_noisy_reshaped))[:,:,1,1]
         mus_infered_withDAE[i,j,r] = infer_mu_decay(recon,q=CHARGE)
         mus_infered_withoutDAE[i,j,r] = infer_mu_decay(tmp,q=CHARGE)
     end
