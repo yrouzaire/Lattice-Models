@@ -141,3 +141,53 @@ params_init["init"] = "pair" ;  params_init["r0"] = round(Int,L/2) ; params_init
 params_init["init"] = "2pair" ;  params_init["r0"] = 40 ; params_init["type2defect"] = ["source","join"]
     thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice)
+
+## Run different simulations and save them
+using JLD2 # saving package, will save data under .jld2 format
+include(srcdir("../parameters.jl"));
+R = 1 # number of indep realisations
+tmax = 1000
+# every  = 2 ; saving_times = every:every:tmax # lin spaced
+nb_sav_pts  = 8 ; saving_times = logspace(1,tmax,nb_sav_pts) # log spaced
+magnetisations = zeros(length(saving_times),R)
+corr_functions = zeros(Int(L/2),length(saving_times),R)
+corr_lengths   = zeros(length(saving_times),R)
+
+z = @elapsed for r in 1:R
+    println("Simulation $r/$R started.")
+    # Prepare your setup
+    model = LangevinXY(params) # sets t = 0
+    lattice = SquareLattice(L)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    token = 1
+    while model.t < tmax # run the actual simulation
+        update!(thetas,model,lattice)
+        if model.t ≥ saving_times[token] # once you hit a saving time, save quantites of interest
+            println("t=$(round(model.t,digits=1)), $(round(model.t/tmax*100,digits=1))% achieved.")
+            magnetisations[token,r]   = OP(thetas)[1] # polar Order Parameter
+            corr_functions[:,token,r] = corr(thetas,model,lattice) # correlation function C(r)
+            corr_lengths[token,r]     = corr_length(corr_functions[:,token,r]) # correlation length computed from C(r)
+            token = min(token+1,length(saving_times)) # next saving_time
+        end
+    end
+end
+prinz(z) # takes 4.5 mn on my machine (i7,16Go RAM) for L = 100, R = 1, tmax = 1000
+filename = datadir("myfirstdata.jld2")
+JLD2.@save filename magnetisations corr_functions corr_lengths params # save data
+JLD2.@load filename magnetisations corr_functions corr_lengths params # load data
+corr_functions_avg = mean(corr_functions,dims=3)
+magnetisations_avg = mean(magnetisations,dims=2)
+corrlength_avg = mean(corr_lengths,dims=2)
+
+p=plot(xlabel="r",ylabel="C(r,t)",axis=:log,ylims=(1E-2,1.2))
+    for tt in 1:length(saving_times)
+        plot!(1:params["L"]/2,remove_negative(corr_functions_avg[:,tt,1]))
+    end
+    p # displays the figure "p"
+
+plot(saving_times,magnetisations_avg,axis=:log,m=true,xlabel="t",ylabel="Magnetisation P(t)")
+plot(saving_times,corrlength_avg,axis=:log,m=true,xlabel="t",ylabel="ξ(t)")
+
+
+
+corr_length(corr_functions_avg[:,end,1])

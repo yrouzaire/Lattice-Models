@@ -12,7 +12,7 @@ algo = "A" # rule for collision!() for model = SPP : algo = "A", or type of XY m
 # Numerical Parameters
 dt = 1E-2
 float_type = Float32
-tmax = 1E6
+tmax = 1E2
 transients = 1E3
 every = 1E2
 
