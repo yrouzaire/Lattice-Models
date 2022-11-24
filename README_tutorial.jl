@@ -175,6 +175,8 @@ prinz(z) # takes 4.5 mn on my machine (i7,16Go RAM) for L = 100, R = 1, tmax = 1
 filename = datadir("myfirstdata.jld2")
 JLD2.@save filename magnetisations corr_functions corr_lengths params # save data
 JLD2.@load filename magnetisations corr_functions corr_lengths params # load data
+
+# Average over the (possible) different realisations. Try with R=1 first, then increase if needed.
 corr_functions_avg = mean(corr_functions,dims=3)
 magnetisations_avg = mean(magnetisations,dims=2)
 corrlength_avg = mean(corr_lengths,dims=2)
@@ -187,7 +189,3 @@ p=plot(xlabel="r",ylabel="C(r,t)",axis=:log,ylims=(1E-2,1.2))
 
 plot(saving_times,magnetisations_avg,axis=:log,m=true,xlabel="t",ylabel="Magnetisation P(t)")
 plot(saving_times,corrlength_avg,axis=:log,m=true,xlabel="t",ylabel="ξ(t)")
-
-
-
-corr_length(corr_functions_avg[:,end,1])
