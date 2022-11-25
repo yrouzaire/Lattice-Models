@@ -140,7 +140,7 @@ function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vect
     weights = ones(length(angles_neighbours))*(1-model.vision)
     if model.symmetry == "polar"
         weights[ID] = 1+(nnn-1)*model.vision
-    elseif model.symmetry == "polar"
+    elseif model.symmetry == "nematic"
         weights[ID] = 1+(nnn-1)/2*model.vision
         weights[mod(Int(ID+nnn/2),nnn)] = 1+(nnn-1)/2*model.vision
     end
