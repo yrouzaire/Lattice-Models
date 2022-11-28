@@ -101,7 +101,7 @@ function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vect
     else
         # return sum(sin,sym(model)*(angles_neighbours .- theta)) # 33% times slower
         if model.symmetry == "polar"
-            return sum(sin,(angles_neighbours .- theta))
+            return sum(sin,angles_neighbours .- theta)
         elseif model.symmetry == "nematic"
             return sum(sin,2.0*(angles_neighbours .- theta))
         else error("Symmetry unknown")
@@ -130,22 +130,24 @@ function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vect
     end
 end
 
-function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vector{<:T},model::SoftVisionXY{T},lattice::Abstract2DLattice)::T where T<:AbstractFloat
-    weights  = zeros(T,length(angles_neighbours))
-    theta0   = mod(theta,modd(model))
+function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vector{<:T},model::SoftVisionXY{T},lattice::TriangularLattice)::T where T<:AbstractFloat
     if     isa(lattice,TriangularLattice) nnn = 6
     elseif isa(lattice,SquareLattice)     nnn = 4
     end
-    ID = ID_projection_angle_onto_lattice(theta,i,j,lattice)
-    weights = ones(length(angles_neighbours))*(1-model.vision)
-    if model.symmetry == "polar"
-        weights[ID] = 1+(nnn-1)*model.vision
-    elseif model.symmetry == "nematic"
-        weights[ID] = 1+(nnn-1)/2*model.vision
-        weights[mod(Int(ID+nnn/2),nnn)] = 1+(nnn-1)/2*model.vision
-    end
     if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
-    else return sum(sin.(sym(model)*(angles_neighbours .- theta)) .* weights)
+    else
+        ID = ID_projection_angle_onto_lattice(theta,i,j,lattice)
+        if model.symmetry == "polar"
+            base = sum(sin,angles_neighbours .- theta) * (1. - model.vision)
+            correction = nnn*model.vision * sin(angles_neighbours[ID]-theta)
+            return base + correction
+        elseif model.symmetry == "nematic"
+            nnn2 = Int(nnn/2)
+            base = sum(sin,angles_neighbours .- theta) * (1. - model.vision)
+            correction1 = nnn2*model.vision * sin(angles_neighbours[ID]-theta)
+            correction2 = nnn2*model.vision * sin(angles_neighbours[mod1(ID+nnn2,nnn)]-theta)
+            return base + correction1 + correction2
+        end
     end
 end
 
