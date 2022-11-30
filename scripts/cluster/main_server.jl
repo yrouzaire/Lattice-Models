@@ -4,22 +4,19 @@ include("LatticeModels.jl") ;
 using Plots,JLD2 # for plotting methods such as @animate etc
 include("IDrealisation.jl") ;
 
-include("parameters_cluster.jl"); # imports Ts, As, rhos
-times_log = logspace(1,tmax,10)
-times_lin = collect(transients:every:tmax)
+include("parameters_cluster.jl");
 
-polar_order   = zeros(length(Ts),length(visions),length(rhos),length(times_log))
-nematic_order = zeros(length(Ts),length(visions),length(rhos),length(times_log))
-C   = zeros(length(Ts),length(visions),length(rhos),Int(L/2),length(times_log))
-xi  = zeros(length(Ts),length(visions),length(rhos),length(times_log))
-n   = zeros(length(Ts),length(visions),length(rhos),length(times_log))
-thetas_save = zeros(Float16,length(Ts),length(visions),length(rhos),length(times_log),L,L)
-# dfts = Array{Union{Missing,DefectTracker},3}(missing,length(Ts),length(As),length(rhos))
+polar_order   = zeros(length(Ts),length(visions),length(times_log))
+nematic_order = zeros(length(Ts),length(visions),length(times_log))
+C   = zeros(length(Ts),length(visions),Int(L/2),length(times_log))
+xi  = zeros(length(Ts),length(visions),length(times_log))
+n   = zeros(length(Ts),length(visions),length(times_log))
+thetas_save = zeros(Float16,length(Ts),length(visions),length(times_log),L,L)
+# dfts = Array{Union{Missing,DefectTracker},3}(missing,length(Ts),length(visions))
 
-z = @elapsed for i in each(Ts) , j in each(As) , k in each(rhos)
+z = @elapsed for i in each(Ts) , j in each(visions)
     params["T"] = Ts[i]
     params["vision"] = visions[j]
-    params["rho"] = rhos[k]
 
     model   = SoftVisionXY(params)
     lattice = TriangularLattice(L,periodic=true,single=true)
@@ -29,12 +26,12 @@ z = @elapsed for i in each(Ts) , j in each(As) , k in each(rhos)
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ times_log[token_log]
-            polar_order[i,j,k,token_log],nematic_order[i,j,k,token_log] = OP(thetas)
+            polar_order[i,j,token_log],nematic_order[i,j,token_log] = OP(thetas)
             correlation  = corr(thetas,model,lattice)
-            C[i,j,k,:,token_log] = correlation
-            xi[i,j,k,token_log]  = corr_length(correlation)
-            n[i,j,k,token_log]   = number_defects(thetas,model,lattice)
-            thetas_save[i,j,k,token_log,:,:] = thetas
+            C[i,j,:,token_log] = correlation
+            xi[i,j,token_log]  = corr_length(correlation)
+            n[i,j,token_log]   = number_defects(thetas,model,lattice)
+            thetas_save[i,j,token_log,:,:] = thetas
 
             token_log = min(token_log+1,length(times_log))
         end

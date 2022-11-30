@@ -183,12 +183,11 @@ end
 # xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 
-function zoom_quiver(thetas,model,lattice::Abstract2DLattice,i,j,window=WINDOW;defects=false)
+function zoom_quiver(thetas,model,lattice::Abstract2DLattice,i,j,window=WINDOW;defects=false,size=(400,400))
     L = lattice.L
-
     no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,window)
     if no_problem_go_ahead
-        p=plot_thetas(thetas_zoom,model,lattice,defects=defects)
+        p=plot_thetas(thetas_zoom,model,lattice,defects=defects,size=size)
         display_quiver!(p,thetas_zoom,window)
         xlims!(1,2window+1) ; ylims!(1,2window+1)
     else error("Zoom not possible")

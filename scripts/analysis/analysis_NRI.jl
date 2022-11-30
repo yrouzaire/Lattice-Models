@@ -4,8 +4,6 @@ include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings,SpecialFunctions,LambertW
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
-#= Important Comments : =#
-
 filename = datadir("first_simus_NRI.jld2")
 @unpack runtimes,scanned_params, params, comments, R, times_log, times_lin  = load(filename)
 @unpack Ts,visions = scanned_params
@@ -17,9 +15,9 @@ lattice = TriangularLattice(L)
 @unpack polar_orders, nematic_orders, Cs, xis, ns = load(filename)
 polar_orders_avg = nanmean(polar_orders,4)[:,:,:,1]
 nematic_orders_avg = nanmean(nematic_orders,4)[:,:,:,1]
-ns_avg = nanmean(ns,4)[:,:,:,1]
+ns_avg  = nanmean(ns,4)[:,:,:,1]
 xis_avg = nanmean(xis,4)[:,:,:,1]
-Cs_avg = nanmean(Cs,5)[:,:,:,:,1]
+Cs_avg  = nanmean(Cs,5)[:,:,:,:,1]
 histogram(runtimes/3600/24,bins=40)
 
 
@@ -27,7 +25,7 @@ ls = [:solid,:dash]
 # Order parameters (t)
 p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))
     for i in each(Ts)
-        for j in 1:2#each(visions)
+        for j in 1:1#each(visions)
             plot!(times_log,polar_orders_avg[i,j,:],c=i,line=:solid,label="T = $(Ts[i])",rib=0)
             plot!(times_log,nematic_orders_avg[i,j,:],c=i,line=:dash)
         end
@@ -38,7 +36,7 @@ p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))
 # Correlation length (t)
 p=plot(xlabel="t",ylabel="ξ/L",legend=false,axis=:log,size=(450,400))
     for i in each(Ts)
-        for j in 1:2#each(visions)
+        for j in 1:1#each(visions)
             plot!(times_log,xis_avg[i,j,:]/L,c=i,line=ls[j],label="T = $(Ts[i])",rib=0)
         end
     end
@@ -97,5 +95,11 @@ p=plot(legend=:topleft)
 ## Thetas saved
 @unpack thetas_saves = load(filename)
 model = XY(params)
-plot_thetas((thetas_saves[1,25,:,:,1]),model,lattice,defects=false)
-zoom_quiver((thetas_saves[1,25,:,:,1]),model,lattice,80,50,10)
+thetass = thetas_saves[1,1,24,:,:,1]
+    plot_thetas(thetass,model,lattice,defects=false)
+zoom_quiver(thetass,model,lattice,115,110,10)
+
+anim = @animate for i in 1:size(thetas_saves,3)
+    plot_thetas(thetas_saves[1,1,i,:,:,1],model,lattice,defects=false,size=(512,512))
+end
+mp4(anim,"films\\NRI_test00.mp4",fps=5)
