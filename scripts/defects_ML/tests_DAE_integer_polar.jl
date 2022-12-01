@@ -22,7 +22,7 @@ NN_test = cpu(NN)
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
-ind = rand(1:64)
+ind = 1#rand(1:64)
     tmp = base_dataset[:,:,ind]
     # trelax = .5 ; update!(tmp,model,lattice,trelax)
     X_noisy = tmp + 0.15*randn(15,15)
@@ -30,7 +30,7 @@ ind = rand(1:64)
         X_noisy = mod.(X_noisy,pi232)
     X_noisy_reshaped = reshape(X_noisy,(W21,W21,1,:))
     thetas = base_dataset[:,:,ind]
-        p0=plot_thetas(thetas,model,lattice,defects=false,title="µ = $(mus[ind])")
+    p0=plot_thetas(thetas,model,lattice,defects=false,title="µ = $(mus[ind])")
         display_quiver!(p0,thetas,WINDOW)
     p1=plot_thetas(X_noisy,model,lattice,defects=false,title="µ = $(round(infer_mu(X_noisy,q=CHARGE),digits=2))")
         display_quiver!(p1,X_noisy,WINDOW)

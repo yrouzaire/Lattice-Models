@@ -5,16 +5,43 @@ using Plots,ColorSchemes,LaTeXStrings
 gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
 
+## Stability of µ over time
+tmax = 10 ; every = 0.1 ; times = collect(0:every:tmax+every)
+ϵ = 0.
+µ0s = [0,pi/2,pi,3pi/2] .+ ϵ
+reals = 10
+visions = [0,0.1,0.2,0.4]
+mus = zeros(length(µ0s),length(visions),length(times),reals)
+z = @elapsed for i in each(µ0s)
+    for j in each(visions)
+        Threads.@threads for r in 1:reals
+            println("r = $r ; µ0 = ",round(µ0s[i],digits=1)," ; vision = ",visions[j])
+            params["L"] = 200 ; params["T"] = 0.1
+            params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
+            params_init["init"] = "single" ; params_init["type1defect"] =  µ0s[i] # initial µ
+            params_init["q"] = CHARGE
+            model = SoftVisionXY(params)
+            lattice = TriangularLattice(L)
+            thetas = init_thetas(model,lattice,params_init=params_init)
 
-## Efficiency
-using BenchmarkTools
-model = SoftVisionXY(params)
-model = XY(params)
-lattice = TriangularLattice(L)
-thetas = init_thetas(model,lattice,params_init=params_init)
-update!(thetas,model,lattice)
-@btime update!(thetas,model,lattice) # 14 ms versus 5 ms pour XY
-
+            dft = DefectTracker(thetas,model,lattice,find_type=true)
+            update_and_track!(thetas,model,lattice,dft,tmax,every,find_type=true)
+            mus[i,j,:,r] = dft.defectsP[1].type
+        end
+    end
+end
+    prinz(z)
+mus_avg = mean(mus,dims=4)[:,:,:,1]
+p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
+    for i in each(µ0s)
+        for j in 4#each(visions)
+            # for r in 1:reals
+            #     plot!(times,smooth(mus[i,j,:,r],over=1),m=true,line=false,c=i)
+            # end
+            plot!(times,mus_avg[i,j,:],c=:black,lw=2)
+        end
+    end
+    p
 ## Movies
 include(srcdir("../parameters.jl"));
 
@@ -107,3 +134,12 @@ corrlength_avg = mean(corr_lengths,dims=2)
 ns_avg = mean(ns,dims=2)
 plot(times,ns_avg,axis=:log,m=true,xlabel="t",ylabel="n(t)")
     plot!(times,5E2 ./ (times).^0.66,c=:black)
+
+## Efficiency
+using BenchmarkTools
+model = SoftVisionXY(params)
+model = XY(params)
+lattice = TriangularLattice(L)
+thetas = init_thetas(model,lattice,params_init=params_init)
+update!(thetas,model,lattice)
+@btime update!(thetas,model,lattice) # 14 ms versus 5 ms pour XY

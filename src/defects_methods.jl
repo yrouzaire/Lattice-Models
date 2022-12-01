@@ -123,7 +123,8 @@ function find_types(list_p,list_n,thetas,lattice)
                     unchanged, i.e =NaN =#
                     # denoised_theta_zoom = DAE(reshape(provide_div_rot(thetas_zoom),(W21,W21,3,1)))
                     # denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
-                    type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
+                    # type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
+                    type_p[n] = infer_mu(thetas_zoom,q=charge_p[1])
                 end
             end
         end
@@ -422,12 +423,12 @@ function annihilate_defects(dt::DefectTracker,ids_annihilated_defects,lattice)
 end
 
 
-function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number;find_type=false) where T<:AbstractFloat
+function update_and_track!(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstract2DLattice,dft::DefectTracker,tmax::Number,every::Number;find_type=false,verbose=false) where T<:AbstractFloat
     next_tracking_time = model.t
     while model.t < tmax
         update!(thetas,model,lattice)
         if model.t ≥ next_tracking_time || model.t ≥ tmax # second condition to end at the same time than the model
-            println("t = ",model.t)
+            if verbose println("t = ",round(next_tracking_time,digits=1)) end
             next_tracking_time += every
             update_DefectTracker!(dft,thetas,model,lattice,find_type=find_type)
         end
