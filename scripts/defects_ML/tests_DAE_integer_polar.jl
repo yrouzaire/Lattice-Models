@@ -16,10 +16,10 @@ using CUDA, Flux, BSON
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
 BSON.@load "NeuralNets/DAE_positive1___09_11_2022.bson" DAE
 NN_test = cpu(DAE)
+NN_test = cpu(NN)
 # comments
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
-params["symmetry"] = "polar"
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 ind = rand(1:64)
@@ -78,8 +78,9 @@ end
 
     p2=plot(xlabel="True µ",ylabel="Inferred µ",title="With DAE preprocess. ")
     scatter!(mus,mus_infered_withDAE[1:end,:],c=:black,ms=1)
-    plot!(x->x-0.3,c=:red,lw=0.5)
-    plot!(x->x+0.3,c=:red,lw=0.5)
+    plot!(x->x,c=:red,lw=1)
+    # plot!(x->x-0.3,c=:red,lw=0.5)
+    # plot!(x->x+0.3,c=:red,lw=0.5)
 
     plot(p1,p2,size=(800,400))
 # savefig("plots/comparison_with_without_DAE_polar.png")
@@ -87,31 +88,30 @@ end
 
 ## Third Test : Errors when inferring true µ = 0
 R = 1000
-flip_strength = [0.1,0.2,0.3]
-mus_infered = zeros(length(flip_strength),R)
-original = base_dataset[:,:,1] # µ = 0
+mus_infered = zeros(R)
+original = base_dataset[:,:,64] # µ = 0
 
 
-z = @elapsed for j in each(flip_strength) , r in 1:R
+z = @elapsed for r in 1:R
     tmp = original
     trelax = .1 ; update!(tmp,model,lattice,trelax)
     tmp = mod.(tmp,2pi)
     X_noisy_reshaped = reshape(tmp,(W21,W21,1,:))
-    recon = NN_test(X_noisy_reshaped)[:,:,1,1]
-    mus_infered[j,r] = infer_mu(recon,q=CHARGE)
+    recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
+    mus_infered[r] = infer_mu(recon,q=CHARGE)
 end
-histogram(mod.(mus_infered[2,:].-pi,2pi).+pi,bins=50,normalize=true)
-mean(mod.(mus_infered[1,:].+pi,2pi).-pi)
-std(mod.(mus_infered[1,:].+pi,2pi).-pi)
+histogram(mod.(mus_infered.+pi,2pi).-pi,bins=100,normalize=true)
+mean(mod.(mus_infered.+pi,2pi).-pi)
+std(mod.(mus_infered.+pi,2pi).-pi)
 
 ## Forth Test : check the constance over time with in vitro defects
 p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
     for initmu in 1:6 ,  r in 1:1
         params["L"] = 200 ; params["T"] = 0.2
-        params["symmetry"] = "polar" ; params["rho"] = 1 ; params["A"] = 0
+        params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = 0
         params_init["init"] = "single" ; params_init["type1defect"] =  initmu # initial µ
         params_init["q"] = CHARGE
-        model = MonteCarloXY(params)
+        model = SoftVisionXY(params)
         lattice = TriangularLattice(L)
         thetas = init_thetas(model,lattice,params_init=params_init)
         # p = plot_thetas(thetas,model,lattice,defects=false)

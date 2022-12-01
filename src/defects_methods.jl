@@ -121,10 +121,9 @@ function find_types(list_p,list_n,thetas,lattice)
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value
                     unchanged, i.e =NaN =#
-                    denoised_theta_zoom = DAE(reshape(thetas_zoom,(W21,W21,1,1)))
-                    denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
+                    # denoised_theta_zoom = DAE(reshape(provide_div_rot(thetas_zoom),(W21,W21,3,1)))
+                    # denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
                     type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
-                    # TODO : generaliser ce 1/2
                 end
             end
         end

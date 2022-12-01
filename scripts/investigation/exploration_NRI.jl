@@ -57,13 +57,13 @@ end
     mp4(anim,datadir("../films/soft_vision/real_seed_$(my_seed)/NRI_$(my_seed)_fast.mp4"),fps=35)
 # movie zoomed
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
-locs = []
+locs = [(100,30)]
 for (locx,locy) in locs
     z = @elapsed anim_zoom = @animate for tt in 1:length(saving_times)
         zoom_quiver(thetas_saves[:,:,tt],model,lattice,locx,locy,15,size=(1024,1024))
     end
     prinz(z)
-    mp4(anim_zoom,datadir("../films/soft_vision/real_seed_$(my_seed)/NRI_$(my_seed)_Zoom($locx,$locy).mp4"))
+    mp4(anim_zoom,datadir("../films/soft_vision/real_seed_$(my_seed)/NRI_$(my_seed)_Zoom($locx,$locy)_slow.mp4"),fps=15)
 end
 zoom_quiver(thetas_saves[:,:,100],model,lattice,locx,locy,15,size=(1024,1024))
 

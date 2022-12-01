@@ -29,12 +29,12 @@ using Distributions,BSON
 ## Define Neural Network
 # We define a reshape layer to use in our decoder
 # Source :https://github.com/alecokas/flux-vae/blob/master/conv-vae/main.jl
-struct Reshape
+struct Reshape2
     shape
 end
-    Reshape(args...) = Reshape(args)
-    (r::Reshape)(x) = reshape(x, r.shape)
-    Flux.@functor Reshape ()
+    Reshape2(args...) = Reshape2(args)
+    (r::Reshape2)(x) = reshape(x, r.shape)
+    Flux.@functor Reshape2 ()
 
     function ConvAE_divrot(latent_dim=16)
         output_conv_layer = (9,9,32)
@@ -44,14 +44,18 @@ end
             Conv((3, 3), 32=>32, relu),
                 Flux.flatten,
             Dense(prod(output_conv_layer), 120, relu),
+            Dropout(0.5),
             Dense(120,60,relu),
+            Dropout(0.5),
             Dense(60,latent_dim,relu)
             )
         decoder = Chain(
         Dense(latent_dim,60,relu),
         Dense(60,120,relu),
+        Dropout(0.5),
         Dense(120,prod(output_conv_layer), relu),
-        Reshape(output_conv_layer...,:),
+        Dropout(0.5),
+        Reshape2(output_conv_layer...,:),
         ConvTranspose((3,3),32=>32,relu),
         ConvTranspose((3,3),32=>16,relu),
         ConvTranspose((3,3),16=>1)
@@ -60,7 +64,7 @@ end
         return autoencoder
     end
 
-    function ConvResAE(latent_dim=16)
+    function ConvResAE_divrot(latent_dim=16)
         output_conv_layer = (9,9,32)
         return Chain(
         Conv((3, 3), 3=>16, relu),
@@ -76,7 +80,7 @@ end
                 Dense(latent_dim,60,relu),
                 Dense(60,120,relu)),+), # end of inner skip
             Dense(120,prod(output_conv_layer), relu),
-            Reshape(output_conv_layer...,:),
+            Reshape2(output_conv_layer...,:),
             ConvTranspose((3,3),32=>32,relu), # end of outer skip
             ConvTranspose((3,3),32=>16,relu)),+), # end of outer skip
         ConvTranspose((3,3),16=>1)
@@ -106,11 +110,11 @@ loss(X, y) = mse(NN(X), y)
 # progress = () -> @show(loss(Xtrain, Ytrain)) # callback to show loss
 # evalcb = throttle(progress, 1)
 ## Training
-dim_latent_space = 10
+dim_latent_space = 3
 NN = 0
     NN = ConvAE_divrot(dim_latent_space) |> xpu
     opt = Adam(1E-3)
-    epochs = 500
+    epochs = 2000
 
 trainL = zeros(epochs)
     trainLpen = zeros(epochs)
@@ -120,6 +124,7 @@ multi_fact = 10
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
 z = @elapsed for e in 1:epochs
+    trainmode!(NN)
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
 
     for i in 1:size(shuffled_dataset,3) # Both Train and Validation Sets
@@ -137,22 +142,23 @@ z = @elapsed for e in 1:epochs
     Ytrain = xpu(reshape(shuffled_dataset[:,:,1:Ntrain],(W21,W21,1,:)))
     Ytest  = xpu(reshape(shuffled_dataset[:,:,1+Ntrain:end],(W21,W21,1,:)))
 
-    Flux.train!(loss_pen, Flux.params(NN),[(Xtrain,Ytrain)], opt)
+    Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     trainL[e] = loss(Xtrain,Ytrain)
-    trainLpen[e] = loss_pen(Xtrain,Ytrain)
+    # trainLpen[e] = loss_pen(Xtrain,Ytrain)
+    testmode!(NN)
     testL[e] =  loss(Xtest,Ytest)
 
     if isinteger(e/50)
         println("e = $e/$epochs : train loss = $(round(trainL[e],digits=5))")
     end
 end
-prinz(z)
+    prinz(z)
 
-plot(legend=:bottomleft)
-    plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
-    plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
-    plot!(1:epochs-1,testL[1:end-1],axis=:log,lw=0.5,label="Test")
-    plot!(1:epochs-1,trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
+# plot(legend=:bottomleft)
+    # plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
+    # plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
+plot!((1:epochs-1).+2000,testL[1:end-1],axis=:log,lw=0.5,label="Test")
+    plot!((1:epochs-1).+2000,trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
 
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 using BSON
