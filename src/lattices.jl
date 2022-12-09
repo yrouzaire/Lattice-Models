@@ -24,6 +24,12 @@ mutable struct SquareLattice <: Abstract2DLattice
     metric::String
 end
 SquareLattice(L::Int;periodic::Bool=true,single::Bool=true,metric::String="euclidian") = SquareLattice(L,periodic,single,metric)
+function number_nearest_neighbours(lattice::Abstract2DLattice)
+    if isa(lattice,TriangularLattice) nnn = 6
+    elseif isa(lattice,SquareLattice) nnn = 4
+    end
+    return nnn
+end
 
 ## ------------------------ Functions ------------------------
 function dist(lattice::Abstract2DLattice,pos1,pos2)

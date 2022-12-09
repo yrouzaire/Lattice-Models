@@ -33,8 +33,8 @@ end
     prinz(z)
 mus_avg = mean(mus,dims=4)[:,:,:,1]
 p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
-    for i in each(µ0s)
-        for j in 4#each(visions)
+    for i in 3#each(µ0s)
+        for j in each(visions)
             # for r in 1:reals
             #     plot!(times,smooth(mus[i,j,:,r],over=1),m=true,line=false,c=i)
             # end
@@ -56,7 +56,7 @@ prinz(z)
 
 ## Movies and save configs
 using Random
-my_seed = 1
+my_seed = 2
 Random.seed!(my_seed)
 include(srcdir("../parameters.jl"));
 
@@ -134,6 +134,18 @@ corrlength_avg = mean(corr_lengths,dims=2)
 ns_avg = mean(ns,dims=2)
 plot(times,ns_avg,axis=:log,m=true,xlabel="t",ylabel="n(t)")
     plot!(times,5E2 ./ (times).^0.66,c=:black)
+
+
+## Test dt
+using Random
+Random.seed!(1)
+include(srcdir("../parameters.jl"));
+    model = SoftVisionXY(params)
+    lattice = TriangularLattice(L)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+z = @elapsed update!(thetas,model,lattice,tmax=tmax)
+plot_thetas(thetas,model,lattice)
+
 
 ## Efficiency
 using BenchmarkTools

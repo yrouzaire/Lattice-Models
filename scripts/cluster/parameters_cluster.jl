@@ -1,10 +1,10 @@
 # To scan over
-Ts = 0.1#[0.1,0.2]
-visions = 0.1#collect(0:0.1:0.3)
+Ts = collect(0:0.15:2)
+visions = collect(0:0.025:0.4)
 scanned_params = Dict("Ts"=>Ts,"visions"=>visions)
 
 # Physical Parameters
-L = 200
+L = 100
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -15,13 +15,13 @@ rho = 1
 algo = "A" # rule for collision!() for model = SPP
 
 # Numerical Parameters
-dt = 1E-2
+dt = 5E-2
 float_type = Float32
-tmax = 5E3
+tmax = 1E4
 transients = 1E3
 every = 1E2
 
-times_log = logspace(1,tmax,30)
+times_log = logspace(1,tmax,40)
 times_lin = collect(transients:every:tmax)
 
 
