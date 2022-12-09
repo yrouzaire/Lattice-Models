@@ -130,10 +130,8 @@ function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vect
     end
 end
 
-function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vector{<:T},model::SoftVisionXY{T},lattice::TriangularLattice)::T where T<:AbstractFloat
-    if     isa(lattice,TriangularLattice) nnn = 6
-    elseif isa(lattice,SquareLattice)     nnn = 4
-    end
+function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vector{<:T},model::SoftVisionXY{T},lattice::Abstract2DLattice)::T where T<:AbstractFloat
+    nnn = number_nearest_neighbours(lattice)
     if isempty(angles_neighbours) return 0.0 # instead of sum(sin,...,init=0) because not possible in Julia 1.3.0 on the cluster I use
     else
         ID = ID_projection_angle_onto_lattice(theta,i,j,lattice)
