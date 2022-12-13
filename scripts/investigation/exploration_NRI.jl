@@ -143,7 +143,7 @@ include(srcdir("../parameters.jl"));
     model = SoftVisionXY(params)
     lattice = TriangularLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)
-z = @elapsed update!(thetas,model,lattice,tmax=tmax)
+z = @elapsed update!(thetas,model,lattice,tmax=100)
 plot_thetas(thetas,model,lattice)
 
 

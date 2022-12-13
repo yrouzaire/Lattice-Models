@@ -20,8 +20,6 @@ ns_avg  = nanmean(ns,4)[:,:,:,1]
 xis_avg = nanmean(xis,4)[:,:,:,1]
 Cs_avg  = nanmean(Cs,5)[:,:,:,:,1]
 histogram(runtimes/3600/24,bins=40)
-gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
-histogram(runtimes/4*2*14*17/12/5/3600/24,bins=40)
 
 ## Phase Space (Final time and Movie over time)
 # Number of defects
@@ -44,8 +42,8 @@ mp4(anim,"plots/NRI/P_phase_spaceTVision_over_time.mp4")
 
 ## Coarsening dynamics
 # Order parameters (t)
-p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))
-    for i in 1#each(Ts)
+p=plot(xlabel="t",ylabel="OP",legend=false,axis=:log,size=(450,400))
+    for i in 5#each(Ts)
         for j in each(visions)
             plot!(times_log,polar_orders_avg[i,j,:],c=i,line=:solid,label="Vision = $(visions[j])",rib=0)
             # plot!(times_log,nematic_orders_avg[i,j,:],c=i,line=:dash)
@@ -56,19 +54,19 @@ p=plot(xlabel="t",ylabel="OP",legend=:topleft,axis=:log,size=(450,400))
 
 # Correlation length (t)
 p=plot(xlabel="t",ylabel="ξ/L",legend=false,axis=:log,size=(450,400))
-    for i in 1#each(Ts)
+    for i in 2#each(Ts)
         for j in each(visions)
-            plot!(times_log,xis_avg[i,j,:]/L,c=i,line=ls[j],label="Vision = $(visions[j])",rib=0)
+            plot!(times_log,xis_avg[i,j,:]/L,c=i,line=:solid,label="Vision = $(visions[j])",rib=0)
         end
     end
     plot!(times_log[2:end],2E-2sqrt.(times_log[2:end]./log.(10times_log[2:end])),c=:black)
     p
 
 # Number of defects (t)
-p=plot(xlabel="t",ylabel="n",legend=:bottomleft,axis=:log,size=(450,400))
-    for i in 1#each(Ts)
+p=plot(xlabel="t",ylabel="n",legend=false,axis=:log,size=(450,400))
+    for i in 7#each(Ts)
         for j in each(visions)
-            plot!(times_log,ns_avg[i,j,:].+1,c=i,line=ls[j],label="Vision = $(visions[j])",rib=0)
+            plot!(times_log,ns_avg[i,j,:].+1,c=i,line=:solid,label="Vision = $(visions[j])",rib=0)
         end
     end
     plot!(times_log[2:end],1E3 ./ (times_log[2:end]./log.(5times_log[2:end])),c=:black)
@@ -76,8 +74,8 @@ p=plot(xlabel="t",ylabel="n",legend=:bottomleft,axis=:log,size=(450,400))
     p
 
 # Correlation function over time
-temp = 1 ; vis = 2
-    p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:outerright,yaxis=:log,size=(650,400))
+temp = 2 ; vis = 1
+    p=plot(xlabel="r",ylabel="C(r,t) for T=$(Ts[temp])",legend=:outerright,axis=:log,size=(650,400))
     for i in 20:28
         plot!(1:length(Cs_avg[temp,vis,:,i]),remove_negative(Cs_avg[temp,vis,:,i]),line=:solid,label="t = $(times_log[i])",rib=0)
     end
@@ -118,11 +116,11 @@ p=plot(legend=:topleft)
 ## Thetas saved
 @unpack thetas_saves = load(filename)
 model = XY(params)
-thetass = thetas_saves[3,4,28,:,:,1]
+thetass = thetas_saves[2,5,25,:,:,1]
     plot_thetas(thetass,model,lattice,defects=false)
 zoom_quiver(thetass,model,lattice,115,110,10)
 
 anim = @animate for i in 1:size(thetas_saves,3)
-    plot_thetas(thetas_saves[1,1,i,:,:,1],model,lattice,defects=false,size=(512,512))
+    plot_thetas(thetas_saves[2,5,i,:,:,1],model,lattice,defects=false,size=(512,512))
 end
-mp4(anim,"films\\NRI_test00.mp4",fps=5)
+mp4(anim,"films\\NRI_test00.mp4",fps=10)
