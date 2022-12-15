@@ -98,11 +98,11 @@ function find_types(list_p,list_n,thetas,lattice)
     type_all = vcat(type_n,type_p)
 
     # define Denoising AutoEncoder DAE
-    # if charge_p[1] == 1
-    #     DAE = NN_test
-    # elseif charge_p[1] == 0.5
-    #     DAE = NN_test
-    # end
+    if charge_p[1] == 1
+        DAE = NN_test
+    elseif charge_p[1] == 0.5
+        DAE = NN_test
+    end
 
     total_number_defects = length(pos_n) + length(pos_p)
     density_defects = total_number_defects / lattice.L^2
@@ -121,9 +121,9 @@ function find_types(list_p,list_n,thetas,lattice)
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value
                     unchanged, i.e =NaN =#
-                    # denoised_theta_zoom = DAE(reshape(provide_div_rot(thetas_zoom),(W21,W21,3,1)))
-                    # denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
-                    # type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
+                    denoised_theta_zoom = DAE(reshape(provide_div_rot(thetas_zoom),(W21,W21,3,1)))
+                    denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
+                    type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
                     type_p[n] = infer_mu(thetas_zoom,q=charge_p[1])
                 end
             end

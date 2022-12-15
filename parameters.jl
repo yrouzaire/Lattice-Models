@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 100
+L = 200
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -17,8 +17,8 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "pair"
-q = 1
+init = "single"
+q = -1
 r0 = round(Int,L/3)
 type1defect = pi
 type2defect = "pair3"

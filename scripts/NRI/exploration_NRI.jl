@@ -5,6 +5,17 @@ using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
 
+## Maximal sigma (non reciprocity)
+include(srcdir("../parameters.jl"));
+params["vision"] = 0.1
+model = SoftVisionXY(params)
+    lattice = TriangularLattice(L)
+    # lattice = SquareLattice(L)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    update!(thetas,model,lattice,100)
+    plot_thetas(thetas,model,lattice,defects=false)
+
+
 ## Attraction ? Repulsion ? between a pair of defects
 include(srcdir("../parameters.jl"));
 dµ = pi/32 ; mus = Float32.(round.(collect(0:dµ:2pi),digits=3))

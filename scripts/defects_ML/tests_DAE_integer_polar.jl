@@ -22,7 +22,7 @@ NN_test = cpu(NN)
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
-ind = 1#rand(1:64)
+ind = rand(1:64)
     tmp = base_dataset[:,:,ind]
     # trelax = .5 ; update!(tmp,model,lattice,trelax)
     X_noisy = tmp + 0.15*randn(15,15)
@@ -71,7 +71,7 @@ z = @elapsed for i in each(mus)
         mus_infered_withoutDAE[i,r] = infer_mu_decay(tmp,q=CHARGE)
     end
 end
-    p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
+p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
     scatter!(mus,mus_infered_withoutDAE[1:end,:],c=:black,ms=1)
     plot!(x->x-0.3,c=:red,lw=0.5)
     plot!(x->x+0.3,c=:red,lw=0.5)
@@ -105,11 +105,15 @@ mean(mod.(mus_infered.+pi,2pi).-pi)
 std(mod.(mus_infered.+pi,2pi).-pi)
 
 ## Forth Test : check the constance over time with in vitro defects
-p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
-    for initmu in 1:6 ,  r in 1:1
+every = 0.5 ; tmax = 20
+initmus = 4:0.25:6.25
+R = 50
+µt = NaN*zeros(length(0:every:tmax),length(initmus),R)
+for i in each(initmus)
+    Threads.@threads for r in 1:R
         params["L"] = 200 ; params["T"] = 0.2
-        params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = 0
-        params_init["init"] = "single" ; params_init["type1defect"] =  initmu # initial µ
+        params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = 0.2
+        params_init["init"] = "single" ; params_init["type1defect"] =  initmus[i] # initial µ
         params_init["q"] = CHARGE
         model = SoftVisionXY(params)
         lattice = TriangularLattice(L)
@@ -117,10 +121,17 @@ p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
         # p = plot_thetas(thetas,model,lattice,defects=false)
 
         dft = DefectTracker(thetas,model,lattice,find_type=true)
-        update_and_track!(thetas,model,lattice,dft,250,10,find_type=true)
-        plot!(dft.defectsP[1].type,m=false,line=true,c=initmu)
+        update_and_track!(thetas,model,lattice,dft,tmax,every,find_type=true)
+        µt[:,i,r] = dft.defectsP[1].type[1:length(0:every:tmax)]
+    end
+end
+µtavg = mean(µt,dims=3)[:,:,1]
+p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
+    for i in each(initmus)
+        plot!(0:every:tmax,µtavg[:,i],m=false,line=true)#,c=initmus[i])
     end
     p
+    plot!(x->3pi/2)
 savefig("plots/constance_over_time_polar.png")
 
 

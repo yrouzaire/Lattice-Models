@@ -10,21 +10,21 @@ using Flux:params, onehotbatch, crossentropy, logitcrossentropy, onecold, thrott
 using Distributions,BSON
 
 ## Create base data set (without augmentation, just the different µ)
-# include(srcdir("../parameters.jl"));
-# dµ = pi/32
-# mus = Float32.(round.(collect(0:dµ:2pi-dµ),digits=2))
-# base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
-# model = XY(params)
-# lattice = SquareLattice(W21,periodic=false)
-# for i in each(mus)
-#     params_init["type1defect"] = mus[i];
-#     base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
-# end
+include(srcdir("../parameters.jl"));
+dµ = pi/32
+mus = Float32.(round.(collect(0:dµ:2pi-dµ),digits=2))
+base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
+model = XY(params)
+lattice = SquareLattice(W21,periodic=false)
+for i in each(mus)
+    params_init["type1defect"] = mus[i];
+    base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
+end
 # using JLD2
-# jldsave("data/for_ML/base_dataset_µN12.jld2";base_dataset,mus,dµ,WINDOW)
+# jldsave("data/for_ML/base_dataset_µN1.jld2";base_dataset,mus,dµ,WINDOW)
 # ind = rand(1:length(mus))
-    # p=plot_thetas(base_dataset[:,:,ind],model,lattice)
-    # display_quiver!(p,base_dataset[:,:,ind],WINDOW)
+#     p=plot_thetas(base_dataset[:,:,ind],model,lattice)
+#     display_quiver!(p,base_dataset[:,:,ind],WINDOW)
 
 ## Define Neural Network
 # We define a reshape layer to use in our decoder
@@ -44,17 +44,17 @@ end
             Conv((3, 3), 32=>32, relu),
                 Flux.flatten,
             Dense(prod(output_conv_layer), 120, relu),
-            Dropout(0.5),
+            # Dropout(0.5),
             Dense(120,60,relu),
-            Dropout(0.5),
+            # Dropout(0.5),
             Dense(60,latent_dim,relu)
             )
         decoder = Chain(
         Dense(latent_dim,60,relu),
         Dense(60,120,relu),
-        Dropout(0.5),
+        # Dropout(0.5),
         Dense(120,prod(output_conv_layer), relu),
-        Dropout(0.5),
+        # Dropout(0.5),
         Reshape2(output_conv_layer...,:),
         ConvTranspose((3,3),32=>32,relu),
         ConvTranspose((3,3),32=>16,relu),
@@ -154,15 +154,16 @@ z = @elapsed for e in 1:epochs
 end
     prinz(z)
 
-# plot(legend=:bottomleft)
-    # plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
-    # plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
-plot!((1:epochs-1).+2000,testL[1:end-1],axis=:log,lw=0.5,label="Test")
-    plot!((1:epochs-1).+2000,trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
+plot(legend=:bottomleft)
+#     plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
+#     plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
+plot!((1:epochs-1),testL[1:end-1],axis=:log,lw=0.5,label="Test")
+    plot!((1:epochs-1),trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
 
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 using BSON
 DAE = cpu(NN)
-BSON.@save "NeuralNets/DAE_positive1___09_11_2022.bson" DAE trainL testL trainLpen base_dataset epochs runtime=z
+BSON.@save "NeuralNets/DAE_negative1___15_12_2022.bson" DAE trainL testL base_dataset epochs runtime=z
+# BSON.@save "NeuralNets/DAE_positive1___15_12_2022.bson" DAE trainL testL base_dataset epochs runtime=z
 
 ## END OF FILE
