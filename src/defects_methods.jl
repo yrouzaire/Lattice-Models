@@ -98,11 +98,11 @@ function find_types(list_p,list_n,thetas,lattice)
     type_all = vcat(type_n,type_p)
 
     # define Denoising AutoEncoder DAE
-    if charge_p[1] == 1
-        DAE = NN_test
-    elseif charge_p[1] == 0.5
-        DAE = NN_test
-    end
+    # if charge_p[1] == 1
+    #     DAE = NN_test
+    # elseif charge_p[1] == 0.5
+    #     DAE = NN_test
+    # end
 
     total_number_defects = length(pos_n) + length(pos_p)
     density_defects = total_number_defects / lattice.L^2
@@ -691,4 +691,57 @@ end
 function theta_mid(x::T,y::T,symm)::T  where T<:AbstractFloat
     arcl = arclength(x,y,symm)
     return x + arcl/2 , y - arcl/2
+end
+
+## Infer µ
+function infer_mu(thetas;q,window=WINDOW,decay=true)
+    if decay return infer_mu_decay(thetas,q=q,window=window)
+    else return infer_mu_0(thetas,q=q,window=window)
+    end
+end
+function infer_mu_0(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
+    L = size(thetas,1)
+    @assert L == 2window+1
+    muss = zeros(size(thetas))
+    # tmp = Complex(0)
+    range = 2:L-1
+    for j in range, i in range
+        muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
+        # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
+        # tmp += exp(im*muss[i,j] - 0.25sqrt((i-window)^2 + (j-window)^2))
+    end
+    # muss[window,window] = 0
+    corrmat = zeros(size(thetas)) ; corrmat[window,window] = 1
+    moyenne = angle(mean(exp.(im*muss[range,range])-0corrmat[range,range]))
+    if     abs(q) == 1   correction = pi - 0.33228605 # 0.2 works perfectly with corrmat, 0.33228605 was the original cst
+    elseif abs(q) == 1/2 correction = 0.8
+    end
+    #= To be honest, I don't know where the shifts might come from,
+    In the beggining, I thought maybe from the spin at the center of the defect,
+    where theta should not be defined. But if one changes mean->sum and adds the condition
+    "if (i == j == window)", the result only becomes weirder... =#
+    # return mod.(muss,2pi)
+    return mod(moyenne .+ correction,2π)
+end
+function infer_mu_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
+    L = size(thetas,1)
+    @assert L == 2window+1
+    muss = zeros(size(thetas))
+    tmp = Complex(0)
+    range = 2:L-1
+    for j in range, i in range
+        muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
+        # i<->j irrelevant because i,j and j,i have the same weight for "mean" or "sum" operation
+        tmp += exp(im*muss[i,j] - sqrt((i-window)^2 + (j-window)^2))
+    end
+    moyenne = angle(tmp)
+    if     q == 1   correction = pi - 0.603228605 # 0.33228605 was the original cst
+    elseif q == 1/2 correction = 0.8
+    elseif q == -1/2 correction = 0.25
+    end
+    #= To be honest, I don't know where the shifts might come from,
+    In the beggining, I thought maybe from the spin at the center of the defect,
+    where theta should not be defined. But if one changes mean->sum and adds the condition
+    "if !(i == j == window)", the result only becomes weirder... =#
+    return mod(moyenne .+ correction,2π)
 end

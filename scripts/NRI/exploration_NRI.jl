@@ -2,16 +2,62 @@ cd("D:/Documents/Research/projects/LatticeModels")
 using DrWatson ; @quickactivate "LatticeModels"
 include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings
-gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
+
+## Attraction ? Repulsion ? between a pair of defects
+include(srcdir("../parameters.jl"));
+dµ = pi/32 ; mus = Float32.(round.(collect(0:dµ:2pi),digits=3))
+r0 = round(Int,L/3)
+tmax = 50
+every = 1
+R = 10
+sigmas = [0.3]
+rs = zeros(length(mus),length(mus),length(sigmas),R)
+dfts = Array{DefectTracker}(undef,length(mus),length(mus),length(sigmas),R)
+z = @elapsed for i in each(mus) , j in each(mus)
+    println((i-1)*length(mus)+j,"/",length(mus)^2)
+    for sig in each(sigmas)
+    Threads.@threads for r in 1:R
+        params["vision"] = sigmas[sig]
+        params_init["type2defect"] = [mus[i],mus[j]]
+        model = SoftVisionXY(params)
+        lattice = TriangularLattice(L)
+        thetas = init_thetas(model,lattice,params_init=params_init)
+        # plot_thetas(thetas,model,lattice,defects=false)
+        update!(thetas,model,lattice,tmax=tmax)
+        dft = DefectTracker(thetas,model,lattice)
+        # update_and_track!(thetas,model,lattice,dft,tmax,every,find_type=true)
+        # plot_thetas(thetas,model,lattice,defects=false)
+        if number_active_defects(dft)>0
+            rs[i,j,sig,r] = dist(lattice,last_loc(dft.defectsP[1]),last_loc(dft.defectsN[1]))
+        else
+            rs[i,j,sig,r] = 0
+        end
+        # dfts[i,j,sig,r] = dft
+    end
+    end
+end
+prinz(z)
+rs_avg = nanmean(rs,5)[:,:,:,:,1]/r0
+plot(xlabel=L"µ_{+}",ylabel=L"µ_{-}",size=(470,400))
+    # heatmap!(mus,mus,rs_avg[:,:,1,10],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
+    # plot!(mus,5pi/2 .+ pi/2 .- mus)
+# savefig("plots/NRI/attraction_µµ_sigma0.34.png")
+# @save "data/attraction_µµ_sigma0.3_zoom.jld2" mus rs rs_avg sigmas R tmax dµ every r0
+# @load "data/attraction_µµ_sigma0.3.jld2" mus rs rs_avg sigmas R tmax dµ every r0
+
+filename = datadir("separations_µµ.jld2")
+@load filename mus separationss sigmas r0 runtimes
+rs = separationss
 
 ## Stability of µ over time
 tmax = 10 ; every = 0.1 ; times = collect(0:every:tmax+every)
 ϵ = 0.
 µ0s = [0,pi/2,pi,3pi/2] .+ ϵ
-reals = 10
-visions = [0,0.1,0.2,0.4]
-mus = zeros(length(µ0s),length(visions),length(times),reals)
+reals = 50
+visions = [0,0.05,0.1,0.2,0.4]
+mus = zeros(length(µ0s),length(visions),length(times)-1,reals)
 z = @elapsed for i in each(µ0s)
     for j in each(visions)
         Threads.@threads for r in 1:reals
@@ -19,7 +65,7 @@ z = @elapsed for i in each(µ0s)
             params["L"] = 200 ; params["T"] = 0.1
             params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
             params_init["init"] = "single" ; params_init["type1defect"] =  µ0s[i] # initial µ
-            params_init["q"] = CHARGE
+            params_init["q"] = 1
             model = SoftVisionXY(params)
             lattice = TriangularLattice(L)
             thetas = init_thetas(model,lattice,params_init=params_init)
@@ -30,18 +76,19 @@ z = @elapsed for i in each(µ0s)
         end
     end
 end
-    prinz(z)
+    prinz(z) # 5 minutes for a lot of curves, very fast
 mus_avg = mean(mus,dims=4)[:,:,:,1]
 p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ(t)")
-    for i in 3#each(µ0s)
+    for i in [3,4]#each(µ0s)
         for j in each(visions)
             # for r in 1:reals
             #     plot!(times,smooth(mus[i,j,:,r],over=1),m=true,line=false,c=i)
             # end
-            plot!(times,mus_avg[i,j,:],c=:black,lw=2)
+            plot!(times[1:end-1],mus_avg[i,j,:],c=j,lw=2)#,label="σ = $(visions[j])",rib=0)
         end
     end
     p
+savefig("plots/µt.png")
 ## Movies
 include(srcdir("../parameters.jl"));
 

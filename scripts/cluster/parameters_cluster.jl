@@ -10,12 +10,12 @@ symmetry = "polar"
 propulsion = "polar"
 Var = 0.
 A = 0
-vision = 0
+vision = 0.1
 rho = 1
 algo = "A" # rule for collision!() for model = SPP
 
 # Numerical Parameters
-dt = 5E-2
+dt = 1E-1
 float_type = Float32
 tmax = 1E4
 transients = 1E3
@@ -26,9 +26,9 @@ times_lin = collect(transients:every:tmax)
 
 
 # Initialisation
-init = "hightemp"
+init = "pair"
 q = 1
-r0 = Int(L/2)
+r0 = round(Int,L/3)
 type1defect = "clockwise"
 type2defect = "pair2"
 

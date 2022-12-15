@@ -78,7 +78,11 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
     #= Check for meaningfulness of the defaults separation,
     otherwise the defaults will annihilate with relaxation =#
     @assert r0 ≤ 0.5L  "Error : r0 > L/2. "
-    @assert iseven(r0) "Error : r0 has to be even. "
+    if isodd(r0)
+        r0 -= 1
+        # println("Warning : r0 has to be even, corrected : r0 -= 1 ")
+    end
+
     # println()
     # println(type)
     # println(typeof(type))

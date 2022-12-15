@@ -19,7 +19,7 @@ nematic_orders_avg = nanmean(nematic_orders,4)[:,:,:,1]
 ns_avg  = nanmean(ns,4)[:,:,:,1]
 xis_avg = nanmean(xis,4)[:,:,:,1]
 Cs_avg  = nanmean(Cs,5)[:,:,:,:,1]
-histogram(runtimes/3600/24,bins=40)
+histogram([runtimes]/3600/24,bins=40)
 
 ## Phase Space (Final time and Movie over time)
 # Number of defects
