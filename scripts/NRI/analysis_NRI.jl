@@ -132,11 +132,11 @@ rs = separationss
 rs_avg = nanmean(rs,5)[:,:,:,:,1]/r0
 
 plot(xlabel=L"µ_{+}",ylabel=L"µ_{-}",size=(470,400))
-    heatmap!(mus,mus,rs_avg[:,:,2,end],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
+    heatmap!(mus,mus,rs_avg[:,:,1,end],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
     # plot!(mus,5pi/2 .+ pi/2 .- mus)
-savefig("plots/NRI/attraction_µµ_sigma0.3.png")
-anim = @animate for tt in size(rs_avg,4)
+savefig("plots/NRI/attraction_µµ_sigma0.1.png")
+anim = @animate for tt in 1:size(rs_avg,4)
     plot(xlabel=L"µ_{+}",ylabel=L"µ_{-}",size=(470,400))
-        heatmap!(mus,mus,rs_avg[:,:,2,end],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
+        heatmap!(mus,mus,rs_avg[:,:,1,tt],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
 end
-mp4("plots/NRI/separations_µµ_sigma0.3.mp4")
+gif(anim,"plots/NRI/separations_µµ_sigma0.1.gif",fps=8)
