@@ -1,11 +1,11 @@
 # Physical Parameters
-L = 200
+L = 100
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
 Var = 0.1
 A = 0
-vision = 0.3
+vision = 0.2
 rho = 1
 algo = "Langevin" # rule for collision!() for model = SPP : algo = "A", or type of XY model : algo = "MonteCarlo"/"MC" or"Langevin
 
@@ -17,9 +17,9 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "single"
+init = "pair"
 q = -1
-r0 = round(Int,L/3)
+r0 = round(Int,L/4)
 type1defect = pi
 type2defect = "pair3"
 
