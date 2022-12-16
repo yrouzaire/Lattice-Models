@@ -5,14 +5,14 @@ cd("D:/Documents/Research/projects/LatticeModels")
     pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
     include(srcdir("../parameters.jl"));
 &
-CHARGE = -1
+CHARGE = 1
+    @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
+    base_datasetP = base_dataset
     @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
-    base_dataset1 = base_dataset
-    @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN12.jld2")
-    base_dataset12 = base_dataset;
+    base_datasetN = base_dataset;
 
 function infer_mu(thetas;q,window=WINDOW,decay=true)
-    if decay return infer_mu_decay(thetas,q=q,window=window)
+    if decay && q > 0 return infer_mu_decay(thetas,q=q,window=window)
     else return infer_mu_0(thetas,q=q,window=window)
     end
 end
@@ -25,14 +25,11 @@ function infer_mu_0(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
     for j in range, i in range
         muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
         # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
-        # tmp += exp(im*muss[i,j] - 0.25sqrt((i-window)^2 + (j-window)^2))
     end
-    # muss[window,window] = 0
-    corrmat = zeros(size(thetas)) ; corrmat[window,window] = 1
-    moyenne = angle(mean(exp.(im*muss[range,range])-0corrmat[range,range]))
-    if     q == 1   correction = pi - 0.33228605 # 0.2 works perfectly with corrmat, 0.33228605 was the original cst
-    elseif q == -1 correction = pi/2 + 0.04
-    elseif q == 1/2 correction = 0.1
+    moyenne = angle(mean(exp.(im*muss[range,range])))
+    if     q == 1    correction = pi - 0.33228605
+    elseif q == -1   correction = pi/2 + 0.04
+    elseif q == 1/2  correction = 0.1
     elseif q == -1/2 correction = pi/4
     end
     #= To be honest, I don't know where the shifts might come from,
@@ -51,11 +48,13 @@ function infer_mu_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloa
     for j in range, i in range
         muss[i,j] = thetas[i,j] - abs(q)*atan( (i-window) ,(j-window))
         # i<->j irrelevant because i,j and j,i have the same weight for "mean" or "sum" operation
-        tmp += exp(im*muss[i,j] - sqrt((i-window)^2 + (j-window)^2))
+        distance = sqrt((i-window)^2 + (j-window)^2)
+        # if distance == 0 distance = Inf end # does horribly wrong
+        tmp += exp(im*muss[i,j] - 1*distance) # 1*distance seems to be the best
     end
     moyenne = angle(tmp)
     if     q == 1   correction = pi - 0.603228605 # 0.33228605 was the original cst
-    elseif q == -1  correction = pi/2 + 0.04
+    elseif q == -1  correction = pi/2 + 0.18
     elseif q == 1/2 correction = 0.1
     elseif q == -1/2 correction = pi/4
     end
@@ -67,39 +66,40 @@ function infer_mu_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloa
 end
 
 ## Test noiseless
-inferred1  = zeros(length(mus))
-inferred12 = zeros(length(mus))
-    for ind in 1:64
-        inferred1[ind] = infer_mu(base_dataset1[:,:,ind],q=sign(CHARGE)*1,decay=false)
-        inferred12[ind] = infer_mu(base_dataset12[:,:,ind],q=sign(CHARGE)*1/2,decay=false)
-    end
-    p1 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noiseless")
-    plot!(mus,inferred1,m=true,c=:red,label="Polar")
-    plot!(mus,inferred12,m=true,c=:green,label="Nematic")
-    plot!(x->x,c=:black)
+# inferredP  = zeros(length(mus))
+#     inferredN = zeros(length(mus))
+#     decay = true
+#     for ind in 1:64
+#         inferredP[ind] = infer_mu(base_datasetP[:,:,ind],q=CHARGE,decay=decay)
+#         inferredN[ind] = infer_mu(base_datasetN[:,:,ind],q=-CHARGE,decay=decay)
+#     end
+#     p1 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noiseless")
+#     plot!(mus,inferredP,m=true,c=:red,label="q=1")
+#     plot!(mus,inferredN,m=true,c=:green,label="q=-1")
+#     plot!(x->x,c=:black)
 
 ## Test with noise
-inferred1  = zeros(length(mus))
-inferred12 = zeros(length(mus))
-noise = 0.3randn(W21,W21,64)
-decay = false
+inferredP  = zeros(length(mus))
+    inferredN = zeros(length(mus))
+    noise = 0.3randn(W21,W21,64)
+    decay = false
     for ind in 1:64
-        inferred1[ind]  = infer_mu(base_dataset1[:,:,ind] + noise[:,:,ind],q=sign(CHARGE)*1,decay=decay)
-        inferred12[ind] = infer_mu(base_dataset12[:,:,ind]+ noise[:,:,ind],q=sign(CHARGE)*1/2,decay=decay)
+        inferredP[ind]  = infer_mu(base_datasetP[:,:,ind] + noise[:,:,ind],q=CHARGE,decay=decay)
+        inferredN[ind] = infer_mu(base_datasetN[:,:,ind]+ noise[:,:,ind],q=-CHARGE,decay=decay)
     end
     p2 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (without decay)")
-    plot!(mus,inferred1,line=false,m=true,c=:red,label="Polar")
-    plot!(mus,inferred12,line=false,m=true,c=:green,label="Nematic")
+    plot!(mus,inferredP,line=false,m=true,c=:red,label="q=1")
+    plot!(mus,inferredN,line=false,m=true,c=:green,label="q=-1")
     plot!(x->x,c=:black)
 
 decay = true
     for ind in 1:64
-        inferred1[ind]  = infer_mu(base_dataset1[:,:,ind] + noise[:,:,ind],q=sign(CHARGE)*1,decay=decay)
-        inferred12[ind] = infer_mu(base_dataset12[:,:,ind]+ noise[:,:,ind],q=sign(CHARGE)*1/2,decay=decay)
+        inferredP[ind]  = infer_mu(base_datasetP[:,:,ind] + noise[:,:,ind],q=CHARGE,decay=decay)
+        inferredN[ind] = infer_mu(base_datasetN[:,:,ind]+ noise[:,:,ind],q=-CHARGE,decay=decay)
     end
-    p3 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (with decay)")
-    plot!(mus,inferred1,line=false,m=true,c=:red,label="Polar")
-    plot!(mus,inferred12,line=false,m=true,c=:green,label="Nematic")
+    p3 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (with decay for q=1)")
+    plot!(mus,inferredP,line=false,m=true,c=:red,label="q=1")
+    plot!(mus,inferredN,line=false,m=true,c=:green,label="q=-1")
     plot!(x->x,c=:black)
 
 

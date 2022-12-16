@@ -7,19 +7,19 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 using Flux, Augmentor, Random, Statistics, CUDA
 using Flux:params, onehotbatch, crossentropy, logitcrossentropy, onecold, throttle, mse, trainmode!, testmode!
-using Distributions,BSON
+using Distributions
 
 ## Create base data set (without augmentation, just the different µ)
-include(srcdir("../parameters.jl"));
-dµ = pi/32
-mus = Float32.(round.(collect(0:dµ:2pi-dµ),digits=2))
-base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
-model = XY(params)
-lattice = SquareLattice(W21,periodic=false)
-for i in each(mus)
-    params_init["type1defect"] = mus[i];
-    base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
-end
+# include(srcdir("../parameters.jl"));
+# dµ = pi/32
+# mus = Float32.(round.(collect(0:dµ:2pi-dµ),digits=2))
+# base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
+# model = XY(params)
+# lattice = SquareLattice(W21,periodic=false)
+# for i in each(mus)
+#     params_init["type1defect"] = mus[i];
+#     base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
+# end
 # using JLD2
 # jldsave("data/for_ML/base_dataset_µN1.jld2";base_dataset,mus,dµ,WINDOW)
 # ind = rand(1:length(mus))
@@ -29,12 +29,12 @@ end
 ## Define Neural Network
 # We define a reshape layer to use in our decoder
 # Source :https://github.com/alecokas/flux-vae/blob/master/conv-vae/main.jl
-struct Reshape2
+struct Reshape
     shape
 end
-    Reshape2(args...) = Reshape2(args)
-    (r::Reshape2)(x) = reshape(x, r.shape)
-    Flux.@functor Reshape2 ()
+    Reshape(args...) = Reshape(args)
+    (r::Reshape)(x) = reshape(x, r.shape)
+    Flux.@functor Reshape ()
 
     function ConvAE_divrot(latent_dim=16)
         output_conv_layer = (9,9,32)
@@ -55,7 +55,7 @@ end
         # Dropout(0.5),
         Dense(120,prod(output_conv_layer), relu),
         # Dropout(0.5),
-        Reshape2(output_conv_layer...,:),
+        Reshape(output_conv_layer...,:),
         ConvTranspose((3,3),32=>32,relu),
         ConvTranspose((3,3),32=>16,relu),
         ConvTranspose((3,3),16=>1)
@@ -80,7 +80,7 @@ end
                 Dense(latent_dim,60,relu),
                 Dense(60,120,relu)),+), # end of inner skip
             Dense(120,prod(output_conv_layer), relu),
-            Reshape2(output_conv_layer...,:),
+            Reshape(output_conv_layer...,:),
             ConvTranspose((3,3),32=>32,relu), # end of outer skip
             ConvTranspose((3,3),32=>16,relu)),+), # end of outer skip
         ConvTranspose((3,3),16=>1)
@@ -99,13 +99,13 @@ export_to_gpu = true
 
 ## Data
 W21 = 2WINDOW+1
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
 include(srcdir("../parameters.jl"));
 
 ## Declare NN, Loss and Optimiser
 L1norm(x) = sum(abs, x); L1penalty() = sum(L1norm,Flux.params(NN))
 L2norm(x) = sum(abs2, x); L2penalty() = sum(L2norm,Flux.params(NN))
-loss_pen(X, y) = mse(NN(X), y) + 5E-3*L2penalty()
+# loss_pen(X, y) = mse(NN(X), y) + 5E-3*L2penalty()
 loss(X, y) = mse(NN(X), y)
 # progress = () -> @show(loss(Xtrain, Ytrain)) # callback to show loss
 # evalcb = throttle(progress, 1)
@@ -113,18 +113,18 @@ loss(X, y) = mse(NN(X), y)
 dim_latent_space = 3
 NN = 0
     NN = ConvAE_divrot(dim_latent_space) |> xpu
-    opt = Adam(1E-3)
-    epochs = 2000
+    opt = Adam(5E-4)
+    epochs = 300
 
 trainL = zeros(epochs)
-    trainLpen = zeros(epochs)
+    # trainLpen = zeros(epochs)
     testL = zeros(epochs)
 
 multi_fact = 10
 X_noisy = similar(repeat(base_dataset,outer=[1,1,multi_fact]))
 Ntrain = round(Int,0.8*size(X_noisy,3))
 z = @elapsed for e in 1:epochs
-    trainmode!(NN)
+    # trainmode!(NN)
     shuffled_dataset = repeat(base_dataset,outer=[1,1,multi_fact])[:,:,shuffle(1:end)]
 
     for i in 1:size(shuffled_dataset,3) # Both Train and Validation Sets
@@ -138,14 +138,14 @@ z = @elapsed for e in 1:epochs
 
     # if needed, reshape to feed the conv/Dense layer
     Xtrain = xpu(X_aug_divrot[:,:,:,1:Ntrain])
-    Xtest = xpu(X_aug_divrot[:,:,:,1+Ntrain:end])
+    Xtest  = xpu(X_aug_divrot[:,:,:,1+Ntrain:end])
     Ytrain = xpu(reshape(shuffled_dataset[:,:,1:Ntrain],(W21,W21,1,:)))
     Ytest  = xpu(reshape(shuffled_dataset[:,:,1+Ntrain:end],(W21,W21,1,:)))
 
     Flux.train!(loss, Flux.params(NN),[(Xtrain,Ytrain)], opt)
     trainL[e] = loss(Xtrain,Ytrain)
     # trainLpen[e] = loss_pen(Xtrain,Ytrain)
-    testmode!(NN)
+    # testmode!(NN)
     testL[e] =  loss(Xtest,Ytest)
 
     if isinteger(e/50)
@@ -161,9 +161,10 @@ plot!((1:epochs-1),testL[1:end-1],axis=:log,lw=0.5,label="Test")
     plot!((1:epochs-1),trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
 
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
-using BSON
-DAE = cpu(NN)
-BSON.@save "NeuralNets/DAE_negative1___15_12_2022.bson" DAE trainL testL base_dataset epochs runtime=z
-# BSON.@save "NeuralNets/DAE_positive1___15_12_2022.bson" DAE trainL testL base_dataset epochs runtime=z
+# using BSON
+# DAE_positive1 = cpu(NN)
+# JLD2.@save "NeuralNets/DAE_positive1___16_12_2022.jld2" DAE_positive1 trainL testL base_dataset epochs runtime=z
+DAE_negative1 = cpu(NN)
+JLD2.@save "NeuralNets/DAE_negative1___17_12_2022.jld2" DAE_negative1 trainL testL base_dataset epochs runtime=z
 
 ## END OF FILE

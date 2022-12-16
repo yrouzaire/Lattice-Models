@@ -12,11 +12,11 @@ model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
 
-using CUDA, Flux, BSON
+using CUDA, Flux
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
-# BSON.@load "NeuralNets/DAE_negative1___15_12_2022.bson" DAE
-NN_test = cpu(DAE)
-NN_test = cpu(NN)
+# NN_test = load("NeuralNets/DAE_positive1___16_12_2022.jld2","DAE_positive1")
+# NN_test = load("NeuralNets/DAE_negative1___16_12_2022.jld2","DAE_negative1")
+# NN_test = cpu(NN)
 # comments
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
@@ -25,7 +25,7 @@ lattice = TriangularLattice(W21,periodic=false)
 ind = rand(1:64)
     tmp = base_dataset[:,:,ind]
     # trelax = .5 ; update!(tmp,model,lattice,trelax)
-    X_noisy = tmp + 0.15*randn(15,15)
+    X_noisy = tmp + 0.3*randn(15,15)
     pi232 = Float32(2pi)
         X_noisy = mod.(X_noisy,pi232)
     X_noisy_reshaped = reshape(X_noisy,(W21,W21,1,:))
@@ -67,14 +67,15 @@ z = @elapsed for i in each(mus)
 
         X_noisy_reshaped = reshape(tmp,(W21,W21,1,:))
         recon = NN_test(provide_div_rot(X_noisy_reshaped))[:,:,1,1]
-        mus_infered_withDAE[i,r] = infer_mu_decay(recon,q=CHARGE)
-        mus_infered_withoutDAE[i,r] = infer_mu_decay(tmp,q=CHARGE)
+        mus_infered_withDAE[i,r] = infer_mu(recon,q=CHARGE)
+        mus_infered_withoutDAE[i,r] = infer_mu(tmp,q=CHARGE)
     end
 end
 p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
     scatter!(mus,mus_infered_withoutDAE[1:end,:],c=:black,ms=1)
-    plot!(x->x-0.3,c=:red,lw=0.5)
-    plot!(x->x+0.3,c=:red,lw=0.5)
+    plot!(x->x,c=:red,lw=1)
+    # plot!(x->x-0.3,c=:red,lw=0.5)
+    # plot!(x->x+0.3,c=:red,lw=0.5)
 
     p2=plot(xlabel="True µ",ylabel="Inferred µ",title="With DAE preprocess. ")
     scatter!(mus,mus_infered_withDAE[1:end,:],c=:black,ms=1)
@@ -83,13 +84,13 @@ p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
     # plot!(x->x+0.3,c=:red,lw=0.5)
 
     plot(p1,p2,size=(800,400))
-# savefig("plots/comparison_with_without_DAE_polar.png")
+# savefig("plots/comparison_with_without_DAE_polar_minusone_defects.png")
 
 
 ## Third Test : Errors when inferring true µ = 0
 R = 1000
 mus_infered = zeros(R)
-original = base_dataset[:,:,64] # µ = 0
+original = base_dataset[:,:,end] # µ = 0
 
 
 z = @elapsed for r in 1:R
@@ -101,6 +102,7 @@ z = @elapsed for r in 1:R
     mus_infered[r] = infer_mu(recon,q=CHARGE)
 end
 histogram(mod.(mus_infered.+pi,2pi).-pi,bins=100,normalize=true)
+histogram(mod.(mus_infered,2pi),bins=100,normalize=true)
 mean(mod.(mus_infered.+pi,2pi).-pi)
 std(mod.(mus_infered.+pi,2pi).-pi)
 
