@@ -100,18 +100,15 @@ function find_types(list_p,list_n,thetas,lattice)
     # define Denoising AutoEncoder DAE
     if charge_p[1] == 1
         DAE_plus  = DAE_positive1
-        DAE_minus = DAE_negative1
     elseif charge_p[1] == 0.5
         DAE_plus  = DAE_positive12
-        DAE_minus = DAE_negative12
     end
 
     total_number_defects = length(pos_n) + length(pos_p)
     density_defects = total_number_defects / lattice.L^2
 
-    # TODO : do we check first ?
     if true #density_defects < 1/(2WINDOW+1)^2
-        #= 11 x 11  window around the defect and we want this square
+        #= WINDOW x WINDOW portion around the defect and we want this square
         free of any other defect to proceed. If too crowded, don't
         even enter the computationally expensive operations hereafter.
         =#
@@ -123,28 +120,28 @@ function find_types(list_p,list_n,thetas,lattice)
                     #= A problem could occur if defect close to boundary
                     and lattice not periodic. If so, leave the type value
                     unchanged, i.e =NaN =#
-                    denoised_theta_zoom = DAE(reshape(provide_div_rot(thetas_zoom),(W21,W21,3,1)))
-                    denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
-                    type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[1])
-                    type_p[n] = infer_mu(thetas_zoom,q=charge_p[1])
+                    if charge_p[n] == +1
+                        denoised_theta_zoom = DAE(reshape(provide_div_rot(thetas_zoom),(W21,W21,3,1)))
+                        denoised_theta_zoom_reshaped = reshape(denoised_theta_zoom,(W21,W21))
+                        type_p[n] = infer_mu(denoised_theta_zoom_reshaped,q=charge_p[n])
+                    end
                 end
             end
         end
-        # TODO : do I do the same for negative defects ? finalité = ?
-        type_n = NaN*zeros(length(pos_n))
-        # for n in each(pos_n)
-        #     if alone_in_window(pos_n[n],pos_all,lattice,WINDOW) # heavy, computes distance
-        #         i,j = pos_n[n]
-        #         no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,WINDOW)
-        #         if no_problem_go_ahead
-        #             #= A problem could occur if defect close to boundary
-        #             and lattice not periodic. If so, leave the type value
-        #             unchanged, i.e "unknown" =#
-        #             # ind_type = onecold(NN_negative(vec(thetas_zoom)))
-        #             type_n[n] = NaN
-        #         end
-        #     end
-        # end
+        for n in each(pos_n)
+            if alone_in_window(pos_n[n],pos_all,lattice,WINDOW) # heavy, computes distance
+                i,j = pos_n[n]
+                no_problem_go_ahead,thetas_zoom = zoom(thetas,lattice,i,j,WINDOW)
+                if no_problem_go_ahead
+                    #= A problem could occur if defect close to boundary
+                    and lattice not periodic. If so, leave the type value
+                    unchanged, i.e "unknown" =#
+                    if charge_n[n] == -1
+                        type_n[n] = infer_mu(thetas_zoom,q=charge_n[n])
+                    end
+                end
+            end
+        end
     end
 
     list_p_updated = similar(list_p)
