@@ -7,14 +7,14 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 include(srcdir("../parameters.jl"));
 params["symmetry"] = "polar"
-CHARGE = 1
+CHARGE = -1
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
 
 using CUDA, Flux, BSON
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
-BSON.@load "NeuralNets/DAE_positive1___09_11_2022.bson" DAE
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
+# BSON.@load "NeuralNets/DAE_negative1___15_12_2022.bson" DAE
 NN_test = cpu(DAE)
 NN_test = cpu(NN)
 # comments

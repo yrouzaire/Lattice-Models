@@ -52,15 +52,11 @@ end
 prinz(z)
 rs_avg = nanmean(rs,5)[:,:,:,:,1]/r0
 plot(xlabel=L"µ_{+}",ylabel=L"µ_{-}",size=(470,400))
-    # heatmap!(mus,mus,rs_avg[:,:,1,10],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
+    heatmap!(mus,mus,rs_avg[:,:,2,end],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
     # plot!(mus,5pi/2 .+ pi/2 .- mus)
 # savefig("plots/NRI/attraction_µµ_sigma0.34.png")
 # @save "data/attraction_µµ_sigma0.3_zoom.jld2" mus rs rs_avg sigmas R tmax dµ every r0
 # @load "data/attraction_µµ_sigma0.3.jld2" mus rs rs_avg sigmas R tmax dµ every r0
-
-filename = datadir("separations_µµ.jld2")
-@load filename mus separationss sigmas r0 runtimes
-rs = separationss
 
 ## Stability of µ over time
 tmax = 10 ; every = 0.1 ; times = collect(0:every:tmax+every)

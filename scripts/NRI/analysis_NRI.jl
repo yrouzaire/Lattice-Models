@@ -124,3 +124,19 @@ anim = @animate for i in 1:size(thetas_saves,3)
     plot_thetas(thetas_saves[2,5,i,:,:,1],model,lattice,defects=false,size=(512,512))
 end
 mp4(anim,"films\\NRI_test00.mp4",fps=10)
+
+## Separations µµ
+filename = datadir("separations_µµ.jld2")
+@load filename mus separationss sigmas r0 runtimes
+rs = separationss
+rs_avg = nanmean(rs,5)[:,:,:,:,1]/r0
+
+plot(xlabel=L"µ_{+}",ylabel=L"µ_{-}",size=(470,400))
+    heatmap!(mus,mus,rs_avg[:,:,2,end],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
+    # plot!(mus,5pi/2 .+ pi/2 .- mus)
+savefig("plots/NRI/attraction_µµ_sigma0.3.png")
+anim = @animate for tt in size(rs_avg,4)
+    plot(xlabel=L"µ_{+}",ylabel=L"µ_{-}",size=(470,400))
+        heatmap!(mus,mus,rs_avg[:,:,2,end],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
+end
+mp4("plots/NRI/separations_µµ_sigma0.3.mp4")
