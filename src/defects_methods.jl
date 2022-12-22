@@ -98,10 +98,12 @@ function find_types(list_p,list_n,thetas,lattice)
     type_all = vcat(type_n,type_p)
 
     # define Denoising AutoEncoder DAE
-    if charge_p[1] == 1
-        DAE_plus  = DAE_positive1
-    elseif charge_p[1] == 0.5
-        DAE_plus  = DAE_positive12
+    if length(charge_p) > 0
+        if charge_p[1] == 1
+            DAE = DAE_positive1
+        elseif charge_p[1] == 0.5
+            DAE = DAE_positive12
+        end
     end
 
     total_number_defects = length(pos_n) + length(pos_p)
@@ -694,7 +696,7 @@ end
 
 ## Infer µ
 function infer_mu(thetas;q,window=WINDOW,decay=true)
-    if decay return infer_mu_decay(thetas,q=q,window=window)
+    if decay && q > 0 return infer_mu_decay(thetas,q=q,window=window)
     else return infer_mu_0(thetas,q=q,window=window)
     end
 end
