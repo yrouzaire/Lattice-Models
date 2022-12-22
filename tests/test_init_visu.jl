@@ -60,6 +60,13 @@ window = 5
     display_quiver!(p,thetas,window)
     xlims!(1,2window+1) ; ylims!(1,2window+1)
 
+## Test init pair with angle phi
+include(srcdir("../parameters.jl"));
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice)
+
+
+
 ## Test the zoom with periodic lattice
 include(srcdir("../parameters.jl"));
 

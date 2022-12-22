@@ -27,7 +27,7 @@ end
 
 function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice;params_init) where float_type<:AbstractFloat
     L = lattice.L
-    @unpack init,q,r0,type1defect,type2defect = params_init
+    @unpack init,q,r0,type1defect,type2defect,phi = params_init
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
@@ -38,7 +38,7 @@ function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice
         thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,type=type1defect) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
         lattice.periodic = false
     elseif init == "pair"
-        thetas = create_pair_vortices(L,r0=r0,q=abs(q),type=type2defect)
+        thetas = create_pair_vortices(L,r0=r0,q=abs(q),phi=phi,type=type2defect)
     elseif init in ["2pairs" , "2pair"]
         thetas = create_2pairs_vortices(L,r0=r0,q=abs(q),type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
@@ -74,7 +74,7 @@ function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="ra
     return thetas .+ offset
 end
 
-function create_pair_vortices(L;r0=Int(L/2),q,type)
+function create_pair_vortices(L;r0=Int(L/2),q,phi=0.0,type)
     #= Check for meaningfulness of the defaults separation,
     otherwise the defaults will annihilate with relaxation =#
     @assert r0 ≤ 0.5L  "Error : r0 > L/2. "
@@ -83,9 +83,6 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
         # println("Warning : r0 has to be even, corrected : r0 -= 1 ")
     end
 
-    # println()
-    # println(type)
-    # println(typeof(type))
     if isa(type,String)
         # type in ["shortname","what you actually see (after interferences)"] , type_pos,type_neg ="what you have to put in (before interferences)"
         if     type in ["random"]                type_pos,type_neg = "random","random"
@@ -100,8 +97,14 @@ function create_pair_vortices(L;r0=Int(L/2),q,type)
     else error("Type Unknown!")
     end
 
-    thetas = create_single_defect(L,round(Int,L/2+r0/2),round(Int,L/2),q=+q,type=type_pos) +
-             create_single_defect(L,round(Int,L/2-r0/2),round(Int,L/2),q=-q,type=type_neg)
+    # Location of the defects
+    xp = round(Int,L/2+r0/2*cos(phi))
+    xm = round(Int,L/2-r0/2*cos(phi))
+    yp = round(Int,L/2+r0/2*sin(phi))
+    ym = round(Int,L/2-r0/2*sin(phi))
+
+    thetas = create_single_defect(L,xp,yp,q=+q,type=type_pos) +
+             create_single_defect(L,xm,ym,q=-q,type=type_neg)
 
     # return smooth_border!(thetas)
     return (thetas)
