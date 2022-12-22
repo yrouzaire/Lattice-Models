@@ -18,14 +18,15 @@ every = 1E2
 
 # Initialisation
 init = "pair"
-q = -1
+q = 1
 r0 = round(Int,L/4)
-type1defect = pi
+phi = pi/2
+type1defect = 3pi/2
 type2defect = "pair3"
 
 # Containers
 params_phys = Dict("L"=>L,"T"=>T,"Var"=>Var,"A"=>A,"rho"=>rho,"vision"=>vision,"symmetry"=>symmetry,"propulsion"=>propulsion,"algo"=>algo)
 params_num  = Dict("dt"=>dt,"float_type"=>float_type,"tmax"=>tmax,"transients"=>transients)
-params_init = Dict("init"=>init,"q"=>q,"r0"=>r0,"type1defect"=>type1defect,"type2defect"=>type2defect)
+params_init = Dict("init"=>init,"q"=>q,"r0"=>r0,"phi"=>phi,"type1defect"=>type1defect,"type2defect"=>type2defect)
 
 params = merge(params_num,params_phys,params_init)

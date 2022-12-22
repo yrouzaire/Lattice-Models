@@ -79,29 +79,29 @@ end
 #     plot!(x->x,c=:black)
 
 ## Test with noise
-inferredP  = zeros(length(mus))
-    inferredN = zeros(length(mus))
-    noise = 0.3randn(W21,W21,64)
-    decay = false
-    for ind in 1:64
-        inferredP[ind]  = infer_mu(base_datasetP[:,:,ind] + noise[:,:,ind],q=CHARGE,decay=decay)
-        inferredN[ind] = infer_mu(base_datasetN[:,:,ind]+ noise[:,:,ind],q=-CHARGE,decay=decay)
-    end
-    p2 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (without decay)")
-    plot!(mus,inferredP,line=false,m=true,c=:red,label="q=1")
-    plot!(mus,inferredN,line=false,m=true,c=:green,label="q=-1")
-    plot!(x->x,c=:black)
-
-decay = true
-    for ind in 1:64
-        inferredP[ind]  = infer_mu(base_datasetP[:,:,ind] + noise[:,:,ind],q=CHARGE,decay=decay)
-        inferredN[ind] = infer_mu(base_datasetN[:,:,ind]+ noise[:,:,ind],q=-CHARGE,decay=decay)
-    end
-    p3 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (with decay for q=1)")
-    plot!(mus,inferredP,line=false,m=true,c=:red,label="q=1")
-    plot!(mus,inferredN,line=false,m=true,c=:green,label="q=-1")
-    plot!(x->x,c=:black)
-
-
-plot(p1,p2,p3,size=(1200,400),layout=(1,3))
-# savefig("plots/procedure_infer_mu_polar.png")
+# inferredP  = zeros(length(mus))
+#     inferredN = zeros(length(mus))
+#     noise = 0.3randn(W21,W21,64)
+#     decay = false
+#     for ind in 1:64
+#         inferredP[ind]  = infer_mu(base_datasetP[:,:,ind] + noise[:,:,ind],q=CHARGE,decay=decay)
+#         inferredN[ind] = infer_mu(base_datasetN[:,:,ind]+ noise[:,:,ind],q=-CHARGE,decay=decay)
+#     end
+#     p2 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (without decay)")
+#     plot!(mus,inferredP,line=false,m=true,c=:red,label="q=1")
+#     plot!(mus,inferredN,line=false,m=true,c=:green,label="q=-1")
+#     plot!(x->x,c=:black)
+#
+# decay = true
+#     for ind in 1:64
+#         inferredP[ind]  = infer_mu(base_datasetP[:,:,ind] + noise[:,:,ind],q=CHARGE,decay=decay)
+#         inferredN[ind] = infer_mu(base_datasetN[:,:,ind]+ noise[:,:,ind],q=-CHARGE,decay=decay)
+#     end
+#     p3 = plot(xlabel="True µ",ylabel="Inferred µ",legend=:top,title="Noisy (with decay for q=1)")
+#     plot!(mus,inferredP,line=false,m=true,c=:red,label="q=1")
+#     plot!(mus,inferredN,line=false,m=true,c=:green,label="q=-1")
+#     plot!(x->x,c=:black)
+#
+#
+# plot(p1,p2,p3,size=(1200,400),layout=(1,3))
+# # savefig("plots/procedure_infer_mu_polar.png")
