@@ -27,7 +27,7 @@ end
 
 function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice;params_init) where float_type<:AbstractFloat
     L = lattice.L
-    @unpack init,q,r0,type1defect,type2defect,phi = params_init
+    @unpack init,q,r0,mu0,mu_plus,mu_minus,phi = params_init
     if init in ["hightemp" , "disorder"]
         thetas = 2π*rand(L,L)
     elseif init in ["lowtemp" , "polar_order"]
@@ -35,86 +35,92 @@ function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice
     elseif init in ["lowtemp_nematic" , "nematic_order"]
         thetas = rand(Bool,L,L)*π
     elseif init in ["isolated" , "single"]
-        thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,type=type1defect) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
+        thetas = create_single_defect(L,round(Int,L/2),round(Int,L/2),q=q,mu=mu0) # in case of something more exotic, recall that the use is : create_single_defect(q,type,L,y0,x0) (x and y swapped)
         lattice.periodic = false
     elseif init == "pair"
-        thetas = create_pair_vortices(L,r0=r0,q=abs(q),phi=phi,type=type2defect)
+        thetas = create_pair_vortices(L,r0=r0,q=abs(q),types=[mu_plus,mu_minus,phi])
     elseif init in ["2pairs" , "2pair"]
-        thetas = create_2pairs_vortices(L,r0=r0,q=abs(q),phi=phi,type=type2defect)
+        thetas = create_2pairs_vortices(L,r0=r0,q=abs(q),types=[mu_plus,mu_minus,phi])
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
     if model.rho < 1 make_holes!(thetas,model.rho) end
     return float_type.(thetas)
 end
 
-function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="random")
+function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,mu="random")
 
-    condition0 = (type == "random") || (isa(type,Number))
-    condition1 = (q > 0 && type in ["source","sink","clockwise","counterclockwise"])
-    condition2 = (q < 0 && type in ["split","join","convergent","divergent","threefold1","threefold2","31","32"])
+    condition0 = (mu == "random") || (isa(mu,Number))
+    condition1 = (q > 0 && mu in ["source","sink","clockwise","counterclockwise"])
+    condition2 = (q < 0 && mu in ["split","join","convergent","divergent","threefold1","threefold2","31","32"])
     @assert condition0 || condition1 || condition2
 
     thetas = zeros(L,L)
     for y in 1:L , x in 1:L thetas[x,y] = q * atan(y-y0,x-x0) end
-    if     isa(type,Number) offset = type
-    elseif isa(type,String)
-        if     type == "random"                 offset = 2π*rand() - π
+    if     isa(mu,Number) offset = mu
+    elseif isa(mu,String)
+        if     mu == "random"                 offset = 2π*rand() - π
             # q > 0
-        elseif type == "source"                 offset = 0
-        elseif type == "sink"                   offset = π
-        elseif type == "counterclockwise"       offset = π/2
-        elseif type == "clockwise"              offset = -π/2
+        elseif mu == "source"                 offset = 0
+        elseif mu == "sink"                   offset = π
+        elseif mu == "counterclockwise"       offset = π/2
+        elseif mu == "clockwise"              offset = -π/2
             # q <
-        elseif type in ["convergent","join"]    offset = 0
-        elseif type in ["divergent" ,"split"]   offset = π
-        elseif type in ["threefold1","31"]      offset = π/2
-        elseif type in ["threefold2","32"]      offset = -π/2
+        elseif mu in ["convergent","join"]    offset = 0
+        elseif mu in ["divergent" ,"split"]   offset = π
+        elseif mu in ["threefold1","31"]      offset = π/2
+        elseif mu in ["threefold2","32"]      offset = -π/2
         end
     end
     return thetas .+ offset
 end
 
 
-function create_pair_vortices(L;r0=Int(L/2),q,phi=0.0,type)
+function create_pair_vortices(L;r0=Int(L/2),q,types)
     #= Check for meaningfulness of the defaults separation,
     otherwise the defaults will annihilate with relaxation =#
-    @assert r0 ≤ 0.5L  "Error : r0 > L/2. "
+    @assert 2 ≤ r0 ≤ 0.5L  "Error : r0 should be bigger 2 ≤ r0 ≤ L/2. "
     if isodd(r0)
         r0 -= 1
         # println("Warning : r0 has to be even, corrected : r0 -= 1 ")
     end
 
-    if isa(type,String)
-        # type in ["shortname","what you actually see (after interferences)"] , type_pos,type_neg ="what you have to put in (before interferences)"
-        if     type in ["random"]                type_pos,type_neg = "random","random"
-        elseif type in ["pair1","source_split"]  type_pos,type_neg = "source","join"
-        elseif type in ["pair2","sink_join"]     type_pos,type_neg = "source","split"
-        elseif type in ["pair3","clock_31"]      type_pos,type_neg = "source","threefold2"
-        elseif type in ["pair4","cclock_32"]     type_pos,type_neg = "source","threefold1"
-        else error("Type Unknown!")
-        end
-    elseif isa(type,Vector{String}) || isa(type,Tuple{Number,Number}) || isa(type,Vector{<:Number})
-        type_pos , type_neg = type
-    else error("Type Unknown!")
+    mu_plus,mu_minus,phi = types
+    @assert sum(isnothing.(types)) == 1
+
+    #= The following lines arise from the following (empirically found) system of equations:
+    mu_plus + mu_minus + phi = 0
+    mu_plus  = mu1 + mu2 - phi + pi
+    mu_minus = mu1 + mu2 + phi
+    =#
+    if isnothing(phi) # mu_plus and mu_minus are given/imposed
+        phi = mu_minus - mu_plus
+        mu1 = 0
+        mu2 = mu_plus + phi + π
+    elseif isnothing(mu_plus) # phi and mu_minus are given/imposed
+        mu1 = 0
+        mu2 = mu_minus - phi
+    elseif isnothing(mu_minus) # phi and mu_plus are given/imposed
+        mu1 = 0
+        mu2 = mu_plus + phi + π
     end
 
     # Location of the defects
-    xp = round(Int,L/2-r0/2*cos(phi))
+    xp = round(Int,L/2+r0/2*cos(phi-π))
+    yp = round(Int,L/2+r0/2*sin(phi-π))
     xm = round(Int,L/2+r0/2*cos(phi))
-    yp = round(Int,L/2-r0/2*sin(phi))
     ym = round(Int,L/2+r0/2*sin(phi))
 
-    thetas = create_single_defect(L,xp,yp,q=+q,type=type_pos) +
-             create_single_defect(L,xm,ym,q=-q,type=type_neg)
+    thetas = create_single_defect(L,xp,yp,q=+q,mu=mu1) +
+             create_single_defect(L,xm,ym,q=-q,mu=mu2)
 
     # return smooth_border!(thetas)
-    return (thetas)
+    return thetas
 end
 
-#= The function below is the ancient version, when I did not control the actual µ
+#= The function below is the ancient version, when I did not control the actual mu
 of the defects, after the interference of the two fields.
 I keep it in order to make it possible to reperform the tests that led to the
-formulae relating µ1 and µ2, the input µ (different from the actually created µ)
+formulae relating mu1 and mu2, the input mu (different from the actually created mu)
 and the angle \phi  =#
 # function create_pair_vortices_old(L;r0=Int(L/2),q,phi=0.0,type)
 #     #= Check for meaningfulness of the defaults separation,
@@ -167,7 +173,8 @@ function smooth_border!(thetas)
     return thetas # in fact, this procedure is fairly insensible to relax!() since already smooth
 end
 
-function create_2pairs_vortices(L;r0,q,phi=0,type)
+function create_2pairs_vortices(L;r0,q,types)
+    mu_plus,mu_minus,phi = types
     @assert isinteger(r0/4) "R0 has to be a multiple of 4 !"
     return create_pair_vortices(L,r0=r0,q=q,phi=phi,type=type) + create_pair_vortices(L,r0=r0/2,q=q,phi=phi,type=type)'
 end

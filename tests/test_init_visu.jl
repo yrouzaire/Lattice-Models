@@ -2,7 +2,7 @@ cd("D:/Documents/Research/projects/LatticeModels")
 using DrWatson ; @quickactivate "LatticeModels"
 include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings
-pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
+gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
 ## Tests Movies
 # gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5)
@@ -45,20 +45,6 @@ thetas = init_thetas(model,lattice,init="pair",q=1/2,r0=60,type=["source","diver
 thetas = init_thetas(model,lattice,init="2pair",q=1/2,r0=60,type=["source","divergent"])
     plot_theta(thetas,model,lattice)
 
-## Test init pair the new way
-include(srcdir("../parameters.jl"));
-    params["init"] = "pair"
-    params["type2defect"] = "pair1"
-
-    model = XY(params)
-    lattice = TriangularLattice(L)
-    thetas = init_thetas(lattice,params=params)
-
-p = plot_thetas(thetas,model,lattice,colorbar=false)
-update!(thetas,model,lattice,10)
-window = 5
-    display_quiver!(p,thetas,window)
-    xlims!(1,2window+1) ; ylims!(1,2window+1)
 
 ## Test init pair with angle phi
 include(srcdir("../parameters.jl"));
@@ -66,7 +52,16 @@ include(srcdir("../parameters.jl"));
     lattice = SquareLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice,defects=true)
-
+    dft = DefectTracker(thetas,model,lattice,find_type=true)
+    if number_active_defects(dft) > 0
+        tp = string(round(last_type(dft.defectsP[1]),digits=2))
+        tm = string(round(last_type(dft.defectsN[1]),digits=2))
+        titre = L"µ_{+}="*tp*L" ; µ_{-}="*tm
+    else
+        titre = ""
+    end
+    zoom_quiver(thetas,model,lattice,50,50,12)
+    title!(titre)
 
 
 ## Test the zoom with periodic lattice
