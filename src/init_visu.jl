@@ -93,7 +93,7 @@ function create_pair_vortices(L;r0=Int(L/2),q,types)
     mu_minus = mu1 + mu2 + phi
     =#
     if isnothing(phi) # mu_plus and mu_minus are given/imposed
-        phi = mu_minus - mu_plus
+        phi = (mu_minus - mu_plus)
         mu1 = 0
         mu2 = mu_plus + phi + π
     elseif isnothing(mu_plus) # phi and mu_minus are given/imposed
