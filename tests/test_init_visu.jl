@@ -62,8 +62,10 @@ window = 5
 
 ## Test init pair with angle phi
 include(srcdir("../parameters.jl"));
+    model = XY(params)
+    lattice = SquareLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)
-    plot_thetas(thetas,model,lattice)
+    plot_thetas(thetas,model,lattice,defects=true)
 
 
 

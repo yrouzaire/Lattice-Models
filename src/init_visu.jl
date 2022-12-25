@@ -40,7 +40,7 @@ function init_thetas(model::AbstractModel{float_type},lattice::Abstract2DLattice
     elseif init == "pair"
         thetas = create_pair_vortices(L,r0=r0,q=abs(q),phi=phi,type=type2defect)
     elseif init in ["2pairs" , "2pair"]
-        thetas = create_2pairs_vortices(L,r0=r0,q=abs(q),type=type2defect)
+        thetas = create_2pairs_vortices(L,r0=r0,q=abs(q),phi=phi,type=type2defect)
     else error("ERROR : Type of initialisation unknown. Choose among \"hightemp/order\",\"lowtemp/polar_order\",\"isolated\" , \"pair\" , \"2pair\" or \"lowtemp_nematic/nematic_order\" .")
     end
     if model.rho < 1 make_holes!(thetas,model.rho) end
@@ -64,7 +64,7 @@ function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="ra
         elseif type == "sink"                   offset = π
         elseif type == "counterclockwise"       offset = π/2
         elseif type == "clockwise"              offset = -π/2
-            # q = -1/2 (when q = -1, I think they are all equivalent)
+            # q <
         elseif type in ["convergent","join"]    offset = 0
         elseif type in ["divergent" ,"split"]   offset = π
         elseif type in ["threefold1","31"]      offset = π/2
@@ -98,10 +98,10 @@ function create_pair_vortices(L;r0=Int(L/2),q,phi=0.0,type)
     end
 
     # Location of the defects
-    xp = round(Int,L/2+r0/2*cos(phi))
-    xm = round(Int,L/2-r0/2*cos(phi))
-    yp = round(Int,L/2+r0/2*sin(phi))
-    ym = round(Int,L/2-r0/2*sin(phi))
+    xp = round(Int,L/2-r0/2*cos(phi))
+    xm = round(Int,L/2+r0/2*cos(phi))
+    yp = round(Int,L/2-r0/2*sin(phi))
+    ym = round(Int,L/2+r0/2*sin(phi))
 
     thetas = create_single_defect(L,xp,yp,q=+q,type=type_pos) +
              create_single_defect(L,xm,ym,q=-q,type=type_neg)
@@ -125,9 +125,9 @@ function smooth_border!(thetas)
     return thetas # in fact, this procedure is fairly insensible to relax!() since already smooth
 end
 
-function create_2pairs_vortices(L;r0,q,type)
+function create_2pairs_vortices(L;r0,q,phi=0,type)
     @assert isinteger(r0/4) "R0 has to be a multiple of 4 !"
-    return create_pair_vortices(L,r0=r0,q=q,type=type) + create_pair_vortices(L,r0=r0/2,q=q,type=type)'
+    return create_pair_vortices(L,r0=r0,q=q,phi=phi,type=type) + create_pair_vortices(L,r0=r0/2,q=q,phi=phi,type=type)'
 end
 
 function make_holes!(thetas,rho)
