@@ -74,6 +74,7 @@ function create_single_defect(L,x0=round(Int,L/2),y0=round(Int,L/2);q=1,type="ra
     return thetas .+ offset
 end
 
+
 function create_pair_vortices(L;r0=Int(L/2),q,phi=0.0,type)
     #= Check for meaningfulness of the defaults separation,
     otherwise the defaults will annihilate with relaxation =#
@@ -109,6 +110,47 @@ function create_pair_vortices(L;r0=Int(L/2),q,phi=0.0,type)
     # return smooth_border!(thetas)
     return (thetas)
 end
+
+#= The function below is the ancient version, when I did not control the actual µ
+of the defects, after the interference of the two fields.
+I keep it in order to make it possible to reperform the tests that led to the
+formulae relating µ1 and µ2, the input µ (different from the actually created µ)
+and the angle \phi  =#
+# function create_pair_vortices_old(L;r0=Int(L/2),q,phi=0.0,type)
+#     #= Check for meaningfulness of the defaults separation,
+#     otherwise the defaults will annihilate with relaxation =#
+#     @assert r0 ≤ 0.5L  "Error : r0 > L/2. "
+#     if isodd(r0)
+#         r0 -= 1
+#         # println("Warning : r0 has to be even, corrected : r0 -= 1 ")
+#     end
+#
+#     if isa(type,String)
+#         # type in ["shortname","what you actually see (after interferences)"] , type_pos,type_neg ="what you have to put in (before interferences)"
+#         if     type in ["random"]                type_pos,type_neg = "random","random"
+#         elseif type in ["pair1","source_split"]  type_pos,type_neg = "source","join"
+#         elseif type in ["pair2","sink_join"]     type_pos,type_neg = "source","split"
+#         elseif type in ["pair3","clock_31"]      type_pos,type_neg = "source","threefold2"
+#         elseif type in ["pair4","cclock_32"]     type_pos,type_neg = "source","threefold1"
+#         else error("Type Unknown!")
+#         end
+#     elseif isa(type,Vector{String}) || isa(type,Tuple{Number,Number}) || isa(type,Vector{<:Number})
+#         type_pos , type_neg = type
+#     else error("Type Unknown!")
+#     end
+#
+#     # Location of the defects
+#     xp = round(Int,L/2-r0/2*cos(phi))
+#     xm = round(Int,L/2+r0/2*cos(phi))
+#     yp = round(Int,L/2-r0/2*sin(phi))
+#     ym = round(Int,L/2+r0/2*sin(phi))
+#
+#     thetas = create_single_defect(L,xp,yp,q=+q,type=type_pos) +
+#              create_single_defect(L,xm,ym,q=-q,type=type_neg)
+#
+#     # return smooth_border!(thetas)
+#     return (thetas)
+# end
 
 function smooth_border!(thetas)
     cst = round(Int,0.02*size(thetas,1)) # has to be even
