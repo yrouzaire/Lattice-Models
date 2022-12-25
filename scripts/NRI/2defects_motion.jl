@@ -32,12 +32,12 @@ mod.(sum(params_init["type2defect"]) + params_init["phi"],2pi)
 ## Understand what is the µ of two defects
 include(srcdir("../parameters.jl"));
     mus = 0:pi/8:2pi
-    actual_mus = Matrix{Tuple{Float64,Float64}}(undef,length(mus),length(mus))
-    for i in each(mus), j in each(mus)
+    actual_mus = Vector{Tuple{Float64,Float64}}(undef,length(mus))
+    for i in each(mus)
     r0 = round(Int,L/8)
-    params_init["type2defect"] = [0,mus[j]]
+    params_init["type2defect"] = [0,mus[i]]
     params_init["r0"] = r0
-    params_init["phi"] = pi/3
+    params_init["phi"] = pi
     model = SoftVisionXY(params)
     lattice = TriangularLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)
@@ -45,14 +45,14 @@ include(srcdir("../parameters.jl"));
     # zoom_quiver(thetas,model,lattice,50,50,12,size=(700,700))
     plot_thetas(thetas,model,lattice,defects=true)
 
-    actual_mus[i,j] = last_type(dft.defectsP[1]),last_type(dft.defectsN[1])
+    actual_mus[i] = last_type(dft.defectsP[1]),last_type(dft.defectsN[1])
 end
-    p=plot()
+    p=plot(xlims=ylims=(0,2pi))
     for i in each(actual_mus)
         scatter!(actual_mus[i])
     end
     p
-    plot!(x->mod(x-params_init["phi"],2pi))
+    plot!(x->mod(x-pi+2params_init["phi"],2pi))
 
 ## Find f(ϕ) such that µ+ - µ- = f(ϕ)
 phis = 0:pi/16:2pi
@@ -70,26 +70,17 @@ for p in each(phis) , i in each(mus)
         actual_mus[p,i] = last_type(dft.defectsP[1]),last_type(dft.defectsN[1])
 end
 p=plot()
-    for p in 1:1:length(phis)
+    for p in 1#:1:length(phis)
         scatter!(actual_mus[p,:])
     end
     p
 # find the x coordinate when y ~ 0
 fphi = NaN*zeros(length(phis))
 for p in each(phis)
-    x = actual_mus[p,:]
-    ind = nothing
-    maxx = Inf
-    for i in each(mus)
-        if x[i][2] < maxx
-            maxx = x[i][2]
-            ind = i
-        end
-    end
-    fphi[p] = mus[ind]
+    fphi[p] = mus[findmin([actual_mus[p,i][1] for i in each(mus)])[2]]
 end
 plot(phis,fphi)
-    plot!(x->mod(-x,2pi))
+    plot!(x->mod(pi+x,2pi))
 
 
 
