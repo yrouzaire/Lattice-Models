@@ -93,7 +93,7 @@ function create_pair_vortices(L;r0=Int(L/2),q,types)
     mu_minus = mu1 + mu2 + phi
     =#
     if isnothing(phi) # mu_plus and mu_minus are given/imposed
-        phi = (mu_minus - mu_plus)
+        phi = (mu_minus - mu_plus + pi)/2
         mu1 = 0
         mu2 = mu_plus + phi + π
     elseif isnothing(mu_plus) # phi and mu_minus are given/imposed
@@ -196,7 +196,7 @@ function plot_thetas(thetas::Vector{T},model::AbstractModel,lattice::Abstract1DL
     return p
 end
 
-function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice;defects=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
+function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice;defects=false,quiver=false,force_quiver=false,title="",colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
     if     model.symmetry == "nematic" modd = pi
     elseif model.symmetry == "polar"   modd = 2pi
     end
@@ -209,6 +209,10 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
         locN = [defects_m[i][1:2] for i in each(defects_m)]
         highlight_defects!(p,lattice.L,locP,locN)
     end
+
+    garde_fou_quiver = 25
+    if quiver
+        if (size(thetas,1) < garde_fou_quiver) || force_quiver 
     # xlims!((0,lattice.L))
     # ylims!((0,lattice.L))
     return p

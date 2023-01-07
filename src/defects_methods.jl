@@ -312,7 +312,7 @@ number_active_defects(dt::DefectTracker)  = number_active_defectsN(dt) + number_
 
 first_types(dt::DefectTracker) = first_type.(vcat(dt.defectsP,dt.defectsN))
 last_types(dt::DefectTracker) = last_type.(vcat(dt.defectsP,dt.defectsN))
-
+types(dt::DefectTracker) = last_types(dt)
 
 function t_bounds(dft::DefectTracker)
     alldefects = vcat(dft.defectsP,dft.defectsN)

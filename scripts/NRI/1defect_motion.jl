@@ -5,6 +5,51 @@ using Plots,ColorSchemes,LaTeXStrings
 gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
 
+## Energy Definition and link with stability of µ
+function energy(thetas,model,lattice)
+    nnn = number_nearest_neighbours(lattice)
+    ij_in_bulk = false
+    energy = 0
+    for j in 1:L , i in 1:L
+        theta = thetas[i,j]
+        angles_neighbours = get_neighbours(thetas,model,lattice,i,j,ij_in_bulk)
+        ID = ID_projection_angle_onto_lattice(theta,i,j,lattice)
+        base = sum(cos,angles_neighbours .- theta) * (1. - model.vision)
+        correction = nnn*model.vision * cos(angles_neighbours[ID]-theta)
+        energy -= base + correction
+    end
+    return energy
+end
+
+
+visions = [0,.1,.2]
+mus = collect(0:pi/100:2pi)
+R = 50
+E = zeros(length(mus),length(visions),R)
+for i in each(mus) , j in each(visions)
+    Threads.@threads for r in 1:R
+        params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
+        params_init["init"] = "single" ; params_init["mu0"] =  mus[i] # initial µ
+        # params_init["init"] = "pair" ; params_init["mu_plus"] =  mus[i] ; params_init["mu_minus"] = 0 ; params_init["phi"] = nothing # initial µ
+        params_init["q"] = 1/2
+        model = SoftVisionXY(params)
+        lattice = TriangularLattice(L)
+        # lattice = SquareLattice(L)
+        thetas = init_thetas(model,lattice,params_init=params_init)
+        update!(thetas,model,lattice,1)
+        E[i,j,r] = energy(thetas,model,lattice)
+    end
+end
+E_avg = mean(E,dims=3)[:,:,1]
+    p=plot()
+    for j in each(visions)
+        plot!(mus,E_avg[:,j]/W21^2 .+ 3.59)
+        # plot!(x->-visions[j]/2*cos(2x))
+        # plot!(x->-visions[j]*0.8*sin(x))
+    end
+    p
+
+
 ## Stability of µ over time
 tmax = 10 ; every = 2 ; times = collect(0:every:tmax+every)
 µ0s = [0,pi/2,pi,3pi/2]
@@ -101,15 +146,14 @@ p=plot(legend=false,ylims=(0,2pi),ylabel="µ(t)",size=(400,400))
 
 ## Movies
 include(srcdir("../parameters.jl"));
-
     lattice = TriangularLattice(L)
     model = SoftVisionXY(params)
     thetas = init_thetas(model,lattice,params_init=params_init)
         plot_thetas(thetas,model,lattice)
-    saving_times = 0:1:200 ; transients = saving_times[end]/2
+    saving_times = 0:1:20 ; transients = saving_times[end]/2
     z = @elapsed anim = movies(thetas,model,lattice,defects=false,saving_times=saving_times,transients=transients)
     prinz(z)
-    mp4(anim,datadir("../films/NRI/stability_defects/NRI_µ$(params["type1defect"]).mp4"))
+    mp4(anim,datadir("../films/NRI/stability_defects/NRI_µ$(params["mu0"]).mp4"))
 
 ## Movies and save configs
 using Random

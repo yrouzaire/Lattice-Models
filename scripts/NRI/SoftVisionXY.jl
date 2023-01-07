@@ -6,12 +6,12 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 include(srcdir("../parameters.jl"));
 using Random ; Random.seed!(1)
 
-params["vision"] = 0.2
+params["vision"] = 0.
 model = SoftVisionXY(params)
 lattice = TriangularLattice(L)
 thetas = init_thetas(model,lattice,params_init=params_init)
 update!(thetas,model,lattice) # calentamiento
-update!(thetas,model,lattice,tmax=30)  # updates until time = t
+update!(thetas,model,lattice,tmax=40)  # updates until time = t
     p = plot_thetas(thetas,model,lattice,defects=false)
 thetasagg = zeros(Float32,2 .*size(thetas))
     thetasagg[1:L,1:L] = thetasagg[1:L,1+L:end] = thetasagg[1+L:end,1:L] = thetasagg[1+L:end,1+L:end] = thetas
@@ -19,6 +19,10 @@ thetasagg = zeros(Float32,2 .*size(thetas))
 update!(thetasagg,model,latticeagg,tmax=50)  # updates until time = t
     p = plot_thetas(thetasagg,model,latticeagg,defects=false)
 
+dft01 = DefectTracker(thetasagg,model,latticeagg,find_type=true)
+histogram(last_types(dft),bins=50)
+    histogram!(last_types(dft0),bins=50)
+    histogram!(last_types(dft01),bins=50)
 ## Movies
 include(srcdir("../parameters.jl"));
 params["vision"] = 0.2

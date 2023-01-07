@@ -96,16 +96,16 @@ plot(phis,fphi)
 ## Defect Tracking => (x,y,µ)(t) averaged over R ?
 
 ## Movies
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
-
-tmax = 200 ; every = 1 ; times = 0:every:tmax
+tmax = 100 ; every = 1 ; times = 0:every:tmax
     params_init["r0"] = round(Int,32)
-    mu_plus = pi
-    mu_minus = pi/2
-    params_init["type2defect"] = [mu_plus,mu_minus]
-    params_init["phi"] = 0
+    params_init["mu_plus"] = pi/2
+    params_init["mu_minus"] = nothing
+    params_init["phi"] = pi/3
+    params_init["r0"]  = 20
     model = SoftVisionXY(params)
-    lattice = TriangularLattice(L)
+    lattice = SquareLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)
     plot_thetas(thetas,model,lattice,defects=false)
     # dft = DefectTracker(thetas,model,lattice,find_type=true)
@@ -125,7 +125,10 @@ tmax = 200 ; every = 1 ; times = 0:every:tmax
     p
 end
     prinz(z)
-    mp4(anim,"films/NRI/trajectories_2defects/µ$(mu_plus)_µ$(mu_minus)_phi$(round(params_init["phi"],digits=1)).mp4")
+    params_init["mu_plus"] == nothing  ?  mup = "_nothing" : mup = round(params_init["mu_plus"],digits=2)
+    params_init["mu_minus"] == nothing ?  mum = "_nothing" : mum = round(params_init["mu_minus"],digits=2)
+    params_init["phi"] == nothing ?     muphi = "_nothing" : muphi = round(params_init["phi"],digits=2)
+    mp4(anim,"films/NRI/trajectories_2defects/µ$(mup)_µ$(mum)_phi$(muphi).mp4")
 
 ## Attraction ? Repulsion ? between a pair of defects
 #=  Important control parameters of the dynamics of two defects:
@@ -134,21 +137,22 @@ end
 To obtain a given µ+ + µ-, one has to set µ1 = 0 and µ2 = (µ+ + µ- + pi)/2
 =#
 include(srcdir("../parameters.jl"));
-dµ = pi/8 ; sum_mus = Float32.(round.(collect(0:dµ:2pi),digits=3))
-phis = sum_mus
+dµ = pi/12 ; mus_plus = Float32.(round.(collect(0:dµ:2pi),digits=3))
+phis = mus_plus
 r0 = round(Int,L/3)
-tmax = 20
+tmax = 10
 every = 1
-R = 5
+R = 8
 sigmas = [0.3]
-rs = zeros(length(sum_mus),length(phis),length(sigmas),R)
-dfts = Array{DefectTracker}(undef,length(sum_mus),length(phis),length(sigmas),R)
-z = @elapsed for i in each(sum_mus) , j in each(phis)
-    println((i-1)*length(sum_mus)+j,"/",length(sum_mus)*length(phis))
+rs = zeros(length(mus_plus),length(phis),length(sigmas),R)
+dfts = Array{DefectTracker}(undef,length(mus_plus),length(phis),length(sigmas),R)
+z = @elapsed for i in each(mus_plus) , j in each(phis)
+    println((i-1)*length(mus_plus)+j,"/",length(mus_plus)*length(phis))
     for sig in each(sigmas)
     Threads.@threads for r in 1:R
         params["vision"] = sigmas[sig]
-        params_init["type2defect"] = [0,(sum_mus[i]+pi)/2]
+        params_init["mu_plus"] = mus_plus[i]
+        params_init["mu_minus"] = nothing
         params_init["phi"] = phis[j]
         params_init["r0"]  = r0
         model = SoftVisionXY(params)
@@ -170,8 +174,8 @@ z = @elapsed for i in each(sum_mus) , j in each(phis)
 end
 prinz(z)
 rs_avg = nanmean(rs,4)[:,:,:,1]/r0
-plot(xlabel=L"µ_{+} + µ_{-}",ylabel=L"ϕ",size=(470,400))
-    heatmap!(sum_mus,phis,rs_avg[:,:,1],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
+plot(xlabel=L"µ_{+}",ylabel=L"ϕ",size=(470,400))
+    heatmap!(mus_plus,phis,rs_avg[:,:,1],c=cgrad([:blue,:deepskyblue2,:white,:red,:red2]),aspect_ratio=1,colorbartitle="R(t)/R0",clims=(minimum(0),1))
     # plot!(mus,5pi/2 .+ pi/2 .- mus)
 # savefig("plots/NRI/attraction_µµ_sigma0.34.png")
 # @save "data/attraction_µµ_sigma0.3_zoom.jld2" mus rs rs_avg sigmas R tmax dµ every r0

@@ -139,12 +139,12 @@ function sum_influence_neighbours(theta::T,i::Int,j::Int,angles_neighbours::Vect
             base = sum(sin,angles_neighbours .- theta) * (1. - model.vision)
             correction = nnn*model.vision * sin(angles_neighbours[ID]-theta)
             return base + correction
-        elseif model.symmetry == "nematic"
-            nnn2 = Int(nnn/2)
-            base = sum(sin,angles_neighbours .- theta) * (1. - model.vision)
-            correction1 = nnn2*model.vision * sin(angles_neighbours[ID]-theta)
-            correction2 = nnn2*model.vision * sin(angles_neighbours[mod1(ID+nnn2,nnn)]-theta)
-            return base + correction1 + correction2
+        # elseif model.symmetry == "nematic"
+        #     nnn2 = Int(nnn/2)
+        #     base = sum(sin,angles_neighbours .- theta) * (1. - model.vision)
+        #     correction_front = nnn2*model.vision * sin(angles_neighbours[ID]-theta)
+        #     correction_back  = nnn2*model.vision * sin(angles_neighbours[mod1(ID+nnn2,nnn)]-theta)
+        #     return base + correction_front + correction_back
         end
     end
 end
