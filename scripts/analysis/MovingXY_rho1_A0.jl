@@ -4,6 +4,8 @@ include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings,SpecialFunctions,LambertW
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 
+plot(rand(10))
+#using DifferentialEquations
 #= Important Comments : =#
 
 filename = datadir("nematicMovXY_rho1_A0.jld2")

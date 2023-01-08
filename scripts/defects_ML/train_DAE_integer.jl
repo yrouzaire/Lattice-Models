@@ -9,6 +9,7 @@ using Flux, Augmentor, Random, Statistics, CUDA
 using Flux:params, onehotbatch, crossentropy, logitcrossentropy, onecold, throttle, mse, trainmode!, testmode!
 using Distributions,BSON
 
+
 ## Create base data set (without augmentation, just the different µ)
 # include(srcdir("../parameters.jl"));
 # dµ = pi/32
@@ -109,9 +110,9 @@ loss(X, y) = mse(NN(X), y)
 dim_latent_space = 10
 NN = 0
     NN = ConvAE(dim_latent_space) |> xpu
-    opt = Adam(1E-3)
+    opt = Nesterov(1E-3) # Adam not defined, I dunno why
+    epochs = Int(1E1)
 
-epochs = Int(1E3)
 trainL = zeros(epochs)
 trainLpen = zeros(epochs)
 testL = zeros(epochs)

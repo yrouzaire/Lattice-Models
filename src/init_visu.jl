@@ -211,8 +211,12 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
     end
 
     garde_fou_quiver = 25
+    L = size(thetas,1)
     if quiver
-        if (size(thetas,1) < garde_fou_quiver) || force_quiver 
+        if (L < garde_fou_quiver) || force_quiver
+            display_quiver!(p,thetas,L)
+        end
+    end
     # xlims!((0,lattice.L))
     # ylims!((0,lattice.L))
     return p
