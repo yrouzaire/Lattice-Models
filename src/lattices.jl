@@ -60,12 +60,13 @@ function distance_matrix(new,old,lattice::AbstractLattice)
 end
 
 #= Pour les offsets, on commence par le voisin du bas, dans le référentiel
-de la matrice. La raison: parce qu'apres un heatmap(thetas'), equivalent à
+de la matrice, ie. axe j vers la droite et axe i vers le bas
+La raison: parce qu'apres un heatmap(thetas'), equivalent à
 une rotation de 90° antihoraire, le premier element du vecteur "offset" sera
 à droite, cohérent avec l'intuition qu'on s'en fait pour \theta = 0
 (qui sera donc projeté sur le premier element de offsets) =#
 function offsets(lattice::TriangularLattice,even::Bool)::Vector{Tuple{Int,Int}}
-    if even return [(1,0) , (1,1) , (0,1)  , (-1,0)  , (-1,1) , (0,-1) ]
+    if even return [(1,0) , (1,1) , (0,1)  , (-1,1)  , (-1,0) ,  (0,-1) ]
     else    return [(1,0) , (0,1) , (-1,0) , (-1,-1) , (0,-1) , (1,-1) ]
     end
 end
