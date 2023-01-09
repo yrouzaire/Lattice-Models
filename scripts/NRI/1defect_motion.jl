@@ -2,7 +2,7 @@ cd("D:/Documents/Research/projects/LatticeModels")
 using DrWatson ; @quickactivate "LatticeModels"
 include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings
-gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
 
 ## Energy Definition and link with stability of µ
@@ -31,27 +31,28 @@ for i in each(mus) , j in each(visions)
         params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
         params_init["init"] = "single" ; params_init["mu0"] =  mus[i] # initial µ
         # params_init["init"] = "pair" ; params_init["mu_plus"] =  mus[i] ; params_init["mu_minus"] = 0 ; params_init["phi"] = nothing # initial µ
-        params_init["q"] = 1/2
+        params_init["q"] = 1
         model = SoftVisionXY(params)
         lattice = TriangularLattice(L)
         # lattice = SquareLattice(L)
         thetas = init_thetas(model,lattice,params_init=params_init)
-        update!(thetas,model,lattice,1)
-        E[i,j,r] = energy(thetas,model,lattice)
+        # update!(thetas,model,lattice,1)
+        E[i,j,r] = energy(thetas + Float32.(0.3*randn(W21,W21)),model,lattice)
     end
 end
 E_avg = mean(E,dims=3)[:,:,1]
-    p=plot()
-    for j in each(visions)
-        plot!(mus,E_avg[:,j]/W21^2 .+ 3.59)
-        # plot!(x->-visions[j]/2*cos(2x))
-        # plot!(x->-visions[j]*0.8*sin(x))
+    p=plot(xlabel="µ",ylabel=L"E_{q=+1}",size=(450,400))
+    for j in [1,3]#each(visions)
+        plot!(mus,E_avg[:,j]/W21^2 .+ 4.56,c=j)
+        # plot!(x->-visions[j]/3*cos(2x),c=j)
+        # plot!(x->-visions[j]*sin(2x),c=:black)
     end
+    plot!(x->-visions[3]*(-cos(x)),c=:black)
     p
-
+savefig("plots/NRI/one_defect/energy_q+1.png")
 
 ## Stability of µ over time
-tmax = 10 ; every = 2 ; times = collect(0:every:tmax+every)
+tmax = 10 ; every = 0.5 ; times = collect(0:every:tmax+every)
 µ0s = [0,pi/2,pi,3pi/2]
 µ0s = collect(0:pi/32:2pi)
 reals = 10
@@ -64,7 +65,7 @@ z = @elapsed for i in each(µ0s)
         Threads.@threads for r in 1:reals
             params["L"] = 200 ; params["T"] = 0.1
             params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
-            params_init["init"] = "single" ; params_init["type1defect"] =  µ0s[i] # initial µ
+            params_init["init"] = "single" ; params_init["type1defect"] = µ0s[i] # initial µ
             params_init["q"] = -1
             model = SoftVisionXY(params)
             lattice = TriangularLattice(L)
@@ -83,10 +84,10 @@ prinz(z) # 5 minutes for a lot of curves, very fast
 # @load "data/NRI/decay_mu_someµ0_several_sigmas.jld2" mus µ0s reals visions tmax every times runtime
 mus_avg = nanmean(mus,4)[:,:,:,1]
 p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ",legend=:outerright,size=(600,400))
-    for j in 5#(each(visions))
+    for j in (each(visions))
     plot!([NaN,NaN],label="σ=$(visions[j])",c=j,rib=0)
     for i in 1:length(µ0s)
-            plot!(times[1:end-1],mus_avg[i,j,:],c=j,lw=2)#,label="σ = $(visions[j])",rib=0)
+            plot!(times[1:end-1],mus_avg[i,j,:],c=j,lw=0.1)#,label="σ = $(visions[j])",rib=0)
             # plot!(visions[j]*times[1:end-1],mus_avg[i,j,:],c=j,lw=2)#,label="σ = $(visions[j])",rib=0)
         end
     end

@@ -8,7 +8,6 @@ include(srcdir("../parameters.jl"));
 using DifferentialEquations
 using Plots
 
-
 ## Visualise pair of defect
 params_init["type2defect"] = [pi,pi]
     params_init["r0"] = 16
