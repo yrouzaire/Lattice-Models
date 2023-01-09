@@ -20,22 +20,45 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
     end
 
     if iseven(i)
+        #= Ordering of the nearest neighbours (pure convention, motivated in the file lattices.jl)
+           5  4 (imagine this line is shifhted 1/2 lattice spacing to the left)
+        6  X  3
+           1  2 (imagine this line is shifhted 1/2 lattice spacing to the left)
+        =#
         @inbounds angles =
-           [thetas[i,jp],
+           # [thetas[i,jp],
+           #  thetas[imm,jp],
+           #  thetas[imm,j],
+           #  thetas[i,jm],
+           #  thetas[ip,j],
+           #  thetas[ip,jp]]
+           [thetas[ip,j],
+            thetas[ip,jp],
+            thetas[i,jp],
             thetas[imm,jp],
             thetas[imm,j],
-            thetas[i,jm],
-            thetas[ip,j],
-            thetas[ip,jp]]
+            thetas[i,jm]]
 
     else
+        #= Ordering of the nearest neighbours (pure convention, motivated in the file lattices.jl)
+        4  3
+        5  X  2 (imagine this line is shifhted 1/2 lattice spacing to the left)
+        6  1
+        =#
         @inbounds angles =
-           [thetas[i,jp],
+           # [thetas[i,jp],
+           #  thetas[imm,j],
+           #  thetas[imm,jm],
+           #  thetas[i,jm],
+           #  thetas[ip,jm],
+           #  thetas[ip,j]]
+           [thetas[ip,j],
+            thetas[i,jp],
             thetas[imm,j],
             thetas[imm,jm],
             thetas[i,jm],
-            thetas[ip,jm],
-            thetas[ip,j]]
+            thetas[ip,jm]]
+
     end
     if model.rho < 1 return filter!(!isnan,angles)
     else return angles
@@ -59,22 +82,44 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Squ
     end
 
     if lattice.metric in ["manhattan","euclidian"]
+        #= Ordering of the nearest neighbours (pure convention, motivated in the file lattices.jl)
+           3
+        4  X  2
+           1
+        =#
         @inbounds angles =
-           [thetas[i,jp],
-            thetas[imm,j],
-            thetas[i,jm],
-            thetas[ip,j]]
+            # [thetas[i,jp],
+            #  thetas[imm,j],
+            #  thetas[i,jm],
+            #  thetas[ip,j]]
+             [thetas[ip,j],
+              thetas[i,jp],
+              thetas[imm,j],
+              thetas[i,jm]]
 
     elseif lattice.metric == "chebychev"
+        #= Ordering of the nearest neighbours (pure convention, motivated in the file lattices.jl)
+        6  5  4
+        7  X  3
+        8  1  2
+        =#
         @inbounds angles =
-           [thetas[i,jp],
+           # [thetas[i,jp],
+           #  thetas[imm,jp],
+           #  thetas[imm,j],
+           #  thetas[imm,jm],
+           #  thetas[i,jm],
+           #  thetas[ip,jm],
+           #  thetas[ip,j],
+           #  thetas[ip,jp]]
+            [thetas[ip,j],
+            thetas[ip,jp],
+            thetas[i,jp],
             thetas[imm,jp],
             thetas[imm,j],
             thetas[imm,jm],
             thetas[i,jm],
-            thetas[ip,jm],
-            thetas[ip,j],
-            thetas[ip,jp]]
+            thetas[ip,jm]]
     end
     if model.rho < 1 return filter!(!isnan,angles)
     else return angles
