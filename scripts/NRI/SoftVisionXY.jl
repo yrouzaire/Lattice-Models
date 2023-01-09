@@ -23,11 +23,12 @@ dft01 = DefectTracker(thetasagg,model,latticeagg,find_type=true)
 histogram(last_types(dft),bins=50)
     histogram!(last_types(dft0),bins=50)
     histogram!(last_types(dft01),bins=50)
+
 ## Movies
 include(srcdir("../parameters.jl"));
 params["vision"] = 0.2
-# params["symmetry"] = "polar"
-# params_init["init"] = "single"
+params["symmetry"] = "polar"
+params_init["init"] = "single"
 params_init["type2defect"] = "pair2"
 model = SoftVisionXY(params)
 lattice = TriangularLattice(L)

@@ -7,17 +7,18 @@ include(srcdir("../parameters.jl"));
 
 ## Movies and save configs
 using Random
-my_seed = 2
+my_seed = 1
 Random.seed!(my_seed)
 include(srcdir("../parameters.jl"));
 
 lattice = TriangularLattice(L)
 model = SoftVisionXY(params)
-thetas = init_thetas(model,lattice,params_init=params_init)
-    plot_thetas(thetas,model,lattice)
-saving_times = 0:1:300; transients = saving_times[end]/2
-thetas_saves = zeros(Float16,L,L,length(saving_times))
-token = 1
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice,quiver=true)
+    saving_times = 0:1:500; transients = saving_times[end]/2
+    thetas_saves = zeros(Float16,L,L,length(saving_times))
+    token = 1
+
 z = @elapsed while model.t < saving_times[end]
     update!(thetas,model,lattice)
     if model.t ≥ saving_times[token]
@@ -26,23 +27,26 @@ z = @elapsed while model.t < saving_times[end]
         token = min(token+1,length(saving_times))
     end
 end
-@save "data/etude_films/NRI_vision$(vision)_T$(T)_seed$(my_seed).jld2" vision T L seed=my_seed thetas_saves model lattice saving_times
+# @save "data/etude_films/NRI_vision$(vision)_T$(T)_seed$(my_seed).jld2" vision T L seed=my_seed thetas_saves model lattice saving_times
+# @load "data/etude_films/NRI_vision$(vision)_T$(T)_seed$(my_seed).jld2" vision T L seed thetas_saves model lattice saving_times
+# my_seed = seed
 # movie of all system
 anim = @animate for tt in 1:length(saving_times)
     plot_thetas(thetas_saves[:,:,tt],model,lattice,size=(512,512))
 end
-    mp4(anim,datadir("../films/soft_vision/real_seed_$(my_seed)/NRI_$(my_seed).mp4"))
-    mp4(anim,datadir("../films/soft_vision/real_seed_$(my_seed)/NRI_$(my_seed)_fast.mp4"),fps=35)
+    mp4(anim,datadir("../films/NRI/real_seed_$(my_seed)/NRI_$(my_seed)_vision$(vision).mp4"))
+    mp4(anim,datadir("../films/NRI/real_seed_$(my_seed)/NRI_$(my_seed)_vision$(vision)_fast.mp4"),fps=35)
 # movie zoomed
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
-locs = [(100,30)]
-for (locx,locy) in locs
-    z = @elapsed anim_zoom = @animate for tt in 1:length(saving_times)
-        zoom_quiver(thetas_saves[:,:,tt],model,lattice,locx,locy,15,size=(1024,1024))
+locs = [(60,95),(180,120),(30,100)]
+z = @elapsed for (locx,locy) in locs
+    z = @elapsed anim_zoom = @animate for tt in 1:100#length(saving_times)
+        zoom_quiver(thetas_saves[:,:,tt],model,lattice,locx,locy,20,size=(1024,1024))
     end
     prinz(z)
-    mp4(anim_zoom,datadir("../films/soft_vision/real_seed_$(my_seed)/NRI_$(my_seed)_Zoom($locx,$locy)_slow.mp4"),fps=15)
+    mp4(anim_zoom,datadir("../films/NRI/real_seed_$(my_seed)/NRI_$(my_seed)_Zoom($locx,$locy)_slow.mp4"),fps=15)
 end
+prinz(15z)
 zoom_quiver(thetas_saves[:,:,100],model,lattice,locx,locy,15,size=(1024,1024))
 
 

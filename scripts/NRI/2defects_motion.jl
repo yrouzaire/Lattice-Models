@@ -94,16 +94,14 @@ end
 plot(phis,fphi)
     plot!(x->mod(-x,2pi))
 
-
-
 ## Defect Tracking => (x,y,µ)(t) averaged over R ?
 
 ## Movies
-pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
+pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot(rand(10))
 include(srcdir("../parameters.jl"));
 tmax = 100 ; every = 1 ; times = 0:every:tmax
     params_init["r0"] = round(Int,32)
-    params_init["mu_plus"] = pi/2
+    params_init["mu_plus"] = pi
     params_init["mu_minus"] = nothing
     params_init["phi"] = pi/3
     params_init["r0"]  = 20
@@ -114,15 +112,15 @@ tmax = 100 ; every = 1 ; times = 0:every:tmax
     # dft = DefectTracker(thetas,model,lattice,find_type=true)
 
     z = @elapsed anim = @animate for tt in each(times)
-    dft = DefectTracker(thetas,model,lattice,find_type=true)
-    if number_active_defects(dft) > 0
-        tp = string(round(last_type(dft.defectsP[1]),digits=2))
-        tm = string(round(last_type(dft.defectsN[1]),digits=2))
-        titre = L"µ_{+}="*tp*L" ; µ_{-}="*tm
-    else
+    # dft = DefectTracker(thetas,model,lattice,find_type=false)
+    # if number_active_defects(dft) > 0
+    #     tp = string(round(last_type(dft.defectsP[1]),digits=2))
+    #     tm = string(round(last_type(dft.defectsN[1]),digits=2))
+    #     titre = L"µ_{+}="*tp*L" ; µ_{-}="*tm
+    # else
+    # end
         titre = ""
-    end
-
+        println("$(round(Int,100tt/times[end])) %")
     p=plot_thetas(thetas,model,lattice,defects=true,size=(512,512),title=titre)
     update!(thetas,model,lattice,every)
     p
@@ -131,7 +129,7 @@ end
     params_init["mu_plus"] == nothing  ?  mup = "_nothing" : mup = round(params_init["mu_plus"],digits=2)
     params_init["mu_minus"] == nothing ?  mum = "_nothing" : mum = round(params_init["mu_minus"],digits=2)
     params_init["phi"] == nothing ?     muphi = "_nothing" : muphi = round(params_init["phi"],digits=2)
-    mp4(anim,"films/NRI/trajectories_2defects/µ$(mup)_µ$(mum)_phi$(muphi).mp4")
+    mp4(anim,"films/NRI/two_defects/µ$(mup)_µ$(mum)_phi$(muphi).mp4")
 
 ## Attraction ? Repulsion ? between a pair of defects
 #=  Important control parameters of the dynamics of two defects:

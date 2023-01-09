@@ -24,14 +24,14 @@ end
 
 visions = [0,.1,.2]
 mus = collect(0:pi/100:2pi)
-R = 50
+R = 500
 E = zeros(length(mus),length(visions),R)
 for i in each(mus) , j in each(visions)
     Threads.@threads for r in 1:R
         params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
         params_init["init"] = "single" ; params_init["mu0"] =  mus[i] # initial µ
         # params_init["init"] = "pair" ; params_init["mu_plus"] =  mus[i] ; params_init["mu_minus"] = 0 ; params_init["phi"] = nothing # initial µ
-        params_init["q"] = 1
+        params_init["q"] = -1/2
         model = SoftVisionXY(params)
         lattice = TriangularLattice(L)
         # lattice = SquareLattice(L)
@@ -41,15 +41,15 @@ for i in each(mus) , j in each(visions)
     end
 end
 E_avg = mean(E,dims=3)[:,:,1]
-    p=plot(xlabel="µ",ylabel=L"E_{q=+1}",size=(450,400))
-    for j in [1,3]#each(visions)
+    p=plot(xlabel="µ",ylabel=L"E_{q=-1/2}",size=(450,400))
+    for j in each(visions)
         plot!(mus,E_avg[:,j]/W21^2 .+ 4.56,c=j)
         # plot!(x->-visions[j]/3*cos(2x),c=j)
         # plot!(x->-visions[j]*sin(2x),c=:black)
     end
-    plot!(x->-visions[3]*(-cos(x)),c=:black)
+    # plot!(x->visions[3]*cos(x)*0.6,c=:black)
     p
-savefig("plots/NRI/one_defect/energy_q+1.png")
+savefig("plots/NRI/one_defect/energy_q-12.png")
 
 ## Stability of µ over time
 tmax = 10 ; every = 0.5 ; times = collect(0:every:tmax+every)
@@ -64,9 +64,9 @@ z = @elapsed for i in each(µ0s)
         println("µ0 = ",round(µ0s[i],digits=1)," ; vision = ",visions[j])
         Threads.@threads for r in 1:reals
             params["L"] = 200 ; params["T"] = 0.1
-            params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
-            params_init["init"] = "single" ; params_init["type1defect"] = µ0s[i] # initial µ
-            params_init["q"] = -1
+            params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = 0.4#visions[j]
+            params_init["init"] = "single" ; params_init["type1defect"] = 0.4#µ0s[i] # initial µ
+            params_init["q"] = 1
             model = SoftVisionXY(params)
             lattice = TriangularLattice(L)
             thetas = init_thetas(model,lattice,params_init=params_init)

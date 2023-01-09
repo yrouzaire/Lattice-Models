@@ -483,6 +483,8 @@ function update_DefectTracker!(dt::DefectTracker,thetas::Matrix{<:AbstractFloat}
 
     elseif Np_new == Np_old == 0 && Nn_new == Nn_old > 0 # there are only (-) defects and no creation/annihilation
         assignment_antivortices = pair_up_hungarian(dt,locN_new,locN_old,lattice,"-")
+        # println("ici")
+        # println(zoom(thetas,lattice,locN_new[1]...,WINDOW)[2])
         for i in 1:Nn_new update_position_and_type!(dt.defectsN[assignment_antivortices[i]],locN_new[i],typeN_new[i],zoom(thetas,lattice,locN_new[i]...,WINDOW)[2]) end
 
     elseif N_new > 0 && N_old == 0
