@@ -23,7 +23,7 @@ params_init["r0"] = 16
         titre = ""
     end
     # plot_thetas(thetas,model,lattice,defects=true,title=titre)
-    zoom_quiver(thetas,model,lattice,75,50,12)
+    zoom_quiver(thetas,model,lattice,50,50,12)
     # zoom_quiver(thetas,model,lattice,50+round(Int,params_init["r0"]/2),50)
     title!(titre)
 mod.(sum(params_init["type2defect"]) - params_init["phi"]+pi,2pi)

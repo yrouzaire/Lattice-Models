@@ -5,6 +5,32 @@ using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
 
+
+## Visualise single defect to make sure every thing is in order
+params_init["init"] = "single"
+    params_init["q"] = +1
+    params_init["mu0"] = 
+    model = SoftVisionXY(params)
+    lattice = TriangularLattice(L)
+    thetas = init_thetas(model,lattice,params_init=params_init)
+    dft = DefectTracker(thetas,model,lattice,find_type=true)
+    # zoom_quiver(thetas,model,lattice,50,50,12,size=(700,700))
+    if number_active_defects(dft) > 0
+        if params_init["q"] == +1
+            titre = L"µ_{+}="*string(round(last_type(dft.defectsP[1]),digits=2))
+        elseif params_init["q"] == -1
+            titre = L"µ_{-}="*string(round(last_type(dft.defectsN[1]),digits=2))
+        end
+    else
+        titre = ""
+    end
+    # plot_thetas(thetas,model,lattice,defects=true,title=titre)
+    zoom_quiver(thetas,model,lattice,50,50,12)
+    # zoom_quiver(thetas,model,lattice,50+round(Int,params_init["r0"]/2),50)
+    title!(titre)
+mod.(sum(params_init["type2defect"]) - params_init["phi"]+pi,2pi)
+mod.(sum(params_init["type2defect"]) + params_init["phi"],2pi)
+
 ## Energy Definition and link with stability of µ
 function energy(thetas,model,lattice)
     nnn = number_nearest_neighbours(lattice)
