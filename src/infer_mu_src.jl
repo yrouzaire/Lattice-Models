@@ -1,7 +1,7 @@
 ## Functions
 function infer_mu(thetas;q,window=WINDOW,decay=true)
     if decay && q > 0 return infer_mu_decay(thetas,q=q,window=window)
-    else return infer_mu_no_decay(thetas,q=q,window=window)
+    else              return infer_mu_no_decay(thetas,q=q,window=window)
     end
 end
 function infer_mu_no_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloat
@@ -15,9 +15,9 @@ function infer_mu_no_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractF
         # i<->j irrelevant because i,j and j,i have the same weight for "mean" operation
     end
     moyenne = angle(mean(exp.(im*muss[range,range])))
-    if     q == 1    correction = pi - 0.33228605
-    elseif q == -1   correction = pi/2
-    elseif q == 1/2  correction = 0.1
+    if     q == +1   correction = pi - 0.33228605
+    elseif q == -1   correction = pi/2 + 0.01
+    elseif q == +1/2 correction = 0.1
     elseif q == -1/2 correction = pi/4
     end
     #= To be honest, I don't know where the shifts might come from,
@@ -41,7 +41,7 @@ function infer_mu_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloa
         tmp += exp(im*muss[i,j] - 1*distance) # 1*distance seems to be the best
     end
     moyenne = angle(tmp)
-    if     q == 1   correction = 2.5 
+    if     q == 1   correction = 2.55
     elseif q == -1  correction = pi/2
     elseif q == 1/2 correction = 0.1
     elseif q == -1/2 correction = pi/4
