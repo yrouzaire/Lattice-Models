@@ -79,30 +79,38 @@ E_avg = mean(E,dims=3)[:,:,1]
 savefig("figures/NRI/one_defect/energy_q+1.png")
 
 ## Stability of µ over time
-tmax = 10 ; every = 0.5 ; times = collect(0:every:tmax+every)
+tmax = 50 ; every = 0.2 ; times = collect(0:every:tmax+every)
 µ0s = [0,pi/2,pi,3pi/2]
-µ0s = collect(0:pi/32:2pi)
-reals = 10
+µ0s = collect(0:pi/8:2pi)
+reals = 20
 visions = [0,0.05,0.1,0.2,0.4]
 visions = [0.4]
 mus = NaN*zeros(length(µ0s),length(visions),length(times)-1,reals)
+
 z = @elapsed for i in each(µ0s)
     for j in each(visions)
         println("µ0 = ",round(µ0s[i],digits=1)," ; vision = ",visions[j])
         Threads.@threads for r in 1:reals
             params["L"] = 200 ; params["T"] = 0.1
-            params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = 0.4#visions[j]
-            params_init["init"] = "single" ; params_init["type1defect"] = 0.4#µ0s[i] # initial µ
+            params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
+            params_init["init"] = "single" ; params_init["mu0"] = µ0s[i] # initial µ
             params_init["q"] = 1
             model = SoftVisionXY(params)
             lattice = TriangularLattice(L)
             thetas = init_thetas(model,lattice,params_init=params_init)
 
+
             try
                 dft = DefectTracker(thetas,model,lattice,find_type=true)
                 update_and_track!(thetas,model,lattice,dft,tmax,every,find_type=true)
-                mus[i,j,:,r] = dft.defectsN[1].type[1:length(times)-1]
-            catch ; end
+                if params_init["q"] == +1
+                    mus[i,j,:,r] = dft.defectsP[1].type[1:length(times)-1]
+                elseif params_init["q"] == -1
+                    mus[i,j,:,r] = dft.defectsN[1].type[1:length(times)-1]
+                end
+            catch
+                println("Error !")
+            end
         end
     end
 end
@@ -110,11 +118,11 @@ prinz(z) # 5 minutes for a lot of curves, very fast
 # @save "data/NRI/decay_scan_mu0.jld2" mus µ0s reals visions tmax every times runtime=z
 # @load "data/NRI/decay_mu_someµ0_several_sigmas.jld2" mus µ0s reals visions tmax every times runtime
 mus_avg = nanmean(mus,4)[:,:,:,1]
-p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ",legend=:outerright,size=(600,400))
+    p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ",legend=:outerright,size=(600,400))
     for j in (each(visions))
     plot!([NaN,NaN],label="σ=$(visions[j])",c=j,rib=0)
     for i in 1:length(µ0s)
-            plot!(times[1:end-1],mus_avg[i,j,:],c=j,lw=0.1)#,label="σ = $(visions[j])",rib=0)
+            plot!(times[1:end-1],mus_avg[i,j,:],c=j,lw=1)#,label="σ = $(visions[j])",rib=0)
             # plot!(visions[j]*times[1:end-1],mus_avg[i,j,:],c=j,lw=2)#,label="σ = $(visions[j])",rib=0)
         end
     end
