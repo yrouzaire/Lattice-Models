@@ -3,13 +3,13 @@ using DrWatson ; @quickactivate "LatticeModels"
 include(srcdir("LatticeModels.jl"))
 using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
-include(srcdir("../parameters.jl"));
 
 ## Visualise pair of defect
-params_init["r0"] = 16
-    params_init["mu_plus"] = pi
-    params_init["mu_minus"] = pi
-    params_init["phi"] = nothing
+include(srcdir("../parameters.jl"));
+    params_init["r0"] = 16
+    params_init["mu_plus"] = 0
+    params_init["mu_minus"] = nothing
+    params_init["phi"] = pi/40
     model = SoftVisionXY(params)
     lattice = TriangularLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)
@@ -22,8 +22,8 @@ params_init["r0"] = 16
     else
         titre = ""
     end
-    # plot_thetas(thetas,model,lattice,defects=true,title=titre)
-    zoom_quiver(thetas,model,lattice,50,50,12)
+    plot_thetas(thetas,model,lattice,defects=false,title=titre)
+    zoom_quiver(thetas,model,lattice,30,30,12)
     # zoom_quiver(thetas,model,lattice,50+round(Int,params_init["r0"]/2),50)
     title!(titre)
 mod.(sum(params_init["type2defect"]) - params_init["phi"]+pi,2pi)

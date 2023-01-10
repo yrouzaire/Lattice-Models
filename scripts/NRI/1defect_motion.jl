@@ -9,12 +9,12 @@ include(srcdir("../parameters.jl"));
 ## Visualise single defect to make sure every thing is in order
 params_init["init"] = "single"
     params_init["q"] = 1
-    params_init["mu0"] = pi/2
+    params_init["mu0"] = 5
     model = SoftVisionXY(params)
     lattice = TriangularLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)
+    # thetas += Float32.(0.3randn(L,L))
     dft = DefectTracker(thetas,model,lattice,find_type=true)
-    # zoom_quiver(thetas,model,lattice,50,50,12,size=(700,700))
     if number_active_defects(dft) > 0
         if params_init["q"] == +1
             titre = L"µ_{+}="*string(round(last_type(dft.defectsP[1]),digits=2))
@@ -28,8 +28,8 @@ params_init["init"] = "single"
     zoom_quiver(thetas,model,lattice,15,15,WINDOW)
     # zoom_quiver(thetas,model,lattice,50+round(Int,params_init["r0"]/2),50)
     title!(titre)
-mod.(sum(params_init["type2defect"]) - params_init["phi"]+pi,2pi)
-mod.(sum(params_init["type2defect"]) + params_init["phi"],2pi)
+# mod.(sum(params_init["type2defect"]) - params_init["phi"]+pi,2pi)
+# mod.(sum(params_init["type2defect"]) + params_init["phi"],2pi)
 
 ## Energy Definition and link with stability of µ
 function energy(thetas,model,lattice)
@@ -51,30 +51,30 @@ include(srcdir("../parameters.jl"));
 
 visions = [0,.1,.2]
 mus = collect(0:pi/100:2pi)
-R = 50
+R = 100
 E = zeros(length(mus),length(visions),R)
 for i in each(mus) , j in each(visions)
     Threads.@threads for r in 1:R
         params["symmetry"] = "polar" ; params["rho"] = 1 ; params["vision"] = visions[j]
         params_init["init"] = "single" ; params_init["mu0"] =  mus[i] # initial µ
         # params_init["init"] = "pair" ; params_init["mu_plus"] =  mus[i] ; params_init["mu_minus"] = 0 ; params_init["phi"] = nothing # initial µ
-        params_init["q"] = +1
+        params_init["q"] = -1
         model = SoftVisionXY(params)
         lattice = TriangularLattice(L)
         # lattice = SquareLattice(L)
         thetas = init_thetas(model,lattice,params_init=params_init)
         # update!(thetas,model,lattice,1)
-        E[i,j,r] = energy(thetas + Float32.(0.3*randn(W21,W21)),model,lattice)
+        E[i,j,r] = energy(thetas + Float32.(0.1*randn(L,L)),model,lattice)
     end
 end
 E_avg = mean(E,dims=3)[:,:,1]
-    p=plot(xlabel="µ",ylabel=L"E_{q=+1}",size=(450,400))
+    p=plot(xlabel="µ",ylabel=L"E_{q=-1}",size=(450,400))
     for j in each(visions)
-        plot!(mus,E_avg[:,j]/W21^2 .+ 4.56,c=j)
+        plot!(mus,E_avg[:,j]/L^2 .+ 5.81,c=j)
         # plot!(x->-visions[j]/3*cos(2x),c=j)
         # plot!(x->-visions[j]*sin(2x),c=:black)
     end
-    # plot!(x->visions[3]*cos(x)*0.6,c=:black)
+    # plot!(x->visions[3]*cos(x)*0.17,c=:black)
     p
 savefig("figures/NRI/one_defect/energy_q+1.png")
 
@@ -119,7 +119,7 @@ prinz(z) # 5 minutes for a lot of curves, very fast
 # @load "data/NRI/decay_mu_someµ0_several_sigmas.jld2" mus µ0s reals visions tmax every times runtime
 mus_avg = nanmean(mus,4)[:,:,:,1]
     p=plot(ylims=(0,2pi),xlabel="t",ylabel="µ",legend=:outerright,size=(600,400))
-    for j in (each(visions))
+    for j in 1:length(each(visions))-2
     plot!([NaN,NaN],label="σ=$(visions[j])",c=j,rib=0)
     for i in 1:length(µ0s)
             plot!(times[1:end-1],mus_avg[i,j,:],c=j,lw=1)#,label="σ = $(visions[j])",rib=0)
@@ -181,15 +181,17 @@ p=plot(legend=false,ylims=(0,2pi),ylabel="µ(t)",size=(400,400))
 # savefig("plots/NRI/traj_analytic_decayµ_sink.png")
 
 ## Movies
+gr(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
 include(srcdir("../parameters.jl"));
     lattice = TriangularLattice(L)
     model = SoftVisionXY(params)
     thetas = init_thetas(model,lattice,params_init=params_init)
         plot_thetas(thetas,model,lattice)
-    saving_times = 0:1:20 ; transients = saving_times[end]/2
+    saving_times = 0:1:300 ; transients = saving_times[end]/2
     z = @elapsed anim = movies(thetas,model,lattice,defects=false,saving_times=saving_times,transients=transients)
     prinz(z)
-    mp4(anim,datadir("../films/NRI/stability_defects/NRI_µ$(params["mu0"]).mp4"))
+    mp4(anim,datadir("../films/NRI/one_defect/NRI_µ$(params["mu0"]).mp4"))
+    # mp4(anim,datadir("../films/NRI/one_defect/NRI_µ$(params["mu0"])_tmax$(saving_times[end]).mp4"))
 
 ## Movies and save configs
 using Random

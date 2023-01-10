@@ -17,7 +17,7 @@ ind = 17#rand(1:length(mus))
     display_quiver!(p,base_datasetP[:,:,ind],WINDOW)
     title!("µ = $(mus[ind])")
 
-ind = 33#rand(1:length(mus))
+ind = 49#rand(1:length(mus))
     p=plot_thetas(base_datasetN[:,:,ind],model,lattice)
     display_quiver!(p,base_datasetN[:,:,ind],WINDOW)
     title!("µ = $(mus[ind])")

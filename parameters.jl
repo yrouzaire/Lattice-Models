@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 15
+L = 100
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -17,10 +17,10 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "single"
+init = "pair"
 q = 1
 r0 = round(Int,L/4)
-mu0 = 3pi/2 # for one defect only
+mu0 = 0.25 # for one defect only
 mu_plus,mu_minus,phi = pi/2,0,nothing # one of them has to be Nothing
 
 # Containers
