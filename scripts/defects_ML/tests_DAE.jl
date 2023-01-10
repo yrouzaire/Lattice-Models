@@ -4,14 +4,16 @@ include(srcdir("LatticeModels.jl"))
 
 using Plots,ColorSchemes,LaTeXStrings
 pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10.colors[1:10],grid=false,markerstrokewidth=0,linewidth=1.3,size=(400,400),thickness_scaling = 1.5) ; plot()
+using Augmentor
 
 include(srcdir("../parameters.jl"));
 model = XY(params)
 lattice = TriangularLattice(W21)
 
 @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
-@unpack NN, trainL, epochs = load("DAE_positive1___03_11_2022.jld2")
-NN_test = cpu(NN)
+@unpack DAE_positive1, trainL, epochs = load("NeuralNets\\DAE_positive1___16_12_2022.jld2")
+NN_test = cpu(DAE_positive1);
+
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
 ind = rand(1:63)

@@ -1,5 +1,5 @@
 # Physical Parameters
-L = 100
+L = 15
 T = 0.1
 symmetry = "polar"
 propulsion = "polar"
@@ -17,7 +17,7 @@ transients = 1E3
 every = 1E2
 
 # Initialisation
-init = "pair"
+init = "single"
 q = 1
 r0 = round(Int,L/4)
 mu0 = 3pi/2 # for one defect only

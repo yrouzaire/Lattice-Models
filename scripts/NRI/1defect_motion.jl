@@ -8,8 +8,8 @@ include(srcdir("../parameters.jl"));
 
 ## Visualise single defect to make sure every thing is in order
 params_init["init"] = "single"
-    params_init["q"] = +1
-    params_init["mu0"] = 
+    params_init["q"] = 1
+    params_init["mu0"] = 1
     model = SoftVisionXY(params)
     lattice = TriangularLattice(L)
     thetas = init_thetas(model,lattice,params_init=params_init)

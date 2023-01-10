@@ -7,16 +7,16 @@ pyplot(box=true,fontfamily="sans-serif",label=nothing,palette=ColorSchemes.tab10
 
 include(srcdir("../parameters.jl"));
 params["symmetry"] = "polar"
-CHARGE = -1
+CHARGE = 1
 model = XY(params)
 lattice = TriangularLattice(W21,periodic=false)
 
 
 using CUDA, Flux
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
-# NN_test = load("NeuralNets/DAE_positive1___16_12_2022.jld2","DAE_positive1")
+@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µP1.jld2")
+NN_test = load("NeuralNets/DAE_positive1___16_12_2022.jld2","DAE_positive1");
 # NN_test = load("NeuralNets/DAE_negative1___16_12_2022.jld2","DAE_negative1")
-# NN_test = cpu(NN)
+NN_test = cpu(NN);
 # comments
 
 ## First Test : reconstruct randomly generated noisy, flipped and rotated in vitro defect.
@@ -90,8 +90,7 @@ p1=plot(xlabel="True µ",ylabel="Inferred µ",title="Without DAE preprocess. ")
 ## Third Test : Errors when inferring true µ = 0
 R = 1000
 mus_infered = zeros(R)
-original = base_dataset[:,:,end] # µ = 0
-
+original = base_dataset[:,:,17] # µ = 0
 
 z = @elapsed for r in 1:R
     tmp = original

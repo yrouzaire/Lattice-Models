@@ -17,12 +17,12 @@ base_dataset = zeros(Float32,2WINDOW+1,2WINDOW+1,length(mus))
 model = XY(params)
 lattice = SquareLattice(W21,periodic=false)
 for i in each(mus)
-    params_init["type1defect"] = mus[i];
+    params_init["mu0"] = mus[i];
     base_dataset[:,:,i] = init_thetas(model,lattice,params_init=params_init)
 end
 using JLD2
 # jldsave("data/for_ML/base_dataset_µN1.jld2";base_dataset,mus,dµ,WINDOW)
-ind = 2#rand(1:length(mus))
+ind = 17#rand(1:length(mus))
     p=plot_thetas(base_dataset[:,:,ind],model,lattice)
     display_quiver!(p,base_dataset[:,:,ind],WINDOW)
 
@@ -99,7 +99,7 @@ export_to_gpu = true
 
 ## Data
 W21 = 2WINDOW+1
-@unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
+# @unpack base_dataset,mus,dµ = load("data/for_ML/base_dataset_µN1.jld2")
 include(srcdir("../parameters.jl"));
 
 ## Declare NN, Loss and Optimiser
@@ -114,7 +114,7 @@ dim_latent_space = 3
 NN = 0
     NN = ConvAE_divrot(dim_latent_space) |> xpu
     opt = Adam(5E-4)
-    epochs = 300
+    epochs = 3000
 
 trainL = zeros(epochs)
     # trainLpen = zeros(epochs)
@@ -157,14 +157,14 @@ end
 plot(legend=:bottomleft)
 #     plot!(1:epochs-1,trainLpen[1:end-1],axis=:log,lw=0.5,label="MSE + L2")
 #     plot!(1:epochs-1,(trainLpen - trainL)[1:end-1],axis=:log,lw=1,label="L2")
-plot!((1:epochs-1),testL[1:end-1],axis=:log,lw=0.5,label="Test")
-    plot!((1:epochs-1),trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
+plot!((1:epochs-1) .+ 500,testL[1:end-1],axis=:log,lw=0.5,label="Test")
+    plot!((1:epochs-1) .+ 500,trainL[1:end-1],axis=:log,lw=0.5,label="MSE")
 
 # comments = ["", "L1 1E-5 penalty, latent space dim = 10", "rotations in 0:10:350"]
 # using BSON
-# DAE_positive1 = cpu(NN)
-# JLD2.@save "NeuralNets/DAE_positive1___16_12_2022.jld2" DAE_positive1 trainL testL base_dataset epochs runtime=z
-DAE_negative1 = cpu(NN)
-JLD2.@save "NeuralNets/DAE_negative1___17_12_2022.jld2" DAE_negative1 trainL testL base_dataset epochs runtime=z
+DAE_positive1 = cpu(NN);
+# JLD2.@save "NeuralNets/DAE_positive1___10_01_2023.jld2" DAE_positive1 trainL testL base_dataset epochs runtime=z
+DAE_negative1 = cpu(NN);
+JLD2.@save "NeuralNets/DAE_negative1___10_01_2023.jld2" DAE_negative1 trainL testL base_dataset epochs runtime=z
 
 ## END OF FILE
