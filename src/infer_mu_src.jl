@@ -16,7 +16,7 @@ function infer_mu_no_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractF
     end
     moyenne = angle(mean(exp.(im*muss[range,range])))
     if     q == 1    correction = pi - 0.33228605
-    elseif q == -1   correction = pi/2 + 0.04
+    elseif q == -1   correction = pi/2
     elseif q == 1/2  correction = 0.1
     elseif q == -1/2 correction = pi/4
     end
@@ -41,8 +41,8 @@ function infer_mu_decay(thetas::Matrix{T};q,window=WINDOW) where T<:AbstractFloa
         tmp += exp(im*muss[i,j] - 1*distance) # 1*distance seems to be the best
     end
     moyenne = angle(tmp)
-    if     q == 1   correction = pi - 0.603228605 # 0.33228605 was the original cst
-    elseif q == -1  correction = pi/2 + 0.18
+    if     q == 1   correction = 2.5 
+    elseif q == -1  correction = pi/2
     elseif q == 1/2 correction = 0.1
     elseif q == -1/2 correction = pi/4
     end
