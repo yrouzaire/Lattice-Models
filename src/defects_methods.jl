@@ -33,7 +33,7 @@ function get_vorticity(thetasmod::Matrix{T},model::AbstractModel{T},lattice::Abs
         4  x  1 when plotted and     5  x  2  in the matrix form
           5  6                         6  1
 
-        Indeed, recall that the visualisation procedure operates a 90° counterclockwise rotation.
+        Indeed, recall that the visualisation procedure operates a 90° counterclockwise rotation on the matrix.
         We thus anticipate the rotation already in the matrix form, so that the first neighbour
         is on the right, following mathematical use (associated to angle θ = 0).
         =#

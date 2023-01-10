@@ -21,7 +21,7 @@ Reshape(args...) = Reshape(args)
 (r::Reshape)(x) = reshape(x, r.shape)
 Flux.@functor Reshape ()
 # using BSON
-global const DAE_positive1  = load("NeuralNets/DAE_positive1___16_12_2022.jld2","DAE_positive1");
+global const DAE_positive1  = load("NeuralNets/DAE_positive1___10_01_2023.jld2","DAE_positive1");
 # global const DAE_negative1  = load("NeuralNets/DAE_negative1___16_12_2022.bson","DAE_negative1")
 # global const DAE_positive12 = load("NeuralNets/DAE_positive12___15_12_2022.bson","DAE")
 # global const DAE_negative12 = load("NeuralNets/DAE_negative12___15_12_2022.bson","DAE")
