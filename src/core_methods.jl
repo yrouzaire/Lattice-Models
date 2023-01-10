@@ -21,9 +21,9 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
 
     if iseven(i)
         #= Ordering of the nearest neighbours (pure convention, motivated in the file lattices.jl)
-           5  4 (imagine this line is shifhted 1/2 lattice spacing to the left)
-        6  X  3
-           1  2 (imagine this line is shifhted 1/2 lattice spacing to the left)
+           5  4 imagine this line is shifhted 1/2 lattice spacing to the left to give :    5  4
+        6  X  3                                                                           6  X  3
+           1  2 imagine this line is shifhted 1/2 lattice spacing to the left to give :    1  2
         =#
         @inbounds angles =
            # [thetas[i,jp],
@@ -41,9 +41,9 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
 
     else
         #= Ordering of the nearest neighbours (pure convention, motivated in the file lattices.jl)
-        4  3
-        5  X  2 (imagine this line is shifhted 1/2 lattice spacing to the left)
-        6  1
+        4  3                                                                               4  3
+        5  X  2 imagine this line is shifhted 1/2 lattice spacing to the left to give :  5  X  2
+        6  1                                                                               6  1
         =#
         @inbounds angles =
            # [thetas[i,jp],
@@ -456,7 +456,7 @@ end
 function ID_projection_angle_onto_lattice(angle::AbstractFloat,i::Int,j::Int,lattice::Abstract2DLattice)::Int
     nearest_neighbours = offsets(lattice,iseven(i)) # can be of length 4, 6 or 8
     nb_nn = length(nearest_neighbours)
-    index_nearest_neighbour = round(Int,mod(angle,2π)/(2π/nb_nn),RoundNearest) + 1
+    index_nearest_neighbour = round(Int,mod(angle,2π)/(2π/nb_nn),RoundNearest) + 1 # +1 so that theta=0 points to the spin on the
     if index_nearest_neighbour == nb_nn + 1
         index_nearest_neighbour = 1
     end

@@ -79,7 +79,7 @@ function spot_defects(thetas::Matrix{T},model::AbstractModel{T},lattice::Abstrac
     vortices_plus_no_duplicates  = merge_duplicates(vortices_plus,lattice)
     vortices_minus_no_duplicates = merge_duplicates(vortices_minus,lattice)
 
-    if find_type return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,mod.(thetas,2pi),lattice)
+    if find_type return find_types(vortices_plus_no_duplicates,vortices_minus_no_duplicates,mod.(thetas,Float32(2pi)),lattice)
     else return vortices_plus_no_duplicates,vortices_minus_no_duplicates
     end
 end
