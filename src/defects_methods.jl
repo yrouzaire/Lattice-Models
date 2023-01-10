@@ -256,8 +256,18 @@ Defect(;id,charge,loc,t,type=NaN) = Defect(id,charge,[type],[loc],nothing,t,noth
 first_loc(d::Defect) = d.pos[1]
 last_loc(d::Defect)  = d.pos[end]
 
-first_type(d::Defect) = d.type[1]
+type(d::Defect)       = d.type[end]
 last_type(d::Defect)  = d.type[end]
+first_type(d::Defect) = d.type[1]
+
+function velocity(d::Defect,L::Int)
+    @assert length(d.pos) ≥ 2 "Not enough information, the history of position has to be of length ≥ 2 to infer a direction of motion."
+    return mod1.(d.pos[end] .- d.pos[end-1],L)
+end
+function acceleration(d::Defect,L::Int)
+    @assert length(d.pos) ≥ 2 "Not enough information, the history of position has to be of length ≥ 3 to infer a direction of motion."
+    return mod1.(0.5.*d.pos[end] .- d.pos[end-1] .+ 0.5.*d.pos[end-2],L)
+end
 
 function update_position_and_type!(d::Defect,new_loc,new_type)
     push!(d.pos,new_loc)
