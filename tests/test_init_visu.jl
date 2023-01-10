@@ -87,3 +87,10 @@ lattice = Chain1D(L)
 model = PropagationForcedXY(params)
 thetas = init_thetas(model,lattice,params_init=params_init)
 plot_thetas(thetas,model,lattice)
+
+## Test plotting routines with quiver integrated
+include(srcdir("../parameters.jl"));
+lattice = TriangularLattice(L)
+model = XY(params)
+thetas = init_thetas(model,lattice,params_init=params_init)
+    plot_thetas(thetas,model,lattice,quiver=true,force_quiver=true)

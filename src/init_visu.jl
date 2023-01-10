@@ -1,6 +1,7 @@
 include("lattices.jl");
 include("models.jl");
 include("core_methods.jl");
+include("defects_methods.jl");
 import StatsBase.sample
 import Plots.@animate
 
@@ -211,15 +212,39 @@ function plot_thetas(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattic
     end
 
     garde_fou_quiver = 25
-    L = round(Int,(sqrt(length(thetas))-1)/2)
+    L = round(Int,(sqrt(length(thetas))-1)/2,RoundDown)
     if quiver
         if (L < garde_fou_quiver) || force_quiver
             display_quiver!(p,thetas,L)
+        elseif (L > garde_fou_quiver) || force_quiver == false
+            println("Quiver procedure stopped because the system size is large.\n
+                Set the kwarg force_quiver to `true` to force the quiver procedure.\n
+                Note that it might take a while to display the figure as
+                PyPlot \"quiver\" function is awfully slow.\n")
+        elseif (L > garde_fou_quiver) || force_quiver == true
+            println("You wanted it ! It might take a long while to display the figure.")
         end
     end
     # xlims!((0,lattice.L))
     # ylims!((0,lattice.L))
     return p
+end
+
+function plot_mus(dft::DefectTracker,L::Int;colorbar=true,cols = cgrad([:black,:blue,:green,:orange,:red,:black]),size=(400 + colorbar*85,400))
+    p=plot(colorbar=true,clims=(0,2pi),colorbartitle="µ",aspect_ratio=1)
+    for defect in dft.defectsP
+        plot!(defect.pos,markershape=:circle,markersize=7,marker_z=defect.type/2π,c=cols)
+    end
+    for defect in dft.defectsN
+        plot!(defect.pos,markershape=:utriangle,markersize=7,marker_z=defect.type/2π,c=cols)
+    end
+    xlims!(1,L)
+    ylims!(1,L)
+    return p
+end
+function plot_mus(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)
+    dft = DefectTracker(thetas,model,lattice,find_type=true)
+    return plot_mus(dft,lattice.L)
 end
 
 function highlight_defects!(p,L,defects_p,defects_m,symbP=:circle,symbM=:utriangle)
@@ -229,8 +254,8 @@ function highlight_defects!(p,L,defects_p,defects_m,symbP=:circle,symbM=:utriang
     for defect in defects_m
         scatter!((defect), m = (8, 12.0, symbM,:transparent, stroke(1.2, :grey85)))
     end
-    xlims!((1,L))
-    ylims!((1,L))
+    # xlims!((1,L))
+    # ylims!((1,L))
     return p
 end
 
