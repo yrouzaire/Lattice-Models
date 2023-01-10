@@ -238,8 +238,8 @@ function plot_mus(dft::DefectTracker,L::Int;colorbar=true,cols = cgrad([:black,:
     for defect in dft.defectsN
         plot!(defect.pos,markershape=:utriangle,markersize=7,marker_z=defect.type/2π,c=cols)
     end
-    xlims!(1,L)
-    ylims!(1,L)
+    xlims!(0,L)
+    ylims!(0,L)
     return p
 end
 function plot_mus(thetas::Matrix{<:AbstractFloat},model::AbstractModel,lattice::Abstract2DLattice)

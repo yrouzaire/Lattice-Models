@@ -260,13 +260,36 @@ type(d::Defect)       = d.type[end]
 last_type(d::Defect)  = d.type[end]
 first_type(d::Defect) = d.type[1]
 
-function velocity(d::Defect,L::Int)
-    @assert length(d.pos) ≥ 2 "Not enough information, the history of position has to be of length ≥ 2 to infer a direction of motion."
-    return mod1.(d.pos[end] .- d.pos[end-1],L)
+function velocity(d::Defect,lattice::Abstract2DLattice)::Tuple{Number,Number}
+    if length(d.pos) ≥ 2
+        a,b = d.loc[end-1] ; x,y = d.loc[end]
+        dx = x-a
+        dy = y-b
+        if lattice.periodic
+            dx = min(abs,dx,lattice.L+dx,dx-lattice.L)
+            dy = min(abs,dy,lattice.L+dy,dy-lattice.L)
+        end
+        return (dx,dy)
+    else
+        println("Not enough information, the history of position has to be of length ≥ 2 to infer a first derivative.")
+        return (NaN,NaN)
+    end
 end
-function acceleration(d::Defect,L::Int)
-    @assert length(d.pos) ≥ 2 "Not enough information, the history of position has to be of length ≥ 3 to infer a direction of motion."
-    return mod1.(0.5.*d.pos[end] .- d.pos[end-1] .+ 0.5.*d.pos[end-2],L)
+
+function acceleration(d::Defect,lattice::Abstract2DLattice)::Tuple{Number,Number}
+    if length(d.pos) ≥ 3
+        a,b = d.loc[end-1] ; x,y = d.loc[end]  ; f,g = d.loc[end-2]
+        d2x = x+f-2a
+        d2y = y+g-2b
+        if lattice.periodic
+            d2x = min(abs,d2x,lattice.L+d2x,d2x-lattice.L)
+            d2y = min(abs,d2y,lattice.L+d2y,d2y-lattice.L)
+        end
+        return (d2x,d2y)
+    else
+        println("Not enough information, the history of position has to be of length ≥ 3 to infer a second derivative.")
+        return (NaN,NaN)
+    end
 end
 
 function update_position_and_type!(d::Defect,new_loc,new_type)
