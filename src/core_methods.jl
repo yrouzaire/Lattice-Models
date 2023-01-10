@@ -26,6 +26,7 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
            1  2 imagine this line is shifhted 1/2 lattice spacing to the left to give :    1  2
         =#
         @inbounds angles =
+        # Commented : influenced by the spins on your left
            # [thetas[i,jp],
            #  thetas[imm,jp],
            #  thetas[imm,j],
@@ -46,6 +47,7 @@ function get_neighbours(thetas::Matrix{<:T},model::AbstractModel{T},lattice::Tri
         6  1                                                                               6  1
         =#
         @inbounds angles =
+        # Commented : influenced by the spins on your left
            # [thetas[i,jp],
            #  thetas[imm,j],
            #  thetas[imm,jm],
